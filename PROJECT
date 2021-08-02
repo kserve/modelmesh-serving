@@ -1,0 +1,30 @@
+domain: kserve.io
+layout:
+- go.kubebuilder.io/v3
+multigroup: true
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: modelmesh-serving
+repo: github.com/kserve/modelmesh-serving
+resources:
+- api:
+    crdVersion: v1
+  group: serving
+  kind: ServingRuntime
+  version: v1alpha1
+- api:
+    crdVersion: v1
+  group: serving
+  kind: Predictor
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubeflow.org
+  group: serving
+  kind: TrainedModel
+  path: github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1
+  version: v1alpha1
+version: "3"

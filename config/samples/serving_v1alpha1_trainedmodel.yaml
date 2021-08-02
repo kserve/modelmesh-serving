@@ -1,0 +1,12 @@
+apiVersion: serving.kubeflow.org/v1alpha1
+kind: TrainedModel
+metadata:
+  name: example-sklearn-tm
+  annotations:
+    serving.kserve.io/secret-key: localMinIO
+spec:
+  inferenceService: mlserver-0.x
+  model:
+    storageUri: s3://modelmesh-example-models/sklearn/mnist-svm.joblib
+    framework: sklearn
+    memory: 256Mi

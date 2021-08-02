@@ -1,0 +1,137 @@
+# Copyright 2021 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.ServiceName}}-{{.Name}}
+  labels:
+    modelmesh-service: {{.ServiceName}}
+    component: model-mesh
+    app.kubernetes.io/instance: modelmesh-controller
+    app.kubernetes.io/managed-by: modelmesh-controller
+    app.kubernetes.io/name: modelmesh-controller
+    name: {{.ServiceName}}-{{.Name}}
+spec:
+  replicas: {{.Replicas}}
+  selector:
+    matchLabels:
+      modelmesh-service: {{.ServiceName}}
+      component: model-mesh
+      name: {{.ServiceName}}-{{.Name}}
+  template:
+    metadata:
+      # annotations required for prometheus, see https://github.com/kserve/modelmesh/blob/main/config/base/patches/prometheus_metrics.yaml
+      {{if .Metrics}}
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "{{.PrometheusPort}}"
+        prometheus.io/scheme: {{.PrometheusScheme}}
+        prometheus.io/scrape: "true"
+      {{end}}
+      labels:
+        modelmesh-service: {{.ServiceName}}
+        component: model-mesh
+        app.kubernetes.io/instance: modelmesh-controller
+        app.kubernetes.io/managed-by: modelmesh-controller
+        app.kubernetes.io/name: modelmesh-controller
+        # Required in Watson Cloud envs to allow outbound access to etcd
+        network-policy: allow-egress
+        name: {{.ServiceName}}-{{.Name}}
+    spec:
+      serviceAccountName: {{.ServiceAccountName}}
+      containers:
+        - name: mm
+          image: {{.ModelMeshImage}}
+
+          ports:
+            - name: grpc
+              containerPort: {{.Port}}
+            {{if .Metrics}}
+            - name: prometheus
+              containerPort: {{.PrometheusPort}}
+            {{end}}
+          env:
+            - name: MM_SERVICE_NAME
+              value: {{.ServiceName}}
+              # External gRPC port of the service, should match ports.containerPort
+            - name: MM_SVC_GRPC_PORT
+              value: "{{.Port}}"
+            - name: WKUBE_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: WKUBE_POD_IPADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MM_LOCATION
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+              # Overridden
+            - name: KV_STORE
+              value: etcd:model-mesh-etcd:2379
+            {{if .Metrics}}
+            - name: MM_METRICS
+              value: prometheus:port={{.PrometheusPort}};scheme={{.PrometheusScheme}}
+            {{- else}}
+            - name: MM_METRICS
+              value: disabled
+            {{end}}
+            - name: SHUTDOWN_TIMEOUT_MS
+              value: "90000"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8089
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 1
+
+          resources:
+            limits:
+              cpu: "{{.ModelMeshLimitCPU}}"
+              memory: "{{.ModelMeshLimitMemory}}"
+            requests:
+              cpu: "{{.ModelMeshRequestsCPU}}"
+              memory: "{{.ModelMeshRequestsMemory}}"
+
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8089
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 2
+
+          lifecycle:
+            preStop:
+              exec:
+                command: [/opt/kserve/mmesh/stop.sh, wait]
+
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+
+      # Model runtime containers are added here
+
+      # longer grace period to allow for model propagation
+      terminationGracePeriodSeconds: 90
+
+  strategy:
+    rollingUpdate:
+      maxSurge: 75%
+      maxUnavailable: 15%

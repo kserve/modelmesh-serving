@@ -1,0 +1,15 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: test
+spec:
+  supportedModelTypes:
+    - name: test
+
+  grpcEndpoint: "port:8000"
+  grpcDataEndpoint: "port:8001"
+
+  storageHelper:
+    disabled: true
+
+  containers: []

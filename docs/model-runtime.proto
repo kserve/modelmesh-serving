@@ -1,0 +1,152 @@
+/*
+ * *****************************************************************
+ * Copyright 2021 IBM Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * *****************************************************************
+ */
+
+syntax = "proto3";
+package mmesh;
+
+option java_package  = "com.ibm.watson.modelmesh.api";
+option java_multiple_files = true;
+
+// this is the internal "sidecar" API for interfacing with a
+// colocated model runtime container
+service ModelRuntime {
+
+  // Load a model, return when model is fully loaded.
+  // Include size of loaded model in response if no additional cost.
+  // A gRPC error code of PRECONDITION_FAILED or INVALID_ARGUMENT
+  // should be returned if no attempt to load the model was made
+  // (so can be sure that no space remains used).
+  // Note that the RPC may be cancelled by model-mesh prior to completion,
+  // after which an unloadModel call will immediately be sent for the same model.
+  // To avoid state inconsistency and "leaking" memory, implementors should
+  // ensure that this case is properly handled, i.e. that the model doesn't
+  // remain loaded after returning successfully from this unloadModel call.
+  rpc loadModel (LoadModelRequest) returns (LoadModelResponse) {}
+
+  // Unload a previously loaded (or failed) model. Return when model
+  // is fully unloaded, or immediately if not found/loaded.
+  rpc unloadModel (UnloadModelRequest) returns (UnloadModelResponse) {}
+
+  // Predict size of not-yet-loaded model - must return almost immediately.
+  // Should not perform expensive computation or remote lookups.
+  // Should be a conservative estimate.
+  rpc predictModelSize (PredictModelSizeRequest) returns (PredictModelSizeResponse) {}
+
+  // Calculate size (memory consumption) of currently-loaded model
+  rpc modelSize (ModelSizeRequest) returns (ModelSizeResponse) {}
+
+  // Provide basic runtime status and parameters; called only during startup.
+  // Before returning a READY status, implementations should check for and
+  // purge any/all currently-loaded models. Since this is only called during
+  // startup, there should very rarely be any, but if there are it implies
+  // the model-mesh container restarted unexpectedly and such a purge must
+  // be done to ensure continued consistency of state and avoid over-committing
+  // resources.
+  rpc runtimeStatus (RuntimeStatusRequest) returns (RuntimeStatusResponse) {}
+}
+
+
+message LoadModelRequest {
+    string modelId = 1;
+
+    string modelType = 2;
+    string modelPath = 3;
+    string modelKey = 4;
+}
+
+message LoadModelResponse {
+    // OPTIONAL - If nontrivial cost is involved in
+    // determining the size, return 0 here and
+    // do the sizing in the modelSize function
+    uint64 sizeInBytes = 1;
+
+    // EXPERIMENTAL - Applies only if limitModelConcurrency = true
+    // was returned from runtimeStatus rpc.
+    // See RuntimeStatusResponse.limitModelConcurrency for more detail
+    uint32 maxConcurrency = 2;
+}
+
+message UnloadModelRequest {
+    string modelId = 1;
+}
+
+message UnloadModelResponse {}
+
+message PredictModelSizeRequest {
+    string modelId = 1;
+
+    string modelType = 2;
+    string modelPath = 3;
+    string modelKey = 4;
+}
+
+message PredictModelSizeResponse {
+    uint64 sizeInBytes = 1;
+}
+
+message ModelSizeRequest {
+    string modelId = 1;
+}
+
+message ModelSizeResponse {
+    uint64 sizeInBytes = 1;
+}
+
+message RuntimeStatusRequest {
+}
+
+message RuntimeStatusResponse {
+    enum Status {
+        STARTING = 0;
+        READY = 1;
+        FAILING = 2; //not used yet
+    }
+    Status status = 1;
+    // memory capacity for static loaded models, in bytes
+    uint64 capacityInBytes = 2;
+    // maximum number of model loads that can be in-flight at the same time
+    uint32 maxLoadingConcurrency = 3;
+    // timeout for model loads in milliseconds
+    uint32 modelLoadingTimeoutMs = 4;
+    // conservative "default" model size,
+    // such that "most" models are smaller than this
+    uint64 defaultModelSizeInBytes = 5;
+    // version string for this model server code
+    string runtimeVersion = 6;
+    // DEPRECATED - the value of this field is not used,
+    // it will be removed in a future update
+    uint64 numericRuntimeVersion = 7;
+
+    message MethodInfo {
+        // optional
+        repeated uint32 idInjectionPath = 1;
+    }
+
+    // optional, EXPERIMENTAL and subject to change
+    map<string,MethodInfo> methodInfos = 8;
+
+    // EXPERIMENTAL - Set to true to enable the mode where
+    // each loaded model reports a maximum inferencing
+    // concurrency via the maxConcurrency field of
+    // the LoadModelResponse message. Additional requests
+    // are queued in the modelmesh framework. Turning this
+    // on will also enable latency-based autoscaling for
+    // the models, which attempts to minimize request
+    // queueing time and requires no other configuration/tuning.
+    bool limitModelConcurrency = 9;
+}

@@ -1,0 +1,21 @@
+name: Unit Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build develop image
+        run: |
+          ./scripts/build_devimage.sh
+      - name: Run unit test
+        run: |
+          CI=true
+          ./scripts/develop.sh make test

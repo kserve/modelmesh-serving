@@ -1,0 +1,35 @@
+inferenceServiceName: modelmesh-serving
+inferenceServicePort: 1234
+modelMeshEndpoint: modelmesh-serving
+etcdSecretName: "secret"
+serviceAccountName: ""
+podsPerRuntime: 2
+headlessService: true
+modelMeshImage:
+  name: image
+  tag: tag
+modelMeshResources:
+  requests:
+    cpu: "300m"
+    memory: "448Mi"
+  limits:
+    cpu: "3"
+    memory: "448Mi"
+storageHelperImage:
+  name: image
+  tag: tag
+  command: ["/opt/app/puller"]
+storageHelperResources:
+  requests:
+    cpu: "50m"
+    memory: "96Mi"
+  limits:
+    cpu: "2"
+    memory: "512Mi"
+metrics:
+  enabled: false
+  port: 2222
+  scheme: http
+scaleToZero:
+  enabled: false
+  gracePeriodSeconds: 60
