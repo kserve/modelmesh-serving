@@ -61,7 +61,7 @@ You can also optionally use `--delete` to delete any existing instances of Model
 
 If the `--quickstart` install option is **not** being used, details of an existing etcd cluster must be specified prior to installation.
 
-Create a file named `etcd-config.json`, populating the values based upon your etcd server. The same etcd server can be shared between environments and/or namespaces, but in this case _the `root_prefix` must be set differently in each namespace's respective secret_. The complete json schema for this configuration is documented [here](https://github.com/IBM/etcd-java/blob/master/etcd-json-schema.md).
+Create a file named `etcd-config.json`, populating the values based upon your etcd server. The same etcd server can be shared between environments and/or namespaces, but in this case _the `root_prefix` must be set differently in each namespace's respective secret_. The complete json schema for this configuration is documented [here](https://github.com/IBM/etcd-java/blob/main/etcd-json-schema.md).
 
 ```json
 {
