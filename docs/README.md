@@ -27,6 +27,8 @@ kubectl create namespace modelmesh-serving
 This will install ModelMesh serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
 Eventually after running this script, you should see a `Successfully installed ModelMesh Serving!` message.
 
+To see more details about installation, click [here](./install/install-script.md).
+
 ### Verify installation
 
 Check that the pods are running:
@@ -58,8 +60,6 @@ are:
 | -------------- | ----------------------------------- |
 | triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
 | mlserver-0.x   | sklearn, xgboost, lightgbm          |
-
-To see more detailed instructions and information, click [here](./install/install-script.md).
 
 ## 2. Deploy a model
 
@@ -170,7 +170,7 @@ This should give you output like the following:
 }
 ```
 
-To see more detailed instructions and information, click [here](./predictors/run-inference.md).
+To see more detailed instructions and information, click [here](./predictors/inferencing.md).
 
 ## 4. (Optional) Deleting your ModelMesh Serving installation
 

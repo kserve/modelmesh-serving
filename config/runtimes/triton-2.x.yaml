@@ -30,10 +30,6 @@ spec:
     - name: onnx
       version: "1" # 1.5.3
 
-  # The current triton image doesn't support GPU
-  # Support will be included in a future update
-  # gpu: true
-
   grpcEndpoint: "port:8085"
   grpcDataEndpoint: "port:8001"
 

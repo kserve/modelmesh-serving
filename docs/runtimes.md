@@ -280,7 +280,6 @@ spec:
       imagePullPolicy: IfNotPresent
       WorkingDir: "/container/working/dir"
   disabled: false
-  gpu: false
   storageHelper:
     disabled: true
   grpcEndpoint: port:1234 # or unix:/path
