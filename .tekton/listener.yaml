@@ -1,0 +1,142 @@
+apiVersion: tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: template
+spec:
+  params:
+    - name: repository
+      description: The git repo
+    - name: revision
+      description: the branch for the git repo
+    - name: apikey
+      description: the ibmcloud api key
+    - name: registry-url
+      description: ibm container registry url
+    - name: registry-namespace
+      description: the ibmcloud registry namespace
+    - name: region
+      description: the ibmcloud registry region
+      default: us-south
+    - name: org
+      description: organization
+    - name: space
+      description: space
+      default: dev
+    - name: resource-group
+      description: resource group
+      default: default
+    - name: docker-username
+      description: ibm container registry username
+      default: iamapikey
+    - name: docker-password
+      description: iam api key
+    - name: dockerhub-username
+      description: username for docker hub
+    - name: dockerhub-password
+      description: dockerhub password/token
+    - name: kubernetes-cluster
+      description: cluster name
+    - name: serving-ns
+      description: modelmesh serving namespace
+      default: modelmesh-serving
+    - name: slack-webhook
+      description: webhook URL
+      default: ""
+    - name: slack-channel
+      description: slack channel
+      default: ""
+    - name: publish-to-dockerhub
+      description: publish image to dockerhub
+      default: "0"
+    - name: image-tag
+      description: image tag
+      default: "nightly"
+    - name: dockerhub-namespace
+      description: dockerhub namespace
+      default: aipipeline
+  resourcetemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: pipelinerun-$(uid)-pvc
+      spec:
+        resources:
+          requests:
+            storage:  5Gi
+        volumeMode: Filesystem
+        accessModes:
+          - ReadWriteOnce
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        name: pipelinerun-$(uid)
+      spec:
+        pipelineRef:
+            name: pipeline
+        workspaces:
+          - name: pipeline-pvc
+            persistentVolumeClaim:
+              claimName: pipelinerun-$(uid)-pvc
+        params:
+        - name: repository
+          value: $(params.repository)
+        - name: revision
+          value: $(params.revision)
+        - name: apikey
+          value: $(params.apikey)
+        - name: registry-url
+          value: $(params.registry-url)
+        - name: registry-namespace
+          value: $(params.registry-namespace)
+        - name: region
+          value: $(params.region)
+        - name: docker-username
+          value: $(params.docker-username)
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: dockerhub-username
+          value: $(params.dockerhub-username)
+        - name: dockerhub-password
+          value: $(params.dockerhub-password)
+        - name: resource-group
+          value: $(params.resource-group)
+        - name: org
+          value: $(params.org)
+        - name: space
+          value: $(params.space)
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: serving-ns
+          value: $(params.serving-ns)
+        - name: slack-webhook
+          value: $(params.slack-webhook)
+        - name: slack-channel
+          value: $(params.slack-channel)
+        - name: image-tag
+          value: $(params.image-tag)
+        - name: dockerhub-namespace
+          value: $(params.dockerhub-namespace)
+        - name: publish-to-dockerhub
+          value: $(params.publish-to-dockerhub)
+---
+apiVersion: tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: binding
+spec:
+  params:
+    - name: repository
+      value: "https://github.com/kserve/modelmesh-serving"
+    - name: revision
+      value: "main"
+---
+apiVersion: tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: listener
+spec:
+  triggers:
+    - binding:
+        name: binding
+      template:
+        name: template
