@@ -55,6 +55,9 @@ type FVTPredictor struct {
 const samplesPath string = "testdata/predictors/"
 const userConfigMapName string = "model-serving-config"
 
+// Used for checking if floats are sufficiently close enough.
+const EPSILON float64 = 0.000001
+
 var xgBoostInputData []float32 = []float32{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0}
 
 // Array of all the predictors that need to be tested
@@ -925,7 +928,7 @@ var _ = Describe("Predictor", func() {
 			// convert raw_output_contents in bytes to array of 10 float32s
 			output, err := convertRawOutputContentsTo10Floats(inferResponse.GetRawOutputContents()[0])
 			Expect(err).ToNot(HaveOccurred())
-			Expect(output[8]).To(BeEquivalentTo(7.343689441680908)) // the 9th class gets the highest activation for this net/image
+			Expect(math.Abs(float64(output[8]-7.343689441680908)) < EPSILON).To(BeTrue()) // the 9th class gets the highest activation for this net/image
 		})
 
 		It("should fail with an invalid input", func() {
@@ -1015,7 +1018,7 @@ var _ = Describe("Predictor", func() {
 			// convert raw_output_contents in bytes to array of 10 float32s
 			output, err := convertRawOutputContentsTo10Floats(inferResponse.GetRawOutputContents()[0])
 			Expect(err).ToNot(HaveOccurred())
-			Expect(output[8]).To(BeEquivalentTo(7.343689441680908)) // the 9th class gets the highest activation for this net/image
+			Expect(math.Abs(float64(output[8]-7.343689441680908)) < EPSILON).To(BeTrue()) // the 9th class gets the highest activation for this net/image
 		})
 
 		It("should fail with an invalid input", func() {

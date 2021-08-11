@@ -113,6 +113,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 			By("Creating a test predictor for one Runtime")
 			// ensure single predictor exists
 			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
+			time.Sleep(10 * time.Second)
 			ListAllPredictorsExpectOne()
 			// ensure the runtime is ready and scaled up and others are scaled down
 			expectScaledUp()
