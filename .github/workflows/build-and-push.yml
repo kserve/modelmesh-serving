@@ -1,36 +1,28 @@
 name: Build and Push
 
 on:
-  pull_request:
+  push:
     branches: [main]
-    types: [closed]
 
 jobs:
+  # Ensure that tests pass before publishing a new image.
   build:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-
+    env:
+      IMAGE_NAME: kserve/modelmesh-controller
+      IMAGE_TAG: latest
+      CI: true
     steps:
       - uses: actions/checkout@v2
       - name: Build develop image
-        run: |
-          ./scripts/build_devimage.sh
+        run: make build.develop
+      - name: Run lint
+        run: ./scripts/develop.sh make fmt
+      - name: Run unit tests
+        run: ./scripts/develop.sh make test
       - name: Build runtime image
-        run: |
-          BUILD_ID=$(date '+%Y%m%d')-$(git rev-parse HEAD | cut -c -5)
-          IMAGE_TAG=main_${BUILD_ID}
-
-          ./scripts/build_docker.sh --target runtime \
-            --tag $IMAGE_TAG \
-            --devimage kserve/modelmesh-controller-develop
-
-      - name: Log in to docker hub
-        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Push to docker hub
-        run: |
-          IMAGE_NAME=modelmesh-serving
-          IMAGE_ID=kserve/$IMAGE_NAME
-          IMAGE_VERSION=latest
-
-          docker push $IMAGE_ID:$IMAGE_VERSION
+        run: make build
+      - name: Log in to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      - name: Push to Docker Hub
+        run: docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
