@@ -1,0 +1,232 @@
+#!/bin/bash
+
+retry() {
+  local max=$1; shift
+  local interval=$1; shift
+
+  until "$@"; do
+    echo "trying.."
+    max=$((max-1))
+    if [[ "$max" -eq 0 ]]; then
+      return 1
+    fi
+    sleep "$interval"
+  done
+}
+
+wait_for_namespace () {
+    if [[ $# -ne 3 ]]
+    then
+        echo "Usage: wait_for_namespace namespace max_retries sleep_time"
+        return 1
+    fi
+
+    local namespace=$1
+    local max_retries=$2
+    local sleep_time=$3
+
+    local i=0
+
+    while [[ $i -lt $max_retries ]]
+    do
+        if kubectl get ns | grep -qow "$namespace"
+        then
+            return 0
+        fi
+        echo "$namespace not found. Checking again in ${sleep_time}s."
+        sleep "$sleep_time"
+        i=$((i+1))
+    done
+
+    return 1
+}
+
+wait_for_pods () {
+    if [[ $# -ne 3 ]]
+    then
+        echo "Usage: wait_for_pods namespace max_retries sleep_time"
+        return 1
+    fi 
+
+    local namespace=$1
+    local max_retries=$2
+    local sleep_time=$3
+
+    local i=0
+
+    while [[ $i -lt $max_retries ]]
+    do
+        local pods
+        local statuses
+        local num_pods
+        local num_running
+        pods=$(kubectl get pod -n "$namespace")
+
+        if [[ -z $pods ]]
+        then
+            echo "Missing pods."
+            return 1
+        fi
+
+        # Using quotations around variables to keep column format in echo
+        # Remove 1st line (header line) -> trim whitespace -> cut statuses column (3rd column)
+        # Might be overkill to parse down to specific columns :).
+        statuses=$(echo "$pods" | tail -n +2 | tr -s ' '  | cut -d ' ' -f 3)
+        num_pods=$(echo "$statuses" | wc -l | xargs)
+        num_running=$(echo "$statuses" | grep -ow "Running\|Completed" | wc -l | xargs)
+
+        local msg="${num_running}/${num_pods} pods running in \"${namespace}\"."
+
+        if [[ $num_running -ne $num_pods ]]
+        then
+            echo "$msg Checking again in ${sleep_time}s."
+        else
+            echo "$msg"
+            return 0
+        fi
+        sleep "$sleep_time"
+        i=$((i+1))
+    done
+
+    return 1
+}
+
+deploy_with_retries () {
+    if [[ $# -ne 4 ]]
+    then
+        echo "Usage: deploy_with_retries (-f FILENAME | -k DIRECTORY) manifest max_retries sleep_time"
+        return 1
+    fi 
+
+    local flag="$1"
+    local manifest="$2"
+    local max_retries="$3"
+    local sleep_time="$4"
+    
+    local i=0
+
+    while [[ $i -lt $max_retries ]]
+    do
+        local exit_code=0
+
+        kubectl apply "$flag" "$manifest" || exit_code=$?
+
+        if [[ $exit_code -eq 0 ]]
+        then
+            return 0
+        fi
+        
+        echo "Deploy unsuccessful with error code $exit_code. Trying again in ${sleep_time}s."
+        sleep "$sleep_time"
+        i=$((i+1))
+    done
+
+    return 1
+}
+
+wait_for_pod () {
+    local namespace=$1
+    local pod_name=$2
+    local max_tries=$3
+    local sleep_time=$4
+
+    until pod_is_running "$namespace" "$pod_name"; do
+        max_tries=$((max_tries-1))
+        if [[ "$max_tries" -eq 0 ]]; then
+            return 1
+        fi
+        echo "Checking again in $sleep_time"
+        sleep "$sleep_time"
+    done
+
+    return 0
+}
+
+pod_is_running () {
+    local namespace=$1
+    local pod_name=$2
+
+    local pod_status
+
+    # May have unexpected results if pod_name has multiple matches
+    pod_status=$(kubectl get pod -n "$namespace" | grep "$pod_name*" | head -1 | awk '{print $3}')
+
+    if [ "$pod_status" = "Running" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+wait_for_pipeline_run () {
+    local run_name=$1
+    local max_tries=$2
+    local sleep_time=$3
+
+    until pipeline_run_is_success "$run_name"; do
+        max_tries=$((max_tries-1))
+        if [[ "$max_tries" -eq 0 ]]; then
+            return 1
+        fi
+        echo "Checking pipeline run again in $sleep_time"
+        sleep "$sleep_time"
+    done
+
+    return 0
+}
+
+wait_for_pipeline_run_rev () {
+    local run_name=$1
+    local max_tries=$2
+    local sleep_time=$3
+
+    until [ "$(pipeline_run_is_success_rev "$run_name")" = "0" ]; do
+        max_tries=$((max_tries-1))
+        if [[ "$max_tries" -eq 0 ]]; then
+            echo "1"
+            return
+        fi
+        sleep "$sleep_time"
+    done
+
+    echo "0"
+    return
+}
+
+pipeline_run_is_success () {
+    local run_name=$1
+
+    local run_status
+
+    # May have unexpected results if run_status has multiple matches
+    run_status=$(kubectl get pipelineruns "$run_name" | tail -1 | awk '{print $2}')
+
+    if [ "$run_status" = "True" ]; then
+        return 0
+    elif [ "$run_status" = "False" ]; then
+        echo "Run Failed"
+        exit 1
+    fi
+
+    return 1
+}
+
+pipeline_run_is_success_rev () {
+    local run_name=$1
+
+    local run_status
+
+    # May have unexpected results if run_status has multiple matches
+    run_status=$(kubectl get pipelineruns "$run_name" | tail -1 | awk '{print $2}')
+
+    if [ "$run_status" = "True" ]; then
+        echo "0"
+        return
+    elif [ "$run_status" = "False" ]; then
+        echo "1"
+        return
+    fi
+
+    echo "1"
+    return
+}

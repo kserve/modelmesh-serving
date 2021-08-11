@@ -1,0 +1,241 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline
+spec:
+  params:
+    - name: repository
+      description: the git repo
+    - name: revision
+      description: the revision
+      default: main
+    - name: apikey
+      description: the ibmcloud api key
+    - name: registry-url
+      description: ibm container registry url
+    - name: registry-namespace
+      description: the ibmcloud registry namespace
+    - name: docker-username
+      description: for ibm container registry
+      default: iamapikey
+    - name: docker-password
+      description: iam api key
+    - name: dockerhub-username
+      description: dockerhub username
+    - name: dockerhub-password
+      description: dockerhub password/token
+    - name: resource-group
+      description: resource group
+      default: default
+    - name: org
+      description: organization
+    - name: region
+      description: region
+    - name: space
+      description: space
+    - name: serving-ns
+      description: modelmesh serving namespace
+      default: modelmesh-serving
+    - name: kubernetes-cluster
+      description: cluster name
+    - name: slack-webhook
+      description: webhook URL
+      default: ""
+    - name: slack-channel
+      description: slack channel
+      default: ""
+    - name: publish-to-dockerhub
+      description: publish images to dockerhub
+      default: "0"
+    - name: image-tag
+      description: image tag
+      default: "nightly"
+    - name: dockerhub-namespace
+      description: dockerhub namespace
+      default: kserve
+  workspaces:
+  - name: pipeline-pvc
+  tasks:
+    - name: setup-env
+      taskRef:
+        name: test
+      params:
+        - name: repository
+          value: $(params.repository)
+        - name: revision
+          value: $(params.revision)
+        - name: apikey
+          value: $(params.apikey)
+        - name: registry-namespace
+          value: $(params.registry-namespace)
+        - name: docker-username
+          value: $(params.docker-username)
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: resource-group
+          value: $(params.resource-group)
+        - name: org
+          value: $(params.org)
+        - name: region
+          value: $(params.region)
+        - name: space
+          value: $(params.space)
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: deploy
+      taskRef:
+        name: deploy
+      runAfter:
+        - setup-env
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: docker-username
+          value: iamapikey
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: serving-ns
+          value: $(params.serving-ns)
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: run-fvt
+      retries: 1
+      taskRef:
+        name: e2e-test
+      runAfter:
+        - deploy
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: serving-ns
+          value: $(params.serving-ns)
+        - name: slack-webhook
+          value: $(params.slack-webhook)
+        - name: slack-channel
+          value: $(params.slack-channel)
+        - name: test-script
+          value: "scripts/deploy/iks/test-fvt.sh"
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: undeploy
+      runAfter:
+        - run-fvt
+      taskRef:
+        name: undeploy
+      params:
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: apikey
+          value: $(params.apikey)
+        - name: serving-ns
+          value: $(params.serving-ns)
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: build-image
+      taskRef:
+        name: build-images-dnd
+      runAfter:
+        - undeploy
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: image-name
+          value: modelmesh-serving
+        - name: docker-root
+          value: .
+        - name: docker-file
+          value: ""
+        - name: registry-url
+          value: $(params.registry-url)
+        - name: registry-namespace
+          value: $(params.registry-namespace)          
+        - name: docker-username
+          value: iamapikey
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: dockerhub-username
+          value: $(params.dockerhub-username)
+        - name: dockerhub-password
+          value: $(params.dockerhub-password)
+        - name: dockerhub-namespace
+          value: $(params.dockerhub-namespace)
+        - name: publish-tag
+          value: $(params.image-tag)
+        - name: run-task
+          value: build
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: publish-image
+      taskRef:
+        name: build-images-dnd
+      runAfter:
+        - build-image
+      when:
+        - input: $(params.publish-to-dockerhub)
+          operator: in
+          values:
+            - '1'
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: image-name
+          value: modelmesh-serving
+        - name: docker-root
+          value: .
+        - name: docker-file
+          value: ""
+        - name: registry-url
+          value: $(params.registry-url)
+        - name: registry-namespace
+          value: $(params.registry-namespace)                    
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: dockerhub-username
+          value: $(params.dockerhub-username)
+        - name: dockerhub-password
+          value: $(params.dockerhub-password)
+        - name: dockerhub-namespace
+          value: $(params.dockerhub-namespace)
+        - name: publish-tag
+          value: $(params.image-tag)
+        - name: run-task
+          value: build_push          
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+  finally:
+    - name: cleanup-namespace
+      taskRef:
+        name: iks-test
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: serving-ns
+          value: $(params.serving-ns)
+        - name: resource-group
+          value: $(params.resource-group)
+        - name: org
+          value: $(params.org)
+        - name: region
+          value: $(params.region)
+        - name: space
+          value: $(params.space)
+        - name: test-commands
+          value: |
+            kubectl get ns
+            kubectl delete ns $(params.serving-ns) || true
+            kubectl delete job --all -n default || true
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
