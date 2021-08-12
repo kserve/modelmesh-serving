@@ -52,7 +52,7 @@ done
 eval set -- "$PARAMS"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd "${DIR}/.." ||
+cd "${DIR}/.."
 
 # Make sure .bash_history exists and is a file
 touch .bash_history
