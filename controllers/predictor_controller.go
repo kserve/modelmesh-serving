@@ -216,7 +216,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 
 // passed in ModelInfo.Key field of registration requests
 type ModelKeyInfo struct {
-	StorageKey string         `json:"storage_key"`
+	StorageKey *string        `json:"storage_key,omitempty"`
 	Bucket     *string        `json:"bucket,omitempty"`
 	ModelType  *api.ModelType `json:"model_type,omitempty"`
 	SchemaPath *string        `json:"schema_path,omitempty"`
@@ -269,13 +269,21 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 	setVmodelCtx, cancel := context.WithTimeout(ctx, GrpcRequestTimeout)
 	defer cancel()
 
-	//TODO other storage types
-	keyJSONBytes, _ := json.Marshal(ModelKeyInfo{
-		StorageKey: spec.Storage.S3.SecretKey,
-		Bucket:     spec.Storage.S3.Bucket,
+	mki := ModelKeyInfo{
 		ModelType:  &spec.Model.Type,
 		SchemaPath: spec.Model.SchemaPath,
-	})
+	}
+
+	if spec.Storage != nil && spec.Storage.S3 != nil {
+		//TODO other storage types
+		mki.StorageKey = &spec.Storage.S3.SecretKey
+		mki.Bucket = spec.Storage.S3.Bucket
+	}
+
+	keyJSONBytes, err := json.Marshal(mki)
+	if err != nil {
+		return nil, fmt.Errorf("error json-marshalling VModel parameters: %w", err)
+	}
 
 	return mmc.SetVModel(setVmodelCtx, &mmeshapi.SetVModelRequest{
 		VModelId:              predictor.GetName(),
