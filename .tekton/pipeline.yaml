@@ -24,6 +24,12 @@ spec:
       description: dockerhub username
     - name: dockerhub-password
       description: dockerhub password/token
+    - name: dockersandbox-username
+      description: dockersandbox username
+    - name: dockersandbox-password
+      description: dockersandbox password/token
+    - name: dockersandbox-namespace
+      description: dockersandbox namespace
     - name: resource-group
       description: resource group
       default: default
@@ -83,11 +89,52 @@ spec:
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc
+    - name: build-image
+      taskRef:
+        name: build-images-dnd
+      runAfter:
+        - setup-env
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: image-name
+          value: modelmesh-serving
+        - name: docker-root
+          value: .
+        - name: docker-file
+          value: ""
+        - name: registry-url
+          value: $(params.registry-url)
+        - name: registry-namespace
+          value: $(params.registry-namespace)          
+        - name: docker-username
+          value: iamapikey
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: dockerhub-username
+          value: $(params.dockerhub-username)
+        - name: dockerhub-password
+          value: $(params.dockerhub-password)
+        - name: dockerhub-namespace
+          value: $(params.dockerhub-namespace)
+        - name: dockersandbox-username
+          value: $(params.dockersandbox-username)
+        - name: dockersandbox-password
+          value: $(params.dockersandbox-password)
+        - name: dockersandbox-namespace
+          value: $(params.dockersandbox-namespace)
+        - name: publish-tag
+          value: $(params.image-tag)
+        - name: run-task
+          value: build
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
     - name: deploy
       taskRef:
         name: deploy
       runAfter:
-        - setup-env
+        - build-image
       params:
         - name: apikey
           value: $(params.apikey)
@@ -99,6 +146,8 @@ spec:
           value: $(params.kubernetes-cluster)
         - name: serving-ns
           value: $(params.serving-ns)
+        - name: dockersandbox-namespace
+          value: $(params.dockersandbox-namespace)
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc
@@ -139,41 +188,6 @@ spec:
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc
-    - name: build-image
-      taskRef:
-        name: build-images-dnd
-      runAfter:
-        - undeploy
-      params:
-        - name: apikey
-          value: $(params.apikey)
-        - name: image-name
-          value: modelmesh-serving
-        - name: docker-root
-          value: .
-        - name: docker-file
-          value: ""
-        - name: registry-url
-          value: $(params.registry-url)
-        - name: registry-namespace
-          value: $(params.registry-namespace)          
-        - name: docker-username
-          value: iamapikey
-        - name: docker-password
-          value: $(params.docker-password)
-        - name: dockerhub-username
-          value: $(params.dockerhub-username)
-        - name: dockerhub-password
-          value: $(params.dockerhub-password)
-        - name: dockerhub-namespace
-          value: $(params.dockerhub-namespace)
-        - name: publish-tag
-          value: $(params.image-tag)
-        - name: run-task
-          value: build
-      workspaces:
-      - name: task-pvc
-        workspace: pipeline-pvc
     - name: publish-image
       taskRef:
         name: build-images-dnd
@@ -205,6 +219,12 @@ spec:
           value: $(params.dockerhub-password)
         - name: dockerhub-namespace
           value: $(params.dockerhub-namespace)
+        - name: dockersandbox-username
+          value: $(params.dockersandbox-username)
+        - name: dockersandbox-password
+          value: $(params.dockersandbox-password)
+        - name: dockersandbox-namespace
+          value: $(params.dockersandbox-namespace)
         - name: publish-tag
           value: $(params.image-tag)
         - name: run-task
@@ -236,6 +256,45 @@ spec:
             kubectl get ns
             kubectl delete ns $(params.serving-ns) || true
             kubectl delete job --all -n default || true
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: cleanup-image
+      taskRef:
+        name: build-images-dnd
+      params:
+        - name: apikey
+          value: $(params.apikey)
+        - name: image-name
+          value: modelmesh-serving
+        - name: docker-root
+          value: .
+        - name: docker-file
+          value: ""
+        - name: registry-url
+          value: $(params.registry-url)
+        - name: registry-namespace
+          value: $(params.registry-namespace)          
+        - name: docker-username
+          value: iamapikey
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: dockerhub-username
+          value: $(params.dockerhub-username)
+        - name: dockerhub-password
+          value: $(params.dockerhub-password)
+        - name: dockerhub-namespace
+          value: $(params.dockerhub-namespace)
+        - name: dockersandbox-username
+          value: $(params.dockersandbox-username)
+        - name: dockersandbox-password
+          value: $(params.dockersandbox-password)
+        - name: dockersandbox-namespace
+          value: $(params.dockersandbox-namespace)
+        - name: publish-tag
+          value: $(params.image-tag)
+        - name: run-task
+          value: cleanup
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc

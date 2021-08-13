@@ -108,6 +108,12 @@ spec:
       description: docker hub password
     - name: dockerhub-username
       description: docker hub username
+    - name: dockersandbox-username
+      description: docker sandbox username
+    - name: dockersandbox-password
+      description: docker sandbox password
+    - name: dockersandbox-namespace
+      description: docker sandbox namespace
     - name: publish-tag
       description: image publish tag
 
@@ -115,7 +121,7 @@ spec:
   - name: task-pvc
     mountPath: /artifacts
   steps:
-    - name: build-image
+    - name: process-image
       image: docker.io/aipipeline/pipeline-base-image:1.2
       env:
         - name: DOCKER_USERNAME
@@ -156,6 +162,12 @@ spec:
           value: $(params.dockerhub-password)
         - name: DOCKERHUB_NAMESPACE
           value: $(params.dockerhub-namespace)
+        - name: DOCKERSANDBOX_USERNAME
+          value: $(params.dockersandbox-username)
+        - name: DOCKERSANDBOX_TOKEN
+          value: $(params.dockersandbox-password)
+        - name: DOCKERSANDBOX_NAMESPACE
+          value: $(params.dockersandbox-namespace)
         - name: PUBLISH_TAG
           value: $(params.publish-tag)
       command: ["/bin/bash", "-c"]
@@ -224,6 +236,8 @@ spec:
     - name: archive-dir
       description: archive directory
       default: "."
+    - name: dockersandbox-namespace
+      description: docker sandbox namespace      
   workspaces:
   - name: task-pvc
     mountPath: /artifacts
@@ -243,6 +257,8 @@ spec:
           value: $(params.archive-dir)
         - name: SERVING_NS
           value: $(params.serving-ns)
+        - name: DOCKERSANDBOX_NAMESPACE
+          value: $(params.dockersandbox-namespace)
       command: ["/bin/bash", "-c"]
       args:
         - set -ex;
