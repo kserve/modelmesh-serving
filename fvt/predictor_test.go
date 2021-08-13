@@ -484,6 +484,47 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
+	var _ = Describe("Missing storage field", func() {
+		var predictorObject *unstructured.Unstructured
+		var predictorName string
+		var startTime string
+
+		BeforeEach(func() {
+			// verify clean state (no predictors)
+			list := fvtClient.ListPredictors(metav1.ListOptions{})
+			Expect(list.Items).To(BeEmpty())
+
+			// load the test predictor object
+			predictorObject = DecodeResourceFromFile(samplesPath + "no-storage-predictor.yaml")
+			predictorName = GetString(predictorObject, "metadata", "name")
+		})
+
+		AfterEach(func() {
+			if CurrentGinkgoTestDescription().Failed {
+				fvtClient.PrintPredictors()
+				fvtClient.TailPodLogs(startTime)
+			}
+			fvtClient.DeleteAllPredictors()
+		})
+
+		It("predictor should fail to load with invalid storage path", func() {
+			By("Creating a predictor with invalid storage")
+			watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{}, defaultTimeout)
+			defer watcher.Stop()
+			obj := fvtClient.CreatePredictorExpectSuccess(predictorObject)
+			startTime = GetString(obj, "metadata", "creationTimestamp")
+			Expect(obj.GetName()).To(Equal(predictorName))
+			ExpectPredictorState(obj, false, "Pending", "", "UpToDate")
+
+			By("Waiting for the predictor to be 'FailedToLoad'")
+			obj = WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "Loading", "FailedToLoad"}, watcher)
+
+			By("Asserting on the predictor state")
+			ExpectPredictorState(obj, false, "FailedToLoad", "", "UpToDate")
+			ExpectPredictorFailureInfo(obj, "ModelLoadFailed", true, true, "Predictor Storage field missing")
+		})
+	})
+
 	var _ = Describe("TensorFlow inference", func() {
 		var tfPredictorObject *unstructured.Unstructured
 		var tfPredictorName string
