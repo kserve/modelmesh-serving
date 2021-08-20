@@ -59,12 +59,15 @@ then
   exit $EXIT_CODE
 fi
 
-
 # Update kustomize
 curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
 mv kustomize /usr/local/bin/kustomize
 
-# Check if all pods are running - allow 60 retries (10 minutes)
+# Update target tag and namespace/organization
+sed -i 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomization.yaml
+sed -i 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-controller"'/' config/manager/kustomization.yaml
+
+# Install and check if all pods are running - allow 60 retries (10 minutes)
 ./scripts/install.sh --namespace "$SERVING_NS" --fvt
 wait_for_pods "$SERVING_NS" 60 "$SLEEP_TIME" || EXIT_CODE=$?
 

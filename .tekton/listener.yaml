@@ -34,6 +34,12 @@ spec:
       description: username for docker hub
     - name: dockerhub-password
       description: dockerhub password/token
+    - name: dockersandbox-username
+      description: dockersandbox username
+    - name: dockersandbox-password
+      description: dockersandbox password/token
+    - name: dockersandbox-namespace
+      description: dockersandbox namespace
     - name: kubernetes-cluster
       description: cluster name
     - name: serving-ns
@@ -98,6 +104,12 @@ spec:
           value: $(params.dockerhub-username)
         - name: dockerhub-password
           value: $(params.dockerhub-password)
+        - name: dockersandbox-username
+          value: $(params.dockersandbox-username)
+        - name: dockersandbox-password
+          value: $(params.dockersandbox-password)
+        - name: dockersandbox-namespace
+          value: $(params.dockersandbox-namespace)
         - name: resource-group
           value: $(params.resource-group)
         - name: org
