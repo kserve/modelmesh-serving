@@ -116,7 +116,7 @@ inference.GRPCInferenceService
 $ grpcurl -plaintext -proto fvt/proto/kfs_inference_v2.proto -d '{ "model_name": "example-mnist-predictor", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' localhost:8033 inference.GRPCInferenceService.ModelInfer
 
 {
-  "modelName": "example-mnist-predictor-725d74f061",
+  "modelName": "example-mnist-predictor__ksp-7702c1b55a",
   "outputs": [
     {
       "name": "predict",
@@ -159,8 +159,8 @@ EOF
 predictor.serving.kserve.io/example-mnist-predictor configured
 
 $ kubectl get predictors
-NAME                      TYPE      AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
-example-mnist-predictor   sklearn   true        Loaded        Loading       InProgress    10m
+NAME                      TYPE         AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
+example-mnist-predictor   tensorflow   true        Loaded        Loading       InProgress   10m
 ```
 
 The "transition" state of the Predictor will be `InProgress` while waiting for the new backing model to be ready,
@@ -168,8 +168,8 @@ and return to `UpToDate` once the transition is complete.
 
 ```shell
 $ kubectl get predictors
-NAME                      TYPE      AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
-example-mnist-predictor   sklearn   true        Loaded                      UpToDate      11m
+NAME                      TYPE         AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
+example-mnist-predictor   tensorflow   true        Loaded                      UpToDate     31m
 ```
 
 If there is a problem loading the new model (for example it does not exist at the specified path), the transition state will
@@ -178,8 +178,8 @@ Predictor remains available.
 
 ```shell
 $ kubectl get predictors
-NAME                      TYPE      AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
-example-mnist-predictor   sklearn   true        Loaded        Failed        BlockedByFailedLoad    20m
+NAME                      TYPE         AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION             AGE
+example-mnist-predictor   tensorflow   true        Loaded        Failed        BlockedByFailedLoad    20m
 ```
 
 ## For More Details
