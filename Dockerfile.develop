@@ -56,7 +56,7 @@ RUN microdnf install \
 # Download kubebuilder
     true \
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
-    && curl -L https://go.kubebuilder.io/dl/2.3.2/linux/amd64 | tar -xz -C /tmp/ \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_linux_amd64.tar.gz | tar -xz -C /tmp/ \
     && mv /tmp/kubebuilder_*_linux_amd64 /usr/local/kubebuilder \
 # Then download and overwrite kubebuilder binary with desired/latest version
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_linux_amd64 -o /usr/local/kubebuilder/bin/kubebuilder \
