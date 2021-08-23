@@ -32,7 +32,7 @@ There should be secret key called `localMinIO` that looks like:
 
 2. Create a Predictor Custom Resource to serve the sample model
 
-The `config/example-predictors` directory contains Predictor manifests for many of the example models. For a list of available models, see the [example models documentation](../example-models#available-models).
+The `config/example-predictors` directory contains Predictor manifests for many of the example models. For a list of available models, see the [example models documentation](../example-models.md#available-models).
 
 Here we are deploying an sklearn model located at `sklearn/mnist-svm.joblib` within the MinIO storage.
 
