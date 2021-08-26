@@ -44,7 +44,7 @@ test:
 
 # Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation
 fvt:
-	go test -v ./fvt -ginkgo.v -ginkgo.progress -test.timeout 40m
+	go test -v ./fvt -ginkgo.v -ginkgo.progress -ginkgo.failFast -test.timeout 40m
 
 # Command to regenerate the grpc go files from the proto files
 fvt-protoc:
