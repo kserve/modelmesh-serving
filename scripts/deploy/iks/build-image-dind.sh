@@ -77,6 +77,7 @@ build_image() {
 push_image() {
   echo "=======================Push image to Docker Hub==============================="
   if [[ "$PUBLISH_TAG" == "latest" ]]; then
+    apt update
     apt install jq -y
     apt install curl -y
     export LAST_PUSHED=$(curl -X GET https://hub.docker.com/v2/repositories/${DOCKERHUB_NAMESPACE}/modelmesh-controller/tags/latest | jq -r '.tag_last_pushed')
