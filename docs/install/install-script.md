@@ -87,3 +87,9 @@ To wipe out the ModelMesh Serving CRDs, controller, and built-in runtimes from t
 ```shell
 ./scripts/delete.sh --namespace modelmesh-serving
 ```
+
+(Optional) Delete the specified namespace `modelmesh-serving`
+
+```
+kubectl delete ns modelmesh-serving
+```
