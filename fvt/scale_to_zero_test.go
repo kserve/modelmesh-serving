@@ -14,6 +14,7 @@
 package fvt
 
 import (
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -24,9 +25,9 @@ import (
 var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 	// constants
-	testPredictorObject := DecodeResourceFromFile(samplesPath + "mlserver-sklearn-predictor.yaml")
-	// runtime deployment expected to serve the test predictor
-	expectedRuntimeDeploymentName := TestServiceName + "-mlserver-0.x"
+	testPredictorObject := NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
+	// runtime expected to serve the test predictor
+	expectedRuntimeName := "mlserver-0.x"
 
 	// helper expectation functions
 	// these use the "constants" so are created within the Describe's scope
@@ -38,7 +39,8 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 		var replicas int32
 		for _, d := range deployments.Items {
 			log.Info("Checking deployment scale", "name", d.ObjectMeta.Name)
-			if d.ObjectMeta.Name == expectedRuntimeDeploymentName {
+			// the service prefix may change
+			if strings.HasSuffix(d.ObjectMeta.Name, expectedRuntimeName) {
 				// since we list existing deploys Replicas should never be nil
 				replicas = *d.Spec.Replicas
 			} else {
@@ -74,9 +76,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 		It("should scale all runtimes down", func() {
 			By("Waiting for the deployments to stabilize")
-			watcher := fvtClient.StartWatchingDeploys(servingRuntimeDeploymentsListOptions)
-			defer watcher.Stop()
-			WaitForStableActiveDeployState(watcher)
+			WaitForStableActiveDeployState()
 
 			// check that all runtimes are scaled to zero
 			expectScaledToZero()
@@ -84,19 +84,14 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 		It("creating a predictor should scale up the runtime and the predictor should eventually load", func() {
 			By("Waiting for the predictor to be 'Loading'")
-			watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{}, defaultTimeout)
+			watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + testPredictorObject.GetName()}, defaultTimeout)
 			defer watcher.Stop()
 
 			By("Creating a test predictor for one Runtime")
 			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Waiting for the deployments to stabilize")
-			{
-				deployWatcher := fvtClient.StartWatchingDeploys(servingRuntimeDeploymentsListOptions)
-				defer deployWatcher.Stop()
-				WaitForStableActiveDeployState(deployWatcher)
-				deployWatcher.Stop()
-			}
+			WaitForStableActiveDeployState()
 
 			// check that all runtimes except the one are scaled to zero
 			expectScaledUp()
@@ -113,8 +108,10 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 			By("Creating a test predictor for one Runtime")
 			// ensure single predictor exists
 			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
-			time.Sleep(10 * time.Second)
-			ListAllPredictorsExpectOne()
+
+			By("Waiting for the deployments to stabilize")
+			WaitForStableActiveDeployState()
+
 			// ensure the runtime is ready and scaled up and others are scaled down
 			expectScaledUp()
 		})
@@ -132,14 +129,14 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 			fvtClient.DeletePredictor(testPredictorObject.GetName())
 
 			By("Waiting for less than the grace period")
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 
 			By("Checking that the deployment is scaled up")
 			expectScaledUp()
 
 			// wait for longer than the grace period
 			By("Waiting for the grace period to expire")
-			time.Sleep(4 * time.Second)
+			time.Sleep(5 * time.Second)
 
 			By("Check that the deployment is scaled to zero")
 			expectScaledToZero()
