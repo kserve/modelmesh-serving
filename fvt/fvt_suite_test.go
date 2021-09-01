@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
@@ -28,9 +27,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
-
-var log logr.Logger
-var fvtClient *FVTClient
 
 // TestFVT is the main Ginko test driver. This adds a junit report to a target dir.
 func TestFVT(t *testing.T) {
@@ -50,11 +46,11 @@ var _ = BeforeSuite(func() {
 
 	namespace := os.Getenv("NAMESPACE")
 	if namespace == "" {
-		namespace = TestNamespace
+		namespace = DefaultTestNamespace
 	}
 	serviceName := os.Getenv("SERVICENAME")
 	if serviceName == "" {
-		serviceName = TestServiceName
+		serviceName = DefaultTestServiceName
 	}
 	log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName)
 
@@ -73,3 +69,20 @@ var _ = BeforeSuite(func() {
 
 	log.Info("Setup completed")
 }, 60)
+
+var _ = AfterSuite(func() {
+	// ensure we cleanup any port-forward
+	fvtClient.DisconnectFromModelServing()
+})
+
+// register hanlders for a failed test case to print info to the console
+var startTime string
+var _ = JustBeforeEach(func() {
+	startTime = time.Now().Format("2006-01-02T15:04:05Z")
+})
+var _ = JustAfterEach(func() {
+	if CurrentGinkgoTestDescription().Failed {
+		fvtClient.PrintPredictors()
+		fvtClient.TailPodLogs(startTime)
+	}
+})
