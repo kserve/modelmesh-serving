@@ -3,6 +3,11 @@ name: FVTs
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/**'
+      - '.tekton/**'
 
 jobs:
   test:

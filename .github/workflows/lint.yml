@@ -1,16 +1,14 @@
-name: Unit Test
+name: Lint
 
 on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'docs/**'
-      - '**.md'
       - '.github/**'
       - '.tekton/**'
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -18,5 +16,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build develop image
         run: make build.develop
-      - name: Run unit tests
-        run: ./scripts/develop.sh make test
+      - name: Run lint
+        run: ./scripts/develop.sh make fmt
