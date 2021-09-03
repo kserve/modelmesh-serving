@@ -98,7 +98,7 @@ fmt:
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="scripts/controller-gen-header.go.txt" paths="./..."
 	pre-commit run --all-files prettier > /dev/null || true
 
 # Build the final runtime docker image
