@@ -15,6 +15,7 @@ package modelmesh
 
 const (
 	ModelMeshContainer = "mm"
+	RESTProxyContainer = "rest-proxy"
 
 	GrpcPortEnvVar         = "INTERNAL_GRPC_PORT"
 	ServeGrpcPortEnvVar    = "INTERNAL_SERVING_GRPC_PORT"

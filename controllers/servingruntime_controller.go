@@ -138,6 +138,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	config := r.ConfigProvider.GetConfig()
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:        config.InferenceServiceName,
+		ServicePort:        config.InferenceServicePort,
 		Name:               req.Name,
 		Namespace:          req.Namespace,
 		Owner:              rt,
@@ -148,6 +149,10 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		PrometheusScheme:   config.Metrics.Scheme,
 		ModelMeshImage:     config.ModelMeshImage.TaggedImage(),
 		ModelMeshResources: config.ModelMeshResources.ToKubernetesType(),
+		RESTProxyEnabled:   config.RESTProxy.Enabled,
+		RESTProxyImage:     config.RESTProxy.Image.TaggedImage(),
+		RESTProxyPort:      config.RESTProxy.Port,
+		RESTProxyResources: config.RESTProxy.Resources.ToKubernetesType(),
 		PullerImage:        config.StorageHelperImage.TaggedImage(),
 		PullerImageCommand: config.StorageHelperImage.Command,
 		PullerResources:    config.StorageHelperResources.ToKubernetesType(),

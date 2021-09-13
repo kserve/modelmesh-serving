@@ -26,6 +26,19 @@ modelMeshResources:
   limits:
     cpu: "3"
     memory: "448Mi"
+restProxy:
+  enabled: true
+  port: 8008
+  image:
+    name: kserve/rest-proxy
+    tag: latest
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "96Mi"
+    limits:
+      cpu: "2"
+      memory: "512Mi"
 storageHelperImage:
   name: kserve/modelmesh-runtime-adapter
   tag: latest

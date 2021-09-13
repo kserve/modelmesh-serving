@@ -228,6 +228,29 @@ spec:
         - mountPath: /storage-config
           name: storage-config
           readOnly: true
+      - env:
+        - name: REST_PROXY_LISTEN_PORT
+          value: "8008"
+        - name: REST_PROXY_GRPC_PORT
+          value: "1234"
+        - name: REST_PROXY_USE_TLS
+          value: "false"
+        image: kserve/rest-proxy:latest
+        imagePullPolicy: Always
+        name: rest-proxy
+        ports:
+        - containerPort: 8008
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -471,6 +494,29 @@ spec:
         - mountPath: /storage-config
           name: storage-config
           readOnly: true
+      - env:
+        - name: REST_PROXY_LISTEN_PORT
+          value: "8008"
+        - name: REST_PROXY_GRPC_PORT
+          value: "1234"
+        - name: REST_PROXY_USE_TLS
+          value: "false"
+        image: kserve/rest-proxy:latest
+        imagePullPolicy: Always
+        name: rest-proxy
+        ports:
+        - containerPort: 8008
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -724,6 +770,29 @@ spec:
         - mountPath: /storage-config
           name: storage-config
           readOnly: true
+      - env:
+        - name: REST_PROXY_LISTEN_PORT
+          value: "8008"
+        - name: REST_PROXY_GRPC_PORT
+          value: "1234"
+        - name: REST_PROXY_USE_TLS
+          value: "false"
+        image: kserve/rest-proxy:latest
+        imagePullPolicy: Always
+        name: rest-proxy
+        ports:
+        - containerPort: 8008
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -916,6 +985,29 @@ spec:
         volumeMounts:
         - mountPath: /models
           name: models-dir
+      - env:
+        - name: REST_PROXY_LISTEN_PORT
+          value: "8008"
+        - name: REST_PROXY_GRPC_PORT
+          value: "1234"
+        - name: REST_PROXY_USE_TLS
+          value: "false"
+        image: kserve/rest-proxy:latest
+        imagePullPolicy: Always
+        name: rest-proxy
+        ports:
+        - containerPort: 8008
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

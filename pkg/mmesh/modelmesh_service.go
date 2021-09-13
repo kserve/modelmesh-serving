@@ -40,6 +40,7 @@ type MMService struct {
 	mmClient *mmClient
 
 	MetricsPort uint16
+	RESTPort    uint16
 }
 
 func NewMMService() *MMService {
@@ -47,7 +48,7 @@ func NewMMService() *MMService {
 }
 
 func (mms *MMService) UpdateConfig(name string, port uint16,
-	endpoint, tlsSecretName string, tlsConfig *tls.Config, headless bool, metricsPort uint16) bool {
+	endpoint, tlsSecretName string, tlsConfig *tls.Config, headless bool, metricsPort uint16, restPort uint16) bool {
 	changed := false
 	if name != mms.Name {
 		mms.Name = name
@@ -77,6 +78,10 @@ func (mms *MMService) UpdateConfig(name string, port uint16,
 		mms.MetricsPort = metricsPort
 		changed = true
 	}
+	if restPort != mms.RESTPort {
+		mms.RESTPort = restPort
+		changed = true
+	}
 	return changed
 }
 
@@ -87,6 +92,14 @@ type mmClient struct {
 
 func (mms *MMService) InferenceEndpoint() string {
 	return fmt.Sprintf("%s:%d", mms.Name, mms.Port)
+}
+
+func (mms *MMService) InferenceRESTEndpoint() string {
+	scheme := "http"
+	if mms.TLSConfig != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s:%d", scheme, mms.Name, mms.RESTPort)
 }
 
 func (mms *MMService) MMClient() mmeshapi.ModelMeshClient {

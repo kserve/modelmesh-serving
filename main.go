@@ -153,7 +153,8 @@ func main() {
 	conf := cp.GetConfig()
 
 	setupLog.Info("Using adapter", "image", conf.StorageHelperImage.TaggedImage())
-	setupLog.Info("Using model-mesh", "image", conf.ModelMeshImage.TaggedImage())
+	setupLog.Info("Using modelmesh", "image", conf.ModelMeshImage.TaggedImage())
+	setupLog.Info("Using modelmesh REST proxy", "image", conf.RESTProxy.Image.TaggedImage())
 	setupLog.Info("Using inference service", "name", conf.InferenceServiceName, "port", conf.InferenceServicePort)
 
 	// mmesh service kubedns or hostname
