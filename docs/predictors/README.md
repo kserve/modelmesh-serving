@@ -184,6 +184,6 @@ example-mnist-predictor   tensorflow   true        Loaded        Failed        B
 
 ## For More Details
 
-- [Setup Storage](setup-storage.md)
-- [Inferencing](run-inference.md)
+- [Setup Storage](storage.md)
+- [Inferencing](inferencing.md)
 - [Predictor Spec](predictor-spec.md)
