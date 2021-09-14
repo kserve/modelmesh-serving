@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.5.0
+    controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
   name: predictors.serving.kserve.io
 spec:
@@ -40,10 +40,16 @@ spec:
           description: Predictor is the Schema for the predictors API
           properties:
             apiVersion:
-              description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+              description:
+                "APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
               type: string
             kind:
-              description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+              description:
+                "Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
               type: string
             metadata:
               type: object
@@ -69,7 +75,9 @@ spec:
                   description: The path to the model files within the storage
                   type: string
                 runtime:
-                  description: If omitted a compatible runtime is selected based on the model type (if available)
+                  description:
+                    If omitted a compatible runtime is selected based on
+                    the model type (if available)
                   properties:
                     name:
                       type: string
@@ -88,10 +96,15 @@ spec:
                       description: One-of these must be present
                       properties:
                         claimName:
-                          description: "ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims"
+                          description:
+                            "ClaimName is the name of a PersistentVolumeClaim
+                            in the same namespace as the pod using this volume. More
+                            info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims"
                           type: string
                         readOnly:
-                          description: Will force the ReadOnly setting in VolumeMounts. Default false.
+                          description:
+                            Will force the ReadOnly setting in VolumeMounts.
+                            Default false.
                           type: boolean
                       required:
                         - claimName
@@ -121,7 +134,9 @@ spec:
               properties:
                 activeModelState:
                   default: Pending
-                  description: "High level state string: Pending, Standby, Loading, Loaded, FailedToLoad"
+                  description:
+                    "High level state string: Pending, Standby, Loading,
+                    Loaded, FailedToLoad"
                   enum:
                     - ""
                     - Pending
@@ -135,18 +150,26 @@ spec:
                   type: boolean
                 failedCopies:
                   default: 0
-                  description: How many copies of this predictor's models failed to load recently
+                  description:
+                    How many copies of this predictor's models failed to
+                    load recently
                   type: integer
                 grpcEndpoint:
                   type: string
                 httpEndpoint:
-                  description: Addressable endpoint for the deployed trained model This will be "static" and will not change when the model is mutated
+                  description:
+                    Addressable endpoint for the deployed trained model This
+                    will be "static" and will not change when the model is mutated
                   type: string
                 lastFailureInfo:
-                  description: Details of last failure, when load of target model is failed or blocked
+                  description:
+                    Details of last failure, when load of target model is
+                    failed or blocked
                   properties:
                     location:
-                      description: Name of component to which the failure relates (usually Pod name)
+                      description:
+                        Name of component to which the failure relates (usually
+                        Pod name)
                       type: string
                     message:
                       description: Detailed error message
@@ -181,7 +204,9 @@ spec:
                   type: string
                 transitionStatus:
                   default: UpToDate
-                  description: Whether the available predictor endpoint reflects the current Spec or is in transition
+                  description:
+                    Whether the available predictor endpoint reflects the
+                    current Spec or is in transition
                   enum:
                     - UpToDate
                     - InProgress
