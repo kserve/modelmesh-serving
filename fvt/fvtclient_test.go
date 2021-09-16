@@ -48,7 +48,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-var defaultTimeout = int64(120)
+var defaultTimeout = int64(180)
 
 const predictorTimeout = time.Second * 120
 const timeForStatusToStabilize = time.Second * 5
