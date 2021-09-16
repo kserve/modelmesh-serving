@@ -67,6 +67,11 @@ if [[ -n $path_to_configs ]]; then
 fi
 
 if [[ -n $namespace ]]; then
+  old_namespace=$(kubectl config  get-contexts $(kubectl config current-context) |tail -1|awk '{ print $5 }')
+  if [[ ! -n $old_namespace ]]; then
+    old_namespace="default"
+  fi
+  echo "current namespace: $old_namespace"
   kubectl config set-context --current --namespace="$namespace"
 fi
 
@@ -79,3 +84,8 @@ kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl delete -f - --ignore-not-found=true
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
+
+# Roll back to previous status
+if [[ -n $namespace ]]; then
+  kubectl config set-context --current --namespace=${old_namespace}
+fi
