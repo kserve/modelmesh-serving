@@ -18,7 +18,7 @@ KFServing controller running to avoid conflicting reconciliation.
 To install the TrainedModel CRD, perform the following:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/kubeflow/kfserving/master/config/crd/serving.kubeflow.org_trainedmodels.yaml
+kubectl apply -f config/crd/kfserving-crd/trainedmodel.yaml
 ```
 
 If the TrainedModel CRD was installed after the ModelMesh controller was deployed, then you will need to restart the controller to enable watching on TrainedModel resources.
@@ -44,9 +44,15 @@ metadata:
 spec:
   inferenceService: mlserver-0.x
   model:
-    storageUri: s3://modelmesh-example-models/sklearn/mnist-svm.joblib
+    // Use either storageUri or storage spec
+    // storageUri: s3://modelmesh-example-models/sklearn/mnist-svm.joblib
     framework: sklearn
     memory: 256Mi
+    storage:
+      key: localMinIO
+      path: sklearn/mnist-svm.joblib
+      parameters:
+        bucket: modelmesh-example-models
 EOF
 ```
 
@@ -77,3 +83,13 @@ example-sklearn-tm   grpc://modelmesh-serving:8033   True    30s
 
 For instructions on how to perform inference on the newly deployed TrainedModel, please refer back to the
 [quickstart instructions](./quickstart.md#3-perform-a-grpc-inference-request).
+
+```shell
+MODEL_NAME=example-sklearn-tm
+grpcurl \
+  -plaintext \
+  -proto fvt/proto/kfs_inference_v2.proto \
+  -d '{ "model_name": "'"${MODEL_NAME}"'", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
+  localhost:8033 \
+  inference.GRPCInferenceService.ModelInfer
+```

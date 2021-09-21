@@ -88,12 +88,29 @@ type TrainedModelList struct {
 // ModelSpec describes a TrainedModel
 type ModelSpec struct {
 	// Storage URI for the model repository
+	// +optional
 	StorageURI string `json:"storageUri"`
 	// Machine Learning <framework name>
 	// The values could be: "tensorflow","pytorch","sklearn","onnx","xgboost", "myawesomeinternalframework" etc.
 	Framework string `json:"framework"`
 	// Maximum memory this model will consume, this field is used to decide if a model server has enough memory to load this model.
 	Memory resource.Quantity `json:"memory"`
+	// Storage Spec for model location
+	// +optional
+	Storage *StorageSpec `json:"storage,omitempty"`
+}
+
+type StorageSpec struct {
+	// The path to the model object in the storage. It cannot co-exist
+	// with the storageURI.
+	// +optional
+	Path *string `json:"path,omitempty"`
+	// Parameters to override the default storage credentials and config.
+	// +optional
+	Parameters *map[string]string `json:"parameters,omitempty"`
+	// The Storage Key in the secret for this model.
+	// +optional
+	StorageKey *string `json:"key,omitempty"`
 }
 
 func init() {

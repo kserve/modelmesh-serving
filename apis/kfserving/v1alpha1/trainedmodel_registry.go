@@ -15,6 +15,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -49,6 +50,54 @@ func BuildPredictorWithBase(t *TrainedModel) *api.Predictor {
 	return p
 }
 
+// Return secretKey, bucket, modelPath, and error
+func ProcessTrainedModelStorage(secretKey *string, bucket *string, modelPath *string, t *TrainedModel,
+	nname types.NamespacedName) error {
+	storageUri := t.Spec.Model.StorageURI
+	storageSpec := t.Spec.Model.Storage
+	pathError := fmt.Errorf("the trainedModel %v must have either the storageUri or the storage.path", nname)
+	if storageUri == "" {
+		if storageSpec != nil {
+			if storageSpec.Path != nil {
+				*modelPath = *storageSpec.Path
+			} else {
+				return pathError
+			}
+		} else {
+			return pathError
+		}
+	} else {
+		if !strings.HasPrefix(storageUri, "s3://") {
+			return nil
+		}
+		s3Uri := strings.TrimPrefix(storageUri, "s3://")
+		urlParts := strings.Split(s3Uri, "/")
+		*bucket = urlParts[0]
+		*modelPath = strings.Join(urlParts[1:], "/")
+		if storageSpec != nil {
+			if storageSpec.Path != nil {
+				return fmt.Errorf("the trainedModel %v cannot have both the storageUri and the storage.path", nname)
+			}
+		}
+	}
+	if storageSpec != nil {
+		if storageSpec.StorageKey != nil {
+			*secretKey = *storageSpec.StorageKey
+		}
+		if storageSpec.Parameters != nil {
+			for k, v := range *storageSpec.Parameters {
+				if k == "bucket" {
+					*bucket = v
+				}
+			}
+		}
+	}
+	if *secretKey == "" {
+		*secretKey = "default"
+	}
+	return nil
+}
+
 func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedName) (*api.Predictor, error) {
 	trainedModel := &TrainedModel{}
 	err := tmr.Client.Get(ctx, nname, trainedModel)
@@ -65,26 +114,27 @@ func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedN
 	if p.Status.ActiveModelState == "" {
 		p.Status.ActiveModelState = api.Pending
 	}
-
-	storageUri := trainedModel.Spec.Model.StorageURI
-	if !strings.HasPrefix(storageUri, "s3://") {
+	secretKey := trainedModel.ObjectMeta.Annotations[SecretKeyAnnotation]
+	var bucket string
+	var modelPath string
+	err = ProcessTrainedModelStorage(&secretKey, &bucket, &modelPath, trainedModel, nname)
+	if err != nil {
+		return nil, err
+	}
+	// If secretKey is empty, it means the storageSpec or the storageUri is not supported.
+	if secretKey == "" {
 		p.Spec.Storage = &api.Storage{
 			S3: nil,
 		}
-	} else {
-		s3Uri := strings.TrimPrefix(storageUri, "s3://")
-		urlParts := strings.Split(s3Uri, "/")
-		bucket := urlParts[0]
-		modelPath := strings.Join(urlParts[1:], "/")
-		secretKey := trainedModel.ObjectMeta.Annotations[SecretKeyAnnotation]
-		p.Spec.Storage = &api.Storage{
-			S3: &api.S3StorageSource{
-				SecretKey: secretKey,
-				Bucket:    &bucket,
-			},
-		}
-		p.Spec.Path = modelPath
+		return p, err
 	}
+	p.Spec.Storage = &api.Storage{
+		S3: &api.S3StorageSource{
+			SecretKey: secretKey,
+			Bucket:    &bucket,
+		},
+	}
+	p.Spec.Path = modelPath
 	return p, err
 }
 
