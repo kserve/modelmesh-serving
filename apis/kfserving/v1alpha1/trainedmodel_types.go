@@ -96,6 +96,26 @@ type ModelSpec struct {
 	Memory resource.Quantity `json:"memory"`
 }
 
+func (tm *TrainedModel) BuildPredictorWithBase() *api.Predictor {
+	p := &api.Predictor{}
+	p.Spec = api.PredictorSpec{
+		Model: api.Model{
+			Type: api.ModelType{
+				Name: tm.Spec.Model.Framework,
+			},
+		},
+	}
+
+	if tm.Spec.InferenceService != "" {
+		p.Spec.Runtime = &api.PredictorRuntime{
+			RuntimeRef: &api.RuntimeRef{
+				Name: tm.Spec.InferenceService,
+			},
+		}
+	}
+	return p
+}
+
 func init() {
 	SchemeBuilder.Register(&TrainedModel{}, &TrainedModelList{})
 }

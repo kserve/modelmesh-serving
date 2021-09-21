@@ -40,6 +40,7 @@ import (
 
 	kfsv1alpha1 "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -49,8 +50,9 @@ import (
 )
 
 const (
-	PredictorCRSourceId    = "ksp"
-	TrainedModelCRSourceId = "kstm"
+	InferenceServiceCRSourceId = "isvc"
+	PredictorCRSourceId        = "ksp"
+	TrainedModelCRSourceId     = "kstm"
 )
 
 // PredictorReconciler reconciles Predictors
@@ -65,6 +67,9 @@ type PredictorReconciler struct {
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors/finalizers,verbs=get;update;patch
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors/status,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/status,verbs=get;update;patch
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels/status,verbs=get;update;patch
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels/finalizers,verbs=update
@@ -101,6 +106,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	if (predictor == nil && err == nil) || errors.IsNotFound(err) {
 		return pr.handlePredictorNotFound(ctx, nname, sourceId)
 	}
+
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to fetch CR from kubebuilder cache for predictor %s: %w",
 			nname.Name, err)
@@ -496,7 +502,7 @@ func Hash(predictorSpec *api.PredictorSpec) string {
 // ---------
 
 func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *mmesh.ModelMeshEventStream,
-	watchTrainedModels bool, sourcePluginEvents <-chan event.GenericEvent) error {
+	watchTrainedModels bool, watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&api.Predictor{}).
 		Watches(&source.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
@@ -507,6 +513,9 @@ func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *m
 
 	if watchTrainedModels {
 		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}}, prefixName(TrainedModelCRSourceId))
+	}
+	if watchInferenceServices {
+		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
 	}
 	return builder.Complete(pr)
 }
