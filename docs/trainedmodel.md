@@ -18,7 +18,7 @@ KFServing controller running to avoid conflicting reconciliation.
 To install the TrainedModel CRD, perform the following:
 
 ```shell
-kubectl apply -f config/crd/kfserving-crd/trainedmodel.yaml
+kubectl apply -f config/third-party/kfserving-crd/trainedmodel.yaml
 ```
 
 If the TrainedModel CRD was installed after the ModelMesh controller was deployed, then you will need to restart the controller to enable watching on TrainedModel resources.
