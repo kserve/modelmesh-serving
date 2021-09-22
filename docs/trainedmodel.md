@@ -76,4 +76,4 @@ example-sklearn-tm   grpc://modelmesh-serving:8033   True    30s
 ## Perform inference
 
 For instructions on how to perform inference on the newly deployed TrainedModel, please refer back to the
-[quickstart instructions](./quickstart.md#3-perform-a-grpc-inference-request).
+[quickstart instructions](./README.md#3-perform-a-grpc-inference-request).
