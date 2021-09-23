@@ -31,7 +31,7 @@ The deployed footprint can be significantly reduced in the following ways:
 
 - Individual built-in runtimes can be disabled by setting `disabled: true` in their corresponding `ServingRuntime` resource - if the corresponding model types aren't used.
 
-- The number of Pods per runtime can be changed from the default of 2 (e.g. down to 1), via the `podsPerRuntime` global configuration parameter (see [configuration](../configuration)). It is recommended for this value to be a minimum of 2 for production deployments.
+- The number of Pods per runtime can be changed from the default of 2 (e.g. down to 1), via the `podsPerRuntime` global configuration parameter (see [configuration](../configuration.md)). It is recommended for this value to be a minimum of 2 for production deployments.
 
 - Memory and/or CPU resource allocations can be reduced (or increased) on the primary model server container in either of the built-in `ServingRuntime` resources (container name `triton` or `mlserver`). This has the effect of adjusting the total capacity available for holding served models in memory.
 
@@ -47,6 +47,6 @@ Please be aware that:
 
 The following resources will also be created in the same namespace:
 
-- `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration)
+- `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration.md)
 - `tc-config` - ConfigMap used for some internal coordination
 - `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [storage config[(../predictors/storage.md) and [the example](../predictors/README.md)
