@@ -631,7 +631,7 @@ spec:
           readOnly: true
       - args:
         - -c
-        - 'mkdir -p /models/_triton_models; chmod -R 777 /models/_triton_models; exec
+        - 'mkdir -p /models/_triton_models; chmod 777 /models/_triton_models; exec
           tritonserver "--model-repository=/models/_triton_models" "--model-control-mode=explicit"
           "--strict-model-config=false" "--strict-readiness=false" "--allow-http=true"
           "--allow-sagemaker=false" '
