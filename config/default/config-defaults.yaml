@@ -37,7 +37,7 @@ restProxy:
       cpu: "50m"
       memory: "96Mi"
     limits:
-      cpu: "2"
+      cpu: "1"
       memory: "512Mi"
 storageHelperImage:
   name: kserve/modelmesh-runtime-adapter

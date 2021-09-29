@@ -33,3 +33,16 @@ metrics:
 scaleToZero:
   enabled: false
   gracePeriodSeconds: 60
+restProxy:
+  enabled: false
+  port: 8008
+  image:
+    name: kserve/rest-proxy
+    tag: latest
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "96Mi"
+    limits:
+      cpu: "1"
+      memory: "512Mi"
