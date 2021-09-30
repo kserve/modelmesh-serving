@@ -4,7 +4,7 @@ ModelMesh Serving is the Controller for managing ModelMesh, a general-purpose mo
 
 ## Getting Started
 
-To quickly get started with ModelMesh Serving, check out the [Quick Start Guide](./docs/README.md).
+To quickly get started with ModelMesh Serving, check out the [Quick Start Guide](./docs/quickstart.md).
 
 For help, please open an issue in this repository.
 
@@ -12,7 +12,7 @@ For help, please open an issue in this repository.
 
 ModelMesh Serving currently comprises components spread over a number of repositories.
 
-![Architecture Image](./docs/architecture/images/0.2.0-highlevel.png)
+![Architecture Image](./docs/images/0.2.0-highlevel.png)
 
 Issues across all components are tracked centrally in this repo.
 
@@ -30,9 +30,9 @@ Issues across all components are tracked centrally in this repo.
 ModelMesh Serving provides out-of-the-box integration with the following model servers.
 
 - [triton-inference-server](https://github.com/triton-inference-server/server) - Nvidia's Triton Inference Server
-- [seldon-mlserver](https://github.com/SeldonIO/MLServer) - Seldon's python MLServer which is part of [KFServing](https://github.com/kubeflow/kfserving)
+- [seldon-mlserver](https://github.com/SeldonIO/MLServer) - Seldon's Python MLServer
 
-`ServingRuntime` custom resources can be used to add support for other existing or custom-built model servers, see the docs on [implementing a custom Serving Runtime](./docs/runtimes.md)
+`ServingRuntime` custom resources can be used to add support for other existing or custom-built model servers, see the docs on [implementing a custom Serving Runtime](./docs/runtimes/custom_runtimes.md)
 
 #### Libraries
 

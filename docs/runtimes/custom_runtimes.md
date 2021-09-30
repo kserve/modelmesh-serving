@@ -20,7 +20,7 @@ _TODO_ add later
 
 ## Model server Management SPI
 
-Below is a description of how to implement the `mmesh.ModelRuntime` gRPC service, specified in [`model-runtime.proto`](./model-runtime.proto). Note that this is currently subject to change, but we will try to ensure that any changes are backwards-compatible or at least will require minimal change on the runtime side.
+Below is a description of how to implement the `mmesh.ModelRuntime` gRPC service, specified in [`model-runtime.proto`](https://github.com/kserve/modelmesh-serving/blob/main/docs/model-runtime.proto). Note that this is currently subject to change, but we will try to ensure that any changes are backwards-compatible or at least will require minimal change on the runtime side.
 
 ### Model sizing
 
@@ -131,7 +131,7 @@ The `modelKey` field will contain a JSON string with the following contents:
 }
 ```
 
-Where `model_type` is the `modelType` section from the originating [`Predictor`](predictors) custom resource. Note that `version` is optional and may not be present. In future, additional attributes might be present in the outer json object so your implementation should ignore them gracefully.
+Where `model_type` is the `modelType` section from the originating [`Predictor`](../predictors) custom resource. Note that `version` is optional and may not be present. In future, additional attributes might be present in the outer json object so your implementation should ignore them gracefully.
 
 The response shouldn't be returned until the model has loaded successfully and is ready to use.
 
@@ -198,15 +198,19 @@ spec:
   grpcDataEndpoint: "port:8090"
 ```
 
+### Runtime container resource allocations
+
+_TODO_ more detail coming here
+
 ## Integrating with existing model servers
 
 The ability to specify multiple containers provides a nice way to integrate with existing model servers via an adapter pattern, as long as they provide the required capability of dynamically loading and unloading models.
 
-![Custom with puller](architecture/images/rt-custom-direct.png)
+![Custom with puller](../images/rt-custom-direct.png)
 
 _Note: In the above diagram, only the adapter and model server containers are explicitly specified in the ServingRuntime CR, the others are included automatically._
 
-The [built-in runtimes](https://github.com/kserve/modelmesh-serving/tree/main/config/runtimes) based on [Nvidia's Triton Inferencing Server](https://github.com/triton-inference-server/server) and the [Seldon MLServer](https://github.com/SeldonIO/MLServer), and their corresponding adapters serve as good examples of this and can be used as a reference.
+The [built-in runtimes](https://github.com/kserve/modelmesh-serving/tree/main/config/runtimes) based on [Nvidia's Triton Inferencing Server](https://github.com/kserve/modelmesh-serving/blob/main/config/runtimes/triton-2.x.yaml) and the [Seldon MLServer](https://github.com/SeldonIO/MLServer), and their corresponding adapters serve as good examples of this and can be used as a reference.
 
 ## Reference
 
@@ -239,11 +243,9 @@ Available attributes in the `ServingRuntime` spec:
 
 Several of the attributes (`grpcEndpoint`, `grpcDataEndpoint`) support either Unix Domain Sockets or TCP. The endpoint should be formatted as either `port:<number>` or `unix:<path>`. The provided container must be either listening on the specific TCP socket or at the provided path.
 
-<InlineNotification kind="warning">
-
-**Note** If a unix domain socket is specified for both `grpcEndpoint` and `grpcDataEndpoint` then it must either be the same socket (identical path) or reside in the same directory.
-
-</InlineNotification>
+<!-- prettier-ignore -->
+!!! warning
+    If a unix domain socket is specified for both `grpcEndpoint` and `grpcDataEndpoint` then it must either be the same socket (identical path) or reside in the same directory.
 
 ### Full Example
 
@@ -278,13 +280,12 @@ spec:
         limits:
           memory: 200Mi
       imagePullPolicy: IfNotPresent
-      WorkingDir: "/container/working/dir"
+      workingDir: "/container/working/dir"
   disabled: false
   storageHelper:
     disabled: true
   grpcEndpoint: port:1234 # or unix:/path
   grpcDataEndpoint: port:1234 # or unix:/path
-  httpDataEndpoint: port:1234 # Not yet supported
   # To influence pod scheduling, one or more of the following can be used
   nodeSelector: # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
     kubernetes.io/arch: "amd64"

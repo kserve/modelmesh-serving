@@ -2,7 +2,7 @@
 
 ### Configure gRPC client
 
-Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the Predictor as the `model_name` field in the `ModelInferRequest` message.
+Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the Predictor as the `model_name` field in the `ModelInferRequest` message.
 
 Configure the gRPC clients which talk to your service to explicitly use:
 
@@ -59,6 +59,12 @@ const client = ModelMeshClient(model_mesh_uri, credentials, clientOptions);
 const response = await rpcProtoType.call(client, message);
 ```
 
+### Adjust maximum gRPC payload size
+
+If the gRPC request payloads larger than 16MiB are to be accepted, configure the max message size by setting the `grpcMaxMessageSizeBytes` in the [ConfigMap](../configuration). The default is 16MiB.
+
+However, the max number of bytes for the GRPC request payloads depends on both this setting and adjusting the model serving runtimes' max message limit. For Triton, the message size is effectively uncapped.
+
 ### How to access service from outside the cluster without a NodePort
 
 Using [`kubectl port-forward`](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/):
@@ -75,7 +81,7 @@ Then change your client target string to localhost:8033, where 8033 is the chose
 
 Here is an example of how to do this using the command-line based [grpcurl](https://github.com/fullstorydev/grpcurl):
 
-1. Install grpcurl:
+#### 1. Install grpcurl:
 
 ```shell
 $ grpcurl --version
@@ -85,7 +91,7 @@ grpcurl 1.8.1
 $ brew install grpcurl
 ```
 
-2. Port-forward to access the runtime service:
+#### 2. Port-forward to access the runtime service:
 
 ```shell
 # access via localhost:8033
@@ -94,7 +100,7 @@ Forwarding from 127.0.0.1:8033 -> 8033
 Forwarding from [::1]:8033 -> 8033
 ```
 
-3. In a separate terminal window, send an inference request using the proto file from `fvt/proto` or one that you have locally:
+#### 3. In a separate terminal window, send an inference request using the proto file from `fvt/proto` or one that you have locally:
 
 ```shell
 $ grpcurl -plaintext -proto fvt/proto/kfs_inference_v2.proto localhost:8033 list

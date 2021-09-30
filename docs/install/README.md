@@ -1,3 +1,5 @@
+# Getting Started
+
 ## Prerequisites
 
 - **Kubernetes cluster** - A Kubernetes cluster is required. You will need `cluster-admin` authority in order to complete all of the prescribed steps.
@@ -6,11 +8,13 @@
 
 - **etcd** - ModelMesh Serving requires an [etcd](https://etcd.io/) server in order to coordinate internal state which can be either dedicated or shared. More on this later.
 
+- **S3-compatible object storage** - Before models can be deployed, a remote S3-compatible datastore is needed from which to pull the model data. This could be for example an [IBM Cloud Object Storage](https://www.ibm.com/cloud/object-storage) instance, or a locally running [MinIO](https://github.com/minio/minio) deployment. Note that this is not required to be in place prior to the initial installation.
+
 We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
 ## Namespace Scope
 
-ModelMesh Serving is namespace scoped, meaning all of its components must exist within a single namespace and only one instance of ModelMesh Serving can be installed per namespace.Multiple ModelMesh Serving instances can be installed in separate namespaces within the cluster.
+ModelMesh Serving is namespace scoped, meaning all of its components must exist within a single namespace and only one instance of ModelMesh Serving can be installed per namespace. Multiple ModelMesh Serving instances can be installed in separate namespaces within the cluster.
 
 ## Deployed Components
 
@@ -25,15 +29,19 @@ ModelMesh Serving is namespace scoped, meaning all of its components must exist 
 
 When ModelMesh serving instance is installed with the `--quickstart` option, pods shown in 1 - 5 are created with a total CPU(request/limit) of 3850m / 41.4 and total memory(request/limit) of 6.96Gi / 8.59Gi.
 
-By default, runtime Pods will only be started when there's at least one Predictor created that uses a corresponding model type.
+(\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until a Predictor is created that uses that runtime. Once a Predictor is assigned, the runtime pods will scale up to 2.
+
+When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no Predictors for that runtime. When `ScaletoZero` is enabled and first predictor CR is submitted, ModelMesh serving will spin up the corresponding built-in runtime pods.
+
+When `ScaletoZero` is **disabled**, pods shown in 4 to 5 are created, with a total CPU(request/limit) of 6/63.1 and total memory(request/limit) of 11.11Gi/14.652Gi.
 
 The deployed footprint can be significantly reduced in the following ways:
 
 - Individual built-in runtimes can be disabled by setting `disabled: true` in their corresponding `ServingRuntime` resource - if the corresponding model types aren't used.
 
-- The number of Pods per runtime can be changed from the default of 2 (e.g. down to 1), via the `podsPerRuntime` global configuration parameter (see [configuration](../configuration.md)). It is recommended for this value to be a minimum of 2 for production deployments.
+- The number of Pods per runtime can be changed from the default of 2 (e.g. down to 1), via the `podsPerRuntime` global configuration parameter (see [configuration](../configuration)). It is recommended for this value to be a minimum of 2 for production deployments.
 
-- Memory and/or CPU resource allocations can be reduced (or increased) on the primary model server container in either of the built-in `ServingRuntime` resources (container name `triton` or `mlserver`). This has the effect of adjusting the total capacity available for holding served models in memory.
+- Memory and/or CPU resource allocations can be reduced (or increased) on the primary model server container in any of the built-in `ServingRuntime` resources (container name `triton` or `mlserver`). This has the effect of adjusting the total capacity available for holding served models in memory.
 
 ```shell
 > kubectl edit servingruntime triton-2.x
@@ -45,8 +53,16 @@ Please be aware that:
 1. Changes made to the _built-in_ runtime resources will likely be reverted when upgrading/re-installing
 2. Most of this resource allocation behaviour/config will change in future versions to become more dynamic - both the number of pods deployed and the system resources allocated to them
 
-The following resources will also be created in the same namespace:
+For more details see the [built-in runtime configuration](../configuration/built-in-runtimes.md)
 
-- `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration.md)
+In addition, the following resources will be created in the same namespace:
+
+- `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration)
 - `tc-config` - ConfigMap used for some internal coordination
-- `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [storage config[(../predictors/storage.md) and [the example](../predictors/README.md)
+- `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [the example](../predictors/)
+
+## Next Steps
+
+- See [the configuration page](../configuration) for details of how to configure system-wide settings via a ConfigMap, either before or after installation.
+
+- See this [example walkthrough](../predictors) of deploying a TensorFlow model as a `Predictor`.

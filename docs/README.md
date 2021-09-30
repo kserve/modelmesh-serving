@@ -1,181 +1,24 @@
-# Quick Start Guide
+# ModelMesh Serving Documentation
 
-To quickly get started using ModelMesh Serving, here is a brief guide.
+ModelMesh Serving is a Kubernetes-based platform for realtime serving of ML/DL models, optimized for high volume/density use cases. Utilization of available system resources is maximized via intelligent management of in-memory model data across clusters of deployed Pods, based on usage of those models over time.
 
-## Prerequisites
+Leveraging existing third-party model servers, a number of standard ML/DL [model formats](model-types/) are supported out-of-the box with more to follow: TensorFlow, PyTorch ScriptModule, ONNX, scikit-learn, XGBoost, LightGBM. It's also possible to extend with custom runtimes to support arbitrary model formats.
 
-- A Kubernetes cluster v 1.16+ with cluster administrative privileges
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0.0+)
-- At least 4 vCPU and 8 GB memory. For more details, please see [here](install/environment.md#deployed-components).
+The architecture comprises a controller Pod that orchestrates one or more Kubernetes "model runtime" Deployments which load/serve the models, and a Service that accepts inferencing requests. A routing layer spanning the runtime pods ensures that models are loaded in the right places at the right times and handles forwarding of those requests.
 
-## 1. Install ModelMesh Serving
+The model data itself is pulled from one or more external [storage instances](predictors/setup-storage.md) which must be configured in a Secret. We currently support only S3-based object storage (self-managed storage is also an option for custom runtimes), but more options will be supported soon.
 
-### Clone the repository
+ModelMesh Serving makes use of two core Kubernetes Custom Resource types:
 
-```shell
-git clone git@github.com:kserve/modelmesh-serving.git
-cd modelmesh-serving
-```
+- `ServingRuntime` - Templates for Pods that can serve one or more particular model formats. There are two "built in" runtimes that cover the out-of-the-box model types, [custom runtimes](runtimes/) can be defined by creating additional ones.
+- [`Predictor`](predictors/) - This represents a logical endpoint for serving predictions using a particular model. The Predictor spec specifies the model type, the storage in which it resides and the path to the model within that storage. The corresponding endpoint is "stable" and will seamlessly transition between different model versions or types when the spec is updated.
 
-### Run install script
+The Pods that correspond to a particular `ServingRuntime` are started only if/when there are one or more defined `Predictor`s that require them.
 
-```shell
-kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace modelmesh-serving --quickstart
-```
+We have standardized on the [KServe v2 data plane API](inference/ks-v2-grpc.md) for inferencing, this is supported for all of the built-in model types. Only the gRPC version of this API is supported in this version of ModelMesh Serving, REST support will be coming soon. Custom runtimes are free to use gRPC Service APIs for inferencing, including the KSv2 API.
 
-This will install ModelMesh serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
-Eventually after running this script, you should see a `Successfully installed ModelMesh Serving!` message.
+System-wide configuration parameters can be set by [creating a ConfigMap](configuration/) with name `model-serving-config`.
 
-To see more details about installation, click [here](./install/install-script.md).
+## Getting Started
 
-### Verify installation
-
-Check that the pods are running:
-
-```shell
-kubectl get pods
-
-NAME                                        READY   STATUS    RESTARTS   AGE
-pod/etcd                                    1/1     Running   0          5m
-pod/minio                                   1/1     Running   0          5m
-pod/modelmesh-controller-547bfb64dc-mrgrq   1/1     Running   0          5m
-```
-
-Check that the `ServingRuntimes` are available:
-
-```shell
-kubectl get servingruntimes
-
-NAME           DISABLED   MODELTYPE    CONTAINERS   AGE
-mlserver-0.x              sklearn      mlserver     5m
-triton-2.x                tensorflow   triton       5m
-```
-
-`ServingRuntimes` are automatically provisioned based on the framework of the model deployed.
-Two `ServingRuntimes` are included with ModelMesh Serving by default. The current mappings for these
-are:
-
-| ServingRuntime | Supported Frameworks                |
-| -------------- | ----------------------------------- |
-| triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
-| mlserver-0.x   | sklearn, xgboost, lightgbm          |
-
-## 2. Deploy a model
-
-With ModelMesh Serving now installed, try deploying a model using the `Predictor` CRD.
-
-> **Note**: ModelMesh Serving also supports deployment using KFServing's TrainedModel interface.
-> Please refer to [these instructions](./trainedmodel.md) for information on alternatively using TrainedModels.
-
-Here, we deploy an SKLearn MNIST model which is served from the local MinIO container:
-
-```shell
-kubectl apply -f - <<EOF
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
-metadata:
-  name: example-mnist-predictor
-spec:
-  modelType:
-    name: sklearn
-  path: sklearn/mnist-svm.joblib
-  storage:
-    s3:
-      secretKey: localMinIO
-EOF
-```
-
-After applying this predictor, you should see it in the `Loading` state:
-
-```
-kubectl get predictors
-
-NAME                      TYPE      AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
-example-mnist-predictor   sklearn   false       Loading                     UpToDate     7s
-```
-
-Eventually, you should see the ServingRuntime pods that will hold the SKLearn model become `Running`.
-
-```shell
-kubectl get pods
-
-...
-modelmesh-serving-mlserver-0.x-7db675f677-twrwd   3/3     Running   0          2m
-modelmesh-serving-mlserver-0.x-7db675f677-xvd8q   3/3     Running   0          2m
-```
-
-Then, checking on the `predictors` again, you should see that it is now available:
-
-```shell
-kubectl get predictors
-
-NAME                      TYPE      AVAILABLE   ACTIVEMODEL   TARGETMODEL   TRANSITION   AGE
-example-mnist-predictor   sklearn   true        Loaded                      UpToDate     2m
-```
-
-To see more detailed instructions and information, click [here](./predictors/README.md).
-
-## 3. Perform a gRPC inference request
-
-Now that a model is loaded and available, you can then perform inference.
-Currently, only gRPC inference requests are supported. By default, ModelMesh Serving uses a
-[headless Service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services)
-since a normal Service has issues load balancing gRPC requests. See more info
-[here](https://kubernetes.io/blog/2018/11/07/grpc-load-balancing-on-kubernetes-without-tears/).
-
-To test out inference requests, you can port-forward the headless service _in a separate terminal window_:
-
-```shell
-kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
-```
-
-Then a gRPC client generated from the KFServing [grpc_predict_v2.proto](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)
-file can be used with `localhost:8033`. A ready-to-use Python example of this can be found [here](https://github.com/pvaneck/model-serving-sandbox/tree/main/grpc-predict).
-
-Alternatively, you can test inference with [grpcurl](https://github.com/fullstorydev/grpcurl). This can easily be installed with `brew install grpcurl` if on macOS.
-
-With `grpcurl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your Predictor/TrainedModel.
-
-```shell
-MODEL_NAME=example-mnist-predictor
-grpcurl \
-  -plaintext \
-  -proto fvt/proto/kfs_inference_v2.proto \
-  -d '{ "model_name": "'"${MODEL_NAME}"'", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
-  localhost:8033 \
-  inference.GRPCInferenceService.ModelInfer
-```
-
-This should give you output like the following:
-
-```shell
-{
-  "modelName": "example-mnist-predictor__ksp-7702c1b55a",
-  "outputs": [
-    {
-      "name": "predict",
-      "datatype": "FP32",
-      "shape": [
-        "1"
-      ],
-      "contents": {
-        "fp32Contents": [
-          8
-        ]
-      }
-    }
-  ]
-}
-```
-
-To see more detailed instructions and information, click [here](./predictors/inferencing.md).
-
-## 4. (Optional) Deleting your ModelMesh Serving installation
-
-To delete all ModelMesh Serving resources that were installed, run the following from the root of the project:
-
-```shell
-./scripts/delete.sh --namespace modelmesh-serving
-```
+To quickly get started with ModelMesh Serving, check out the [Quick Start Guide](quickstart.md).

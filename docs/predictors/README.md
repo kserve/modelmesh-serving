@@ -12,7 +12,9 @@ The ModelMesh Serving instance should be installed in the desired namespace. See
 
 ### Deploy a sample model directly from the pre-installed local MinIO service
 
-1. Verify the `storage-config` secret for access to the pre-configured MinIO service
+If installed using the install script and the `--quickstart` argument, a locally deployed MinIO should be available.
+
+#### 1. Verify the `storage-config` secret for access to the pre-configured MinIO service
 
 ```
 kubectl get secret storage-config -o json
@@ -30,7 +32,7 @@ There should be secret key called `localMinIO` that looks like:
 }
 ```
 
-2. Create a Predictor Custom Resource to serve the sample model
+#### 2. Create a Predictor Custom Resource to serve the sample model
 
 The `config/example-predictors` directory contains Predictor manifests for many of the example models. For a list of available models, see the [example models documentation](../example-models.md#available-models).
 
@@ -69,7 +71,7 @@ modelmesh-serving-mlserver-0.x-658b7dd689-46nwm    0/3     ContainerCreating   0
 modelmesh-controller-568c45b959-nl88c       1/1     Running             0          11m
 ```
 
-3. Check the status of your Predictor:
+#### 3. Check the status of your Predictor:
 
 ```shell
 $ kubectl get predictors
@@ -83,16 +85,19 @@ grpc://modelmesh-serving:8033
 The states should reflect immediate availability, but may take some seconds to move from `Loading` to `Loaded`.
 Inferencing requests for this Predictor received prior to loading completion will block until it completes.
 
-<InlineNotification>
+See the [Predictor Status](predictor-cr.md#predictor-status) section for details of how to interpret the different states.
 
-**Note:** When `ScaleToZero` is enabled, the first Predictor assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
-
-</InlineNotification>
+<!-- prettier-ignore -->
+!!! note
+    When `ScaleToZero` is enabled, the first Predictor assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
 
 ## Using the deployed model
 
-Configure your gRPC client to point to address `modelmesh-serving:8033`. Use the protobuf-based gRPC inference service defined [here](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/required_api.md#grpc)
-to make inference requests to the model using the `ModelInfer` RPC, setting the name of the Predictor as the `model_name` field in the `ModelInferRequest` message.
+The built-in runtimes implement the gRPC protocol of the [KServe Predict API Version 2](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc).
+The `.proto` file for this API can be downloaded from [KServe's repo](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)
+or from the [`modelmesh-serving` repository at `fvt/proto/kfs_inference_v2.proto`](https://github.com/kserve/modelmesh-serving/blob/main/fvt/proto/kfs_inference_v2.proto).
+
+To send an inference request, configure your gRPC client to point to address `modelmesh-serving:8033` and construct a request to the model using the `ModelInfer` RPC, setting the name of the Predictor as the `model_name` field in the `ModelInferRequest` message.
 
 Here is an example of how to do this using the command-line based [grpcurl](https://github.com/fullstorydev/grpcurl):
 
@@ -106,6 +111,7 @@ Forwarding from [::1]:8033 -> 8033
 ```
 
 In a separate terminal window, send an inference request using the proto file from `fvt/proto` or one that you have locally. Note that you have to provide the `model_name` in the data load, which is the name of the Predictor deployed.
+Note that you have to set the `model_name` in the data payload to the name of the Predictor.
 
 ```shell
 $ grpcurl -plaintext -proto fvt/proto/kfs_inference_v2.proto localhost:8033 list
