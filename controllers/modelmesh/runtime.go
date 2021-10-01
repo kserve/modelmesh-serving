@@ -16,6 +16,7 @@ package modelmesh
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -129,19 +130,14 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 	}
 
 	// Now add the containers specified in serving runtime spec
-	for _, cspec := range rt.Spec.Containers {
-		coreEnv := make([]corev1.EnvVar, len(cspec.Env))
-		for i, cenv := range cspec.Env {
-			coreEnv[i].Name = cenv.Name
-			coreEnv[i].Value = cenv.Value
-			coreEnv[i].ValueFrom = cenv.ValueFrom
-		}
+	for i := range rt.Spec.Containers {
+		cspec := &rt.Spec.Containers[i]
 
 		//translate our container spec to corev1 container spec
 		corecspec := corev1.Container{
 			Args:            cspec.Args,
 			Command:         cspec.Command,
-			Env:             coreEnv,
+			Env:             cspec.Env,
 			Image:           cspec.Image,
 			Name:            cspec.Name,
 			Resources:       cspec.Resources,
@@ -153,12 +149,11 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			SecurityContext: securityContext,
 		}
 
-		err := addDomainSocketMount(rt, &corecspec)
-		if err != nil {
+		if err := addDomainSocketMount(rt, &corecspec); err != nil {
 			return err
 		}
 
-		if found, i, _ := findContainer(cspec.Name, deployment); found {
+		if i, _ := findContainer(cspec.Name, deployment); i >= 0 {
 			deployment.Spec.Template.Spec.Containers[i] = corecspec
 		} else {
 			deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, corecspec)
@@ -177,6 +172,17 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			Name:            runtimeAdapterName,
 			Lifecycle:       lifecycle,
 			SecurityContext: securityContext,
+		}
+
+		var runtimeVersion string
+		if _, c := findContainer(runtimeName, deployment); c != nil {
+			if i := strings.IndexRune(c.Image, ':'); i >= 0 {
+				runtimeVersion = c.Image[i+1:]
+			}
+		} else {
+			m.Log.Error(nil, "ServingRuntime uses built-in adapter"+
+				" but does not include a container with the name of the specified server type",
+				"servingRuntime", m.Owner.Name, "serverType", runtimeName)
 		}
 
 		// the puller and adapter containers are the same image and are given the
@@ -219,6 +225,25 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 				Name:  "USE_EMBEDDED_PULLER",
 				Value: "true",
 			},
+			{
+				Name:  "RUNTIME_VERSION",
+				Value: runtimeVersion,
+			},
+			{}, {}, // allocate larger array to avoid reallocation
+		}[:7]
+
+		if mlc, ok := rt.Annotations["maxLoadingConcurrency"]; ok {
+			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
+				Name:  "LOADING_CONCURRENCY",
+				Value: mlc,
+			})
+		}
+
+		if pmcl, ok := rt.Annotations["perModelConcurrencyLimit"]; ok {
+			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
+				Name:  "LIMIT_PER_MODEL_CONCURRENCY",
+				Value: pmcl,
+			})
 		}
 
 		deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, builtInAdapterContainer)

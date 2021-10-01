@@ -17,6 +17,8 @@ metadata:
   name: triton-2.x
   labels:
     name: modelmesh-serving-triton-2.x-SR
+  annotations:
+    maxLoadingConcurrency: "2"
 spec:
   supportedModelTypes:
     - name: tensorflow
