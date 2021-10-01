@@ -61,38 +61,3 @@ By default, the internal logging of the controller component is set to log stack
 ```sh
 kubectl set env deploy/modelmesh-controller DEV_MODE_LOGGING=true
 ```
-
-## Generating TLS Certificates for Dev/Test
-
-TLS is enabled through adding a value for `tls.secretName` in the user's ConfigMap that points to an existing kube secret with TLS key/cert details.
-
-To create a SAN key/cert for TLS, use command:
-
-```shell
-$ openssl req -x509 -newkey rsa:4096 -sha256 -days 3560 -nodes -keyout example.key -out example.crt -subj '/CN=modelmesh-serving' -extensions san -config openssl-san.config
-```
-
-Where the contents of `openssl-san.config` look like:
-
-```
-[ req ]
-distinguished_name = req
-[ san ]
-subjectAltName = DNS:modelmesh-serving,DNS:localhost,IP:0.0.0.0
-```
-
-With the generated key/cert, create a kube secret with contents like:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: <NAME_OF_SECRET>
-type: kubernetes.io/tls
-stringData:
-  tls.crt: <contents-of-example.crt>
-  tls.key: <contents-of-example.key>
-  ca.crt: <contents-of-example.crt>
-```
-
-For basic TLS, only the fields `tls.crt` and `tls.key` are needed in the kube secret. For mutual TLS, add `ca.crt` in the kube secret and set the configuration `tls.clientAuth` to `require` in the ConfigMap `model-serving-config`.

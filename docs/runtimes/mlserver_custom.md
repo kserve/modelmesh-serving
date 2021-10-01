@@ -80,9 +80,13 @@ class CustomMLModel(MLModel):
 
 Given an `MLModel` implementation, we need to package it and all of its dependencies, including MLServer, into an image that supports being ran as a ModelMesh Serving `ServingRuntime`. There are a variety of ways to build such an image and there may be different requirements on the image. The below snippet shows the set of directives that could be in the `Dockerfile` to make the image compatible with ModelMesh Serving.
 
-<!-- prettier-ignore -->
-!!! note
-    The below snippet assumes the custom model module is called `custom_model.py` and the class is `CustomMLModel`. Make changes accordingly for the actual implementation.
+---
+
+**Note**
+
+The below snippet assumes the custom model module is called `custom_model.py` and the class is `CustomMLModel`. Make changes accordingly for the actual implementation.
+
+---
 
 ```dockerfile
 # TODO: choose appropriate base image, install Python, MLServer, and
@@ -116,8 +120,6 @@ RUN mlserver start $MLSERVER_MODELS_DIR
 ```
 
 ### Build on ModelMesh Serving MLServer Image
-
-It may be convenient to use the `seldonio-mlserver` image included with ModelMesh Serving and used in the built-in runtime as your base image. In that image, Python and MLServer are already installed.
 
 ## Custom ServingRuntime Template
 

@@ -21,10 +21,14 @@ spec:
       bucket: my_bucket # Optional
 ```
 
-<!-- prettier-ignore -->
-!!! note
-    - `runtime` is optional. If included, the model will be loaded/served using the `ServingRuntime` with the specified name, and the predictors `modelType` must match an entry in that runtime's `supportedModels` list (see [runtimes](../runtimes/))
-    - The CRD contains additional fields but they have been omitted here for now since they are not yet fully supported
+---
+
+**Note**
+
+- `runtime` is optional. If included, the model will be loaded/served using the `ServingRuntime` with the specified name, and the predictors `modelType` must match an entry in that runtime's `supportedModels` list (see [runtimes](../runtimes/))
+- The CRD contains additional fields but they have been omitted here for now since they are not yet fully supported
+
+---
 
 ## Predictor Status
 

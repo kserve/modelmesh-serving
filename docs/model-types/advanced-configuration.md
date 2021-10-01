@@ -27,12 +27,16 @@ For details on the contents of `config.pbtxt`, refer to
 For details on Triton's Model Repository structure, refer to
 [Triton's Model Repository documentation](https://github.com/triton-inference-server/server/blob/r21.05/docs/model_repository.md).
 
-<!-- prettier-ignore -->
-!!! note
-    - The model's `name` field will be ignored by ModelMesh Serving.
-    - The native Triton file layout can contain multiple version directories, but
-      only one version will be loaded because ModelMesh Serving handles versioning in a
-      higher layer.
+---
+
+**Note**
+
+- The model's `name` field will be ignored by ModelMesh Serving.
+- The native Triton file layout can contain multiple version directories, but
+  only one version will be loaded because ModelMesh Serving handles versioning in a
+  higher layer.
+
+---
 
 ### Batching
 
@@ -77,6 +81,10 @@ To pass runtime specific configuration through to MLServer, include a non-empty
 For details on the specification of this configuration, refer to the definition of
 [MLServer's ModelSettings class](https://github.com/SeldonIO/MLServer/blob/0.3.2/mlserver/settings.py#L49).
 
-<!-- prettier-ignore -->
-!!! note
-    The model's `name` field will be overwritten by ModelMesh Serving.
+---
+
+**Note**
+
+The model's `name` field will be overwritten by ModelMesh Serving.
+
+---

@@ -87,9 +87,13 @@ Inferencing requests for this Predictor received prior to loading completion wil
 
 See the [Predictor Status](predictor-cr.md#predictor-status) section for details of how to interpret the different states.
 
-<!-- prettier-ignore -->
-!!! note
-    When `ScaleToZero` is enabled, the first Predictor assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
+---
+
+**Note**
+
+When `ScaleToZero` is enabled, the first Predictor assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
+
+---
 
 ## Using the deployed model
 

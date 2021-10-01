@@ -1,7 +1,5 @@
 # Troubleshooting
 
-Check the [known issues](known-issues.md) first to see if the problem you are hitting is already documented.
-
 ### Predictor CR in `FailedtoLoad` state
 
 Check details in the Predictor Status' `lastFailureInfo`. The message field should indicate the problem or give a clue as to what the problem is.

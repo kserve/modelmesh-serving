@@ -2,9 +2,13 @@
 
 The input and output schema of ML models can be provided via the `Predictor` CR along with the model files themselves. This must be a JSON file in the standard format described below, which currently must reside in the same storage instance as the corresponding model.
 
-<!-- prettier-ignore -->
-!!! warn
-    The generic model schema should be considered alpha. Breaking changes to how the schema is used are expected. Do not rely on this schema in production.
+---
+
+**Warning**
+
+The generic model schema should be considered alpha. Breaking changes to how the schema is used are expected. Do not rely on this schema in production.
+
+---
 
 ### Schema Format
 

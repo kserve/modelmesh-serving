@@ -243,9 +243,13 @@ Available attributes in the `ServingRuntime` spec:
 
 Several of the attributes (`grpcEndpoint`, `grpcDataEndpoint`) support either Unix Domain Sockets or TCP. The endpoint should be formatted as either `port:<number>` or `unix:<path>`. The provided container must be either listening on the specific TCP socket or at the provided path.
 
-<!-- prettier-ignore -->
-!!! warning
-    If a unix domain socket is specified for both `grpcEndpoint` and `grpcDataEndpoint` then it must either be the same socket (identical path) or reside in the same directory.
+---
+
+**Warning**
+
+If a unix domain socket is specified for both `grpcEndpoint` and `grpcDataEndpoint` then it must either be the same socket (identical path) or reside in the same directory.
+
+---
 
 ### Full Example
 
