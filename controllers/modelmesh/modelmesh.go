@@ -170,10 +170,8 @@ func (m *Deployment) transform(deployment *appsv1.Deployment, funcs ...func(depl
 }
 
 func (m *Deployment) addMMDomainSocketMount(deployment *appsv1.Deployment) error {
-	var found bool
-	var index int
-	var c corev1.Container
-	if found, index, c = findContainer(ModelMeshContainer, deployment); !found {
+	var c *corev1.Container
+	if _, c = findContainer(ModelMeshContainer, deployment); c == nil {
 		return fmt.Errorf("Could not find the model mesh container %v", ModelMeshContainer)
 	}
 
@@ -185,8 +183,6 @@ func (m *Deployment) addMMDomainSocketMount(deployment *appsv1.Deployment) error
 			MountPath: mountPoint,
 		})
 	}
-
-	deployment.Spec.Template.Spec.Containers[index] = c
 
 	return nil
 }

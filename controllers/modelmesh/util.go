@@ -26,37 +26,30 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// Find a container by name in the given deployment
-func findContainer(name string, deployment *appsv1.Deployment) (found bool, index int, container corev1.Container) {
-	for i, c := range deployment.Spec.Template.Spec.Containers {
-		if c.Name == name {
-			return true, i, c
+// Find a container by name in the given deployment, returns (-1, nil) if not found
+func findContainer(name string, deployment *appsv1.Deployment) (index int, container *corev1.Container) {
+	for i := range deployment.Spec.Template.Spec.Containers {
+		if c := &deployment.Spec.Template.Spec.Containers[i]; c.Name == name {
+			return i, c
 		}
 	}
-
-	return false, 0, corev1.Container{}
+	return -1, nil
 }
 
 // Sets an environment variable by name
 func setEnvironmentVar(container string, variable string, value string, deployment *appsv1.Deployment) error {
-	if found, index, c := findContainer(container, deployment); found {
-		found := false
-		for _, env := range c.Env {
-			if env.Name == variable {
-				found = true
-				env.Value = value
+	if _, c := findContainer(container, deployment); c != nil {
+		for i := range c.Env {
+			if c.Env[i].Name == variable {
+				c.Env[i].Value = value
+				return nil
 			}
 		}
-		if !found {
-			c.Env = append(c.Env, corev1.EnvVar{Name: variable, Value: value})
-		}
-
-		deployment.Spec.Template.Spec.Containers[index] = c
-	} else {
-		return fmt.Errorf("Cannot find container: %v", container)
+		c.Env = append(c.Env, corev1.EnvVar{Name: variable, Value: value})
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("Cannot find container: %v", container)
 }
 
 // Determines if any unix domain sockets are present and returns
@@ -68,8 +61,7 @@ func unixDomainSockets(rt *api.ServingRuntime) (bool, []string, []string) {
 		rt.Spec.GrpcMultiModelManagementEndpoint,
 	}
 
-	_endpoints := []string{}
-	_fspaths := []string{}
+	var _endpoints, _fspaths []string
 	for _, endpoint := range endpoints {
 		if endpoint != nil && strings.HasPrefix(*endpoint, "unix:") {
 			fspath := strings.Replace(*endpoint, "unix://", "", 1)
