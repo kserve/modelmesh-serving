@@ -200,6 +200,8 @@ spec:
           value: "90000"
         - name: USE_EMBEDDED_PULLER
           value: "true"
+        - name: RUNTIME_VERSION
+          value: replace
         image: image:tag
         imagePullPolicy: IfNotPresent
         lifecycle:
@@ -443,6 +445,8 @@ spec:
           value: "90000"
         - name: USE_EMBEDDED_PULLER
           value: "true"
+        - name: RUNTIME_VERSION
+          value: replace
         image: image:tag
         imagePullPolicy: IfNotPresent
         lifecycle:
@@ -709,6 +713,8 @@ spec:
           value: "90000"
         - name: USE_EMBEDDED_PULLER
           value: "true"
+        - name: RUNTIME_VERSION
+          value: replace
         image: image:tag
         imagePullPolicy: IfNotPresent
         lifecycle:
@@ -962,6 +968,10 @@ spec:
           value: "90000"
         - name: USE_EMBEDDED_PULLER
           value: "true"
+        - name: RUNTIME_VERSION
+          value: replace
+        - name: LOADING_CONCURRENCY
+          value: "2"
         image: image:tag
         imagePullPolicy: IfNotPresent
         lifecycle:

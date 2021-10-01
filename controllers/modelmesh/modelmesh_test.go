@@ -72,18 +72,15 @@ func TestEnableAccessLogging(t *testing.T) {
 	m := &Deployment{Owner: rt, EnableAccessLogging: true}
 	m.addMMEnvVars(d)
 
-	if exists, _, c := findContainer("mm", d); !exists {
+	if _, c := findContainer("mm", d); c == nil {
 		t.Fatal("Could not find the model mesh container")
 	} else {
-		found := false
 		for _, env := range c.Env {
 			if env.Name == "MM_LOG_EACH_INVOKE" && env.Value == "true" {
-				found = true
+				return
 			}
 		}
-		if !found {
-			t.Fatal("Expected to find an env variable MM_LOG_EACH_INVOKE but not found")
-		}
+		t.Fatal("Expected to find an env variable MM_LOG_EACH_INVOKE but not found")
 	}
 }
 
