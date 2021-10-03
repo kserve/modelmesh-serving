@@ -8,6 +8,8 @@ on:
       - '**.md'
       - '.github/**'
       - '.tekton/**'
+    tags:
+      - v*
 
 jobs:
   # Ensure that tests pass before publishing a new image.
@@ -15,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: kserve/modelmesh-controller
-      IMAGE_TAG: latest
       CI: true
     steps:
       - uses: actions/checkout@v2
@@ -25,10 +26,23 @@ jobs:
         run: ./scripts/develop.sh make fmt
       - name: Run unit tests
         run: ./scripts/develop.sh make test
-      # Depend on nightly builds for pushing for now.
-      # - name: Build runtime image
-      #   run: make build
-      # - name: Log in to Docker Hub
-      #   run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
-      # - name: Push to Docker Hub
-      #   run: docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      - name: Build runtime image
+        run: make build
+      - name: Log in to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      - name: Push to Docker Hub
+        run: |
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          echo $VERSION
+
+          # Currently, we rely on nightly builds for pushing images, so exit if
+          # not a tag version for now.
+          if [ "$VERSION" == "main" ]; then
+            echo "Skipping image push"
+            VERSION=latest
+            exit 0
+          fi
+
+          docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.IMAGE_NAME }}:$VERSION
+          docker push ${{ env.IMAGE_NAME }}:$VERSION
