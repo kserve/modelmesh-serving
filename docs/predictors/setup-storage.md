@@ -1,4 +1,4 @@
-# Storage Configuration
+# Set up Storage for Loading Models
 
 You will need access to an S3-compatible object storage, for example [MinIO](https://github.com/minio/minio). To provide access to the object storage, use the `storage-config` secret.
 
