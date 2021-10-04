@@ -29,8 +29,8 @@ It's generally a good idea to search the repo or control-f for strings of the ol
 1. Submit your PR to the release branch and wait for it to merge.
 1. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
-   - `kustomize build runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
+   - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
    - `cp config/dependencies/quickstart.yaml modelmesh-optional-dependencies.yaml`
 1. Once everything has settled, tag and push the release with `git tag $VERSION` and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
    - The `modelmesh-controller` image will be published via GitHub Actions.
-1. Upload generated install manifests to GitGub release assets.
+1. Upload generated install manifests to GitHub release assets.
