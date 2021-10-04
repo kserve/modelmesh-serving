@@ -26,6 +26,8 @@ Release branches serve several purposes:
 It's generally a good idea to search the repo or control-f for strings of the old version number and replace them with the new, keeping in mind conflicts with other library version numbers.
 
 1. Update `modelmesh`, `modelmesh-runtime-adapter`, and `modelmesh-controller` image tags to the corresponding release version numbers.
+   - Edit `newTag` in `config/manager/kustomization.yaml`.
+   - Edit the the `modelmesh` and `modelmesh-runtime-adapter` image tags in `config/default/config-defaults.yaml`.
 1. Submit your PR to the release branch and wait for it to merge.
 1. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
