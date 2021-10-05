@@ -62,6 +62,7 @@ type Config struct {
 	// Runtimes config
 	ModelMeshImage         ImageConfig
 	ModelMeshResources     ResourceRequirements
+	RESTProxy              RESTProxyConfig
 	StorageHelperImage     ImageConfig
 	StorageHelperResources ResourceRequirements
 	PodsPerRuntime         uint16
@@ -93,6 +94,13 @@ type TLSConfig struct {
 	SecretName string
 	// Mutual TLS disabled if omitted
 	ClientAuth string
+}
+
+type RESTProxyConfig struct {
+	Enabled   bool
+	Port      uint16
+	Image     ImageConfig
+	Resources ResourceRequirements
 }
 
 func (c *Config) GetEtcdSecretName() string {
@@ -360,6 +368,9 @@ func NewMergedConfigFromString(configYaml string) (*Config, error) {
 	// extra validations on parsed config
 	if err = config.ModelMeshResources.parseAndValidate(); err != nil {
 		return nil, fmt.Errorf("Invalid config for 'ModelMeshResources': %s", err)
+	}
+	if err = config.RESTProxy.Resources.parseAndValidate(); err != nil {
+		return nil, fmt.Errorf("Invalid config for 'RESTProxy.Resources': %s", err)
 	}
 	if err = config.StorageHelperResources.parseAndValidate(); err != nil {
 		return nil, fmt.Errorf("Invalid config for 'StorageHelperResources': %s", err)

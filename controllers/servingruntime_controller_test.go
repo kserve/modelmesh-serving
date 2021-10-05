@@ -165,3 +165,30 @@ var _ = Describe("Serving runtime with storageHelper disabled", func() {
 		Expect(d).To(SnapshotMatcher())
 	})
 })
+
+var _ = Describe("REST Proxy configuration", func() {
+	var m mf.Manifest
+	var err error
+
+	It("deployment should contain REST Proxy container", func() {
+		By("enable REST Proxy in the config")
+		reconcilerConfig.RESTProxy.Enabled = true
+
+		By("create a sample runtime")
+		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
+		m.Client = mfc.NewClient(k8sClient)
+		Expect(err).ToNot(HaveOccurred())
+		m, err = m.Transform(mf.InjectNamespace(namespace))
+		Expect(err).ToNot(HaveOccurred())
+		err = m.Apply()
+		Expect(err).ToNot(HaveOccurred())
+
+		By("check the generated Deployment")
+		srName := m.Resources()[0].GetName()
+		d := waitForAndGetRuntimeDeployment(srName)
+
+		// discard objectmeta before snapshot compare to remove generated values
+		d.ObjectMeta = metav1.ObjectMeta{}
+		Expect(d).To(SnapshotMatcher())
+	})
+})

@@ -37,6 +37,7 @@ const ModelMeshEtcdPrefix = "mm"
 //Models a deployment
 type Deployment struct {
 	ServiceName        string
+	ServicePort        uint16
 	Name               string
 	Namespace          string
 	Owner              *api.ServingRuntime
@@ -47,6 +48,10 @@ type Deployment struct {
 	PrometheusScheme   string
 	ModelMeshImage     string
 	ModelMeshResources *corev1.ResourceRequirements
+	RESTProxyEnabled   bool
+	RESTProxyImage     string
+	RESTProxyResources *corev1.ResourceRequirements
+	RESTProxyPort      uint16
 	// internal fields used when templating
 	ModelMeshLimitCPU       string
 	ModelMeshRequestsCPU    string
@@ -113,6 +118,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 				m.addMMEnvVars,
 				m.addModelTypeConstraints,
 				m.configureMMDeploymentForEtcdSecret,
+				m.addRESTProxyToDeployment,
 				m.configureMMDeploymentForTLSSecret,
 			); tErr != nil {
 				return tErr

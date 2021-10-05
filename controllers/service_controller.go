@@ -90,13 +90,16 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err != nil {
 			return RequeueResult, err
 		}
-		var metricsPort uint16 = 0
+		var metricsPort, restProxyPort uint16 = 0, 0
 		if cfg.Metrics.Enabled {
 			metricsPort = cfg.Metrics.Port
 		}
+		if cfg.RESTProxy.Enabled {
+			restProxyPort = cfg.RESTProxy.Port
+		}
 		changed = r.ModelMeshService.UpdateConfig(
 			cfg.InferenceServiceName, cfg.InferenceServicePort,
-			cfg.ModelMeshEndpoint, cfg.TLS.SecretName, tlsConfig, cfg.HeadlessService, metricsPort)
+			cfg.ModelMeshEndpoint, cfg.TLS.SecretName, tlsConfig, cfg.HeadlessService, metricsPort, restProxyPort)
 	}
 
 	d := &appsv1.Deployment{}
@@ -213,6 +216,14 @@ func (r *ServiceReconciler) applyService(ctx context.Context, d *appsv1.Deployme
 			Name:       "prometheus",
 			Port:       int32(r.ModelMeshService.MetricsPort),
 			TargetPort: intstr.FromString("prometheus"),
+		})
+	}
+
+	if r.ModelMeshService.RESTPort > 0 {
+		s.Spec.Ports = append(s.Spec.Ports, corev1.ServicePort{
+			Name:       "http",
+			Port:       int32(r.ModelMeshService.RESTPort),
+			TargetPort: intstr.FromString("http"),
 		})
 	}
 

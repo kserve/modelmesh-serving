@@ -437,7 +437,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 	status.Available = status.ActiveModelState != "" &&
 		status.ActiveModelState != api.FailedToLoad && !status.WaitingForRuntime()
 	status.GrpcEndpoint = fmt.Sprintf("grpc://%s", pr.MMService.InferenceEndpoint())
-	status.HTTPEndpoint = "" //TODO not yet supported
+	status.HTTPEndpoint = pr.MMService.InferenceRESTEndpoint()
 
 	// This will be reinstated once the loading/loaded counts are added back to the Predictor CRD Status
 	//if counts != [3]int{status.LoadingCopies, status.LoadedCopies, status.FailedCopies} {
