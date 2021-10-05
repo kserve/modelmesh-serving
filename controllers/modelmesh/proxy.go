@@ -14,7 +14,7 @@
 package modelmesh
 
 import (
-	"fmt"
+	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,18 +29,20 @@ const (
 func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) error {
 
 	if m.RESTProxyEnabled {
-		enableTLS := "false"
-		if m.TLSSecretName != "" {
-			enableTLS = "true"
-		}
-
 		cspec := corev1.Container{
 			Image: m.RESTProxyImage,
 			Name:  RESTProxyContainer,
 			Env: []corev1.EnvVar{
-				{Name: restProxyPortEnvVar, Value: fmt.Sprintf("%d", m.RESTProxyPort)},
-				{Name: restProxyGrpcPortEnvVar, Value: fmt.Sprintf("%d", m.ServicePort)},
-				{Name: restProxyTlsEnvVar, Value: enableTLS},
+				{
+					Name:  restProxyPortEnvVar,
+					Value: strconv.Itoa(int(m.RESTProxyPort)),
+				}, {
+					Name:  restProxyGrpcPortEnvVar,
+					Value: strconv.Itoa(int(m.ServicePort)),
+				}, {
+					Name:  restProxyTlsEnvVar,
+					Value: strconv.FormatBool(m.TLSSecretName != ""),
+				},
 			},
 			Ports: []corev1.ContainerPort{
 				{

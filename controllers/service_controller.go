@@ -90,13 +90,16 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err != nil {
 			return RequeueResult, err
 		}
-		var metricsPort uint16 = 0
+		var metricsPort, restProxyPort uint16 = 0, 0
 		if cfg.Metrics.Enabled {
 			metricsPort = cfg.Metrics.Port
 		}
+		if cfg.RESTProxy.Enabled {
+			restProxyPort = cfg.RESTProxy.Port
+		}
 		changed = r.ModelMeshService.UpdateConfig(
 			cfg.InferenceServiceName, cfg.InferenceServicePort,
-			cfg.ModelMeshEndpoint, cfg.TLS.SecretName, tlsConfig, cfg.HeadlessService, metricsPort, cfg.RESTProxy.Port)
+			cfg.ModelMeshEndpoint, cfg.TLS.SecretName, tlsConfig, cfg.HeadlessService, metricsPort, restProxyPort)
 	}
 
 	d := &appsv1.Deployment{}

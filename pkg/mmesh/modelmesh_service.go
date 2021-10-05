@@ -95,6 +95,9 @@ func (mms *MMService) InferenceEndpoint() string {
 }
 
 func (mms *MMService) InferenceRESTEndpoint() string {
+	if mms.RESTPort <= 0 {
+		return ""
+	}
 	scheme := "http"
 	if mms.TLSConfig != nil {
 		scheme = "https"
