@@ -116,15 +116,17 @@ example-mnist-predictor   sklearn   true        Loaded                      UpTo
 
 To see more detailed instructions and information, click [here](./predictors/).
 
-## 3. Perform a gRPC inference request
+## 3. Perform an inference request
 
 Now that a model is loaded and available, you can then perform inference.
-Currently, only gRPC inference requests are supported. By default, ModelMesh Serving uses a
+Currently, only gRPC inference requests are supported by ModelMesh, but REST support is enabled via a [REST proxy](https://github.com/kserve/rest-proxy) container. By default, ModelMesh Serving uses a
 [headless Service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services)
 since a normal Service has issues load balancing gRPC requests. See more info
 [here](https://kubernetes.io/blog/2018/11/07/grpc-load-balancing-on-kubernetes-without-tears/).
 
-To test out inference requests, you can port-forward the headless service _in a separate terminal window_:
+### gRPC request
+
+To test out **gRPC** inference requests, you can port-forward the headless service _in a separate terminal window_:
 
 ```shell
 kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
@@ -150,21 +152,51 @@ grpcurl \
 
 This should give you output like the following:
 
-```shell
+```json
 {
   "modelName": "example-mnist-predictor__ksp-7702c1b55a",
   "outputs": [
     {
       "name": "predict",
       "datatype": "FP32",
-      "shape": [
-        "1"
-      ],
+      "shape": ["1"],
       "contents": {
-        "fp32Contents": [
-          8
-        ]
+        "fp32Contents": [8]
       }
+    }
+  ]
+}
+```
+
+### REST request
+
+> **Note**: The REST proxy is currently in an alpha state and may still have issues with certain usage scenarios.
+
+You will need to port-forward a different port for REST.
+
+```shell
+kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8008 -n modelmesh-serving
+```
+
+With `curl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
+variable below is set to the name of your Predictor/TrainedModel.
+
+```shell
+MODEL_NAME=example-mnist-predictor
+curl -X POST -k http://localhost:8008/v2/models/${MODEL_NAME}/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
+```
+
+This should give you a response like the following:
+
+```json
+{
+  "model_name": "example-mnist-predictor__ksp-7702c1b55a",
+  "outputs": [
+    {
+      "name": "predict",
+      "datatype": "FP32",
+      "shape": [1],
+      "data": [8]
     }
   ]
 }
