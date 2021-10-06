@@ -10,7 +10,7 @@ For help, please open an issue in this repository.
 
 ## Components and their Repositories
 
-ModelMesh Serving currently comprises components spread over a number of repositories.
+ModelMesh Serving currently comprises components spread over a number of repositories. The supported versions for the latest release are documented [here](./docs/component-versions.md).
 
 ![Architecture Image](./docs/images/0.2.0-highlevel.png)
 
