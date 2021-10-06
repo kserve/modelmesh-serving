@@ -34,6 +34,10 @@ ModelMesh Serving provides out-of-the-box integration with the following model s
 
 `ServingRuntime` custom resources can be used to add support for other existing or custom-built model servers, see the docs on [implementing a custom Serving Runtime](./docs/runtimes/custom_runtimes.md)
 
+#### Supplementary
+
+- [KServe V2 REST Proxy](https://github.com/kserve/rest-proxy) - a reverse-proxy server which translates a RESTful HTTP API into gRPC. This allows sending inference requests using the KServe V2 REST Predict Protocol to ModelMesh models which currently only support the V2 gRPC Predict Protocol.
+
 #### Libraries
 
 These are helper Java libraries used by the ModelMesh component.

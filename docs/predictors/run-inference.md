@@ -1,4 +1,11 @@
-## Send an inference request to your Predictor
+# Send an inference request to your Predictor
+
+Currently, only gRPC requests are supported by ModelMesh. However, if the `restProxy` is `enabled` in the ModelMesh Serving [config](../configuration) (which it is by default), then REST inference requests are enabled via [KServe V2 REST proxies](https://github.com/kserve/rest-proxy). This allows sending requests using the KServe V2 REST Predict Protocol to ModelMesh models.
+
+1. [Inference using gRPC](#inference-using-grpc)
+2. [Inference using REST](#inference-using-rest)
+
+## Inference using gRPC
 
 ### Configure gRPC client
 
@@ -151,4 +158,67 @@ grpcurl \
   -d '{ "model_name": "example-sklearn-mnist-svm", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
   localhost:8033 \
   inference.GRPCInferenceService.ModelInfer
+```
+
+## Inference using REST
+
+> **Note**: The [REST proxy](https://github.com/kserve/rest-proxy) is currently in an alpha state and may still have issues with certain usage scenarios.
+
+By default, REST requests will go through the `modelmesh-serving` service using port `8008`.
+
+Since the service is also headless by default, you can access this service by using [`kubectl port-forward`](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/):
+
+```shell
+kubectl port-forward modelmesh-serving 8008:8008
+```
+
+This assumes you are using port 8008 for REST. Change the source and/or destination ports as appropriate.
+
+REST inference requests can then be sent using the [KServe V2 REST Predict Protocol](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#httprest).
+For example, with `curl`, a request can be sent to a model like the following:
+
+```shell
+curl -X POST -k http://localhost:8008/v2/models/example-mnist-predictor/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
+```
+
+This would give a response similar to the following:
+
+```json
+{
+  "model_name": "example-mnist-predictor__ksp-7702c1b55a",
+  "outputs": [
+    {
+      "name": "predict",
+      "datatype": "FP32",
+      "shape": [1],
+      "data": [8]
+    }
+  ]
+}
+```
+
+### Creating your own service for REST
+
+If you want to use a `LoadBalancer` or `NodePort` service, you can always create another service with the respective type. For example:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelmesh-rest
+spec:
+  type: LoadBalancer
+  selector:
+    modelmesh-service: modelmesh-serving
+  ports:
+    - name: http
+      port: 8008
+      protocol: TCP
+      targetPort: http
+```
+
+Then a sample inference might look like:
+
+```shell
+curl -X POST -k http://<external-ip>:8008/v2/models/example-mnist-predictor/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
 ```
