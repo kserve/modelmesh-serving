@@ -36,6 +36,8 @@ spec:
     - ports:
         - port: 8033
           protocol: TCP
+        - port: 8008
+          protocol: TCP
     # exposed for prometheus metrics
     - ports:
         - port: 2112
