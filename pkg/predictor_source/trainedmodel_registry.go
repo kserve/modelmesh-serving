@@ -11,25 +11,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package v1alpha1
+package predictor_source
 
 import (
 	"context"
 	"strings"
 
+	kfsapi "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// +kubebuilder:object:generate=false
+var _ PredictorRegistry = (*TrainedModelRegistry)(nil)
+
 type TrainedModelRegistry struct {
 	Client client.Client
 }
 
-func BuildPredictorWithBase(t *TrainedModel) *api.Predictor {
+func BuildPredictorWithBase(t *kfsapi.TrainedModel) *api.Predictor {
 	p := &api.Predictor{}
 	p.Spec = api.PredictorSpec{
 		Model: api.Model{
@@ -49,8 +52,23 @@ func BuildPredictorWithBase(t *TrainedModel) *api.Predictor {
 	return p
 }
 
+func (tmr TrainedModelRegistry) Find(ctx context.Context, namespace string,
+	predicate func(*api.Predictor) bool) (bool, error) {
+	list := &kfsapi.TrainedModelList{}
+	err := tmr.Client.List(ctx, list, client.InNamespace(namespace))
+	if err != nil {
+		return false, err
+	}
+	for i := range list.Items {
+		if predicate(BuildPredictorWithBase(&list.Items[i])) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedName) (*api.Predictor, error) {
-	trainedModel := &TrainedModel{}
+	trainedModel := &kfsapi.TrainedModel{}
 	err := tmr.Client.Get(ctx, nname, trainedModel)
 
 	if err != nil {
@@ -76,7 +94,7 @@ func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedN
 		urlParts := strings.Split(s3Uri, "/")
 		bucket := urlParts[0]
 		modelPath := strings.Join(urlParts[1:], "/")
-		secretKey := trainedModel.ObjectMeta.Annotations[SecretKeyAnnotation]
+		secretKey := trainedModel.ObjectMeta.Annotations[kfsapi.SecretKeyAnnotation]
 		p.Spec.Storage = &api.Storage{
 			S3: &api.S3StorageSource{
 				SecretKey: secretKey,
@@ -89,22 +107,22 @@ func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedN
 }
 
 func (tmr TrainedModelRegistry) UpdateStatus(ctx context.Context, predictor *api.Predictor) (bool, error) {
-	trainedModel := &TrainedModel{}
+	trainedModel := &kfsapi.TrainedModel{}
 	trainedModel.TypeMeta = predictor.TypeMeta
 	trainedModel.ObjectMeta = predictor.ObjectMeta
 	trainedModel.Status.PredictorStatus = predictor.Status
 
 	if predictor.Status.Available {
-		trainedModel.Status.Conditions = Conditions{
-			Condition{
+		trainedModel.Status.Conditions = kfsapi.Conditions{
+			kfsapi.Condition{
 				Type:   "Ready",
 				Status: corev1.ConditionTrue,
 			},
 		}
 		trainedModel.Status.URL = predictor.Status.GrpcEndpoint
 	} else {
-		trainedModel.Status.Conditions = Conditions{
-			Condition{
+		trainedModel.Status.Conditions = kfsapi.Conditions{
+			kfsapi.Condition{
 				Type:   "Ready",
 				Status: corev1.ConditionFalse,
 			},

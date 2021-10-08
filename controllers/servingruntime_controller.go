@@ -33,6 +33,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
+
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -61,9 +65,10 @@ type ServingRuntimeReconciler struct {
 	DeploymentName      string
 	DeploymentNamespace string
 	// store some information about current runtimes for making scaling decisions
-	runtimeInfoMap          map[types.NamespacedName]*runtimeInfo
-	runtimeInfoMapMutex     sync.Mutex
-	EnableTrainedModelWatch bool
+	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
+	runtimeInfoMapMutex sync.Mutex
+
+	RegistryMap map[string]predictor_source.PredictorRegistry
 }
 
 type runtimeInfo struct {
@@ -298,34 +303,15 @@ func (r *ServingRuntimeReconciler) determineReplicas(rt *api.ServingRuntime) uin
 
 // runtimeHasPredictors returns true if the runtime supports an existing Predictor
 func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt *api.ServingRuntime) (bool, error) {
-
-	// see if any Predictor is supported by this runtime
-	predictors := &api.PredictorList{}
-	err := r.Client.List(ctx, predictors, client.InNamespace(r.DeploymentNamespace))
-	if err != nil {
-		return false, err
+	f := func(p *api.Predictor) bool {
+		return runtimeSupportsPredictor(rt, p)
 	}
 
-	for _, p := range predictors.Items {
-		if runtimeSupportsPredictor(rt, &p) {
-			return true, nil
+	for _, pr := range r.RegistryMap {
+		if found, err := pr.Find(ctx, r.DeploymentNamespace, f); found || err != nil {
+			return found, err
 		}
 	}
-
-	if r.EnableTrainedModelWatch {
-		trainedModels := &kfsv1alpha1.TrainedModelList{}
-		err = r.Client.List(ctx, trainedModels, client.InNamespace(r.DeploymentNamespace))
-		if err != nil {
-			return false, err
-		}
-
-		for i := range trainedModels.Items {
-			if runtimeSupportsPredictor(rt, kfsv1alpha1.BuildPredictorWithBase(&trainedModels.Items[i])) {
-				return true, nil
-			}
-		}
-	}
-
 	return false, nil
 }
 
@@ -365,7 +351,8 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	return srnns, nil
 }
 
-func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager, watchTrainedModels bool,
+	sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		Named("ServingRuntimeReconciler").
 		For(&api.ServingRuntime{}).
@@ -392,12 +379,16 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
 
-	if r.EnableTrainedModelWatch {
+	if watchTrainedModels {
 		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				p := kfsv1alpha1.BuildPredictorWithBase(o.(*kfsv1alpha1.TrainedModel))
+				p := predictor_source.BuildPredictorWithBase(o.(*kfsv1alpha1.TrainedModel))
 				return r.runtimeRequestsForPredictor(p, "TrainedModel")
 			}))
+	}
+
+	if sourcePluginEvents != nil {
+		builder.Watches(&source.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
 	}
 
 	return builder.Complete(r)

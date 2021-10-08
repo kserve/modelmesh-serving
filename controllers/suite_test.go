@@ -168,14 +168,13 @@ var _ = BeforeSuite(func(done Done) {
 
 	// create the reconciler and add it to the manager
 	err = (&ServingRuntimeReconciler{
-		Client:                  k8sManager.GetClient(),
-		Scheme:                  k8sManager.GetScheme(),
-		Log:                     ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
-		ConfigProvider:          configProvider,
-		DeploymentName:          "modelmesh-controller",
-		DeploymentNamespace:     namespace,
-		EnableTrainedModelWatch: false,
-	}).SetupWithManager(k8sManager)
+		Client:              k8sManager.GetClient(),
+		Scheme:              k8sManager.GetScheme(),
+		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
+		ConfigProvider:      configProvider,
+		DeploymentName:      "modelmesh-controller",
+		DeploymentNamespace: namespace,
+	}).SetupWithManager(k8sManager, false, nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	// TODO: create PredictorReconciler when Predictor tests are added
