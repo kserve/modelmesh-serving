@@ -14,12 +14,8 @@
 package v1alpha1
 
 import (
-	"context"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -240,21 +236,6 @@ type PredictorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Predictor `json:"items"`
-}
-
-func (pr *Predictor) GetResource(ctx context.Context, nname types.NamespacedName, kclient client.Client) (Predictor, error) {
-	var p Predictor
-	err := kclient.Get(ctx, nname, &p)
-	return p, err
-}
-
-func (pr *Predictor) UpdateResource(ctx context.Context, kclient client.Client, predictor Predictor) error {
-	err := kclient.Status().Update(ctx, &predictor)
-	return err
-}
-
-func (pr *Predictor) GetType() string {
-	return "Predictor"
 }
 
 func init() {
