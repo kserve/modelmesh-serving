@@ -1,0 +1,16 @@
+######################################################### {COPYRIGHT-TOP} ###
+# IBM Confidential
+# IBM Watson Machine Learning Core
+# Copyright IBM Corp. 2021
+######################################################### {COPYRIGHT-END} ###
+apiVersion: wmlserving.ai.ibm.com/v1
+kind: Predictor
+metadata:
+  name: keras-predictor
+spec:
+  modelType:
+    name: keras
+  path: fvt/tensorflow/keras-mnist/mnist.h5
+  storage:
+    s3:
+      secretKey: wml-serving-models
