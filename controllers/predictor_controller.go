@@ -23,6 +23,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
+
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 
 	"github.com/go-logr/logr"
@@ -55,7 +59,7 @@ type PredictorReconciler struct {
 	Log       logr.Logger
 	MMService *mmesh.MMService
 
-	RegistryLookup map[string]api.PredictorRegistry
+	RegistryLookup map[string]predictor_source.PredictorRegistry
 }
 
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors,verbs=get;list;watch;create;update;patch;delete
@@ -88,16 +92,16 @@ func (pr *PredictorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname types.NamespacedName,
-	sourceId string, registry api.PredictorRegistry) (ctrl.Result, error) {
+	sourceId string, registry predictor_source.PredictorRegistry) (ctrl.Result, error) {
 	resourceType := registry.GetSourceName()
 	log := pr.Log.WithValues("namespacedName", nname, "source", resourceType)
 	log.V(1).Info("ReconcilePredictor called")
 
 	predictor, err := registry.Get(ctx, nname)
+	if (predictor == nil && err == nil) || errors.IsNotFound(err) {
+		return pr.handlePredictorNotFound(ctx, nname, sourceId)
+	}
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return pr.handlePredictorNotFound(ctx, nname, sourceId)
-		}
 		return ctrl.Result{}, fmt.Errorf("failed to fetch CR from kubebuilder cache for predictor %s: %w",
 			nname.Name, err)
 	}
@@ -492,18 +496,22 @@ func Hash(predictorSpec *api.PredictorSpec) string {
 // ---------
 
 func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *mmesh.ModelMeshEventStream,
-	watchTrainedModels bool) error {
+	watchTrainedModels bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&api.Predictor{}).
 		Watches(&source.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
 
+	if sourcePluginEvents != nil {
+		builder.Watches(&source.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
+	}
+
 	if watchTrainedModels {
-		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}}, PrefixName(TrainedModelCRSourceId))
+		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}}, prefixName(TrainedModelCRSourceId))
 	}
 	return builder.Complete(pr)
 }
 
-func PrefixName(prefix string) handler.EventHandler {
+func prefixName(prefix string) handler.EventHandler {
 	return handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
 		// Prepend prefix
 		return []reconcile.Request{{

@@ -39,6 +39,11 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/operator-framework/operator-lib/leader"
@@ -270,12 +275,15 @@ func main() {
 		ConfigMapName:           types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
 		ServiceMonitorCRDExists: serviceMonitorCRDExists,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Service")
+		setupLog.Error(err, "Unable to create controller", "controller", "Service")
 		os.Exit(1)
 	}
 
-	registryMap := map[string]servingv1alpha1.PredictorRegistry{
-		controllers.PredictorCRSourceId: servingv1alpha1.PredictorCRRegistry{Client: mgr.GetClient()},
+	//TODO populate with registered/loaded plugins
+	sources := []predictor_source.PredictorSource{}
+
+	registryMap := map[string]predictor_source.PredictorRegistry{
+		controllers.PredictorCRSourceId: predictor_source.PredictorCRRegistry{Client: mgr.GetClient()},
 	}
 
 	// Watch TrainedModels only if env var is explicitly set to "true" or if
@@ -287,7 +295,7 @@ func main() {
 		err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, tm)
 		if err == nil || errors.IsNotFound(err) {
 			enableTMWatch = true
-			registryMap[controllers.TrainedModelCRSourceId] = kfsv1alpha1.TrainedModelRegistry{Client: mgr.GetClient()}
+			registryMap[controllers.TrainedModelCRSourceId] = predictor_source.TrainedModelRegistry{Client: mgr.GetClient()}
 			setupLog.Info("Reconciliation of TrainedModels is enabled")
 		} else if envVarVal == "true" {
 			// If env var is explicitly true, require that TrainedModel CRD is present
@@ -300,26 +308,69 @@ func main() {
 		}
 	}
 
+	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
+	if len(sources) != 0 {
+		predictorControllerEvents = make(chan event.GenericEvent, 256)
+		runtimeControllerEvents = make(chan event.GenericEvent, 256)
+		dispatchers := make([]func(), 0, len(sources))
+		for _, s := range sources {
+			sid := s.GetSourceId()
+			if sid == "" || sid == controllers.PredictorCRSourceId || sid == controllers.TrainedModelCRSourceId {
+				setupLog.Error(nil, "Invalid predictor source plugin id",
+					"sourceId", sid)
+				os.Exit(1)
+			}
+			if _, ok := registryMap[sid]; ok {
+				setupLog.Error(nil, "More than one predictor source plugin is registered with the same id",
+					"sourceId", sid)
+				os.Exit(1)
+			}
+			r, c, serr := s.StartWatch(context.Background())
+			if serr != nil {
+				setupLog.Error(serr, "Error starting predictor source plugin", "sourceId", sid)
+				os.Exit(1)
+			}
+			registryMap[sid] = r
+			dispatchers = append(dispatchers, func() {
+				for {
+					pe, ok := <-c
+					if !ok {
+						break
+					}
+					event := event.GenericEvent{Object: &v1.PartialObjectMetadata{ObjectMeta: v1.ObjectMeta{
+						Name: pe.Name, Namespace: fmt.Sprintf("%s_%s", sid, pe.Namespace)},
+					}}
+					predictorControllerEvents <- event
+					runtimeControllerEvents <- event
+				}
+				setupLog.Info("Predictor source plugin event channel closed", "sourceId", sid)
+			})
+		}
+		for _, d := range dispatchers {
+			go d()
+		}
+	}
+
 	if err = (&controllers.PredictorReconciler{
 		Client:         mgr.GetClient(),
 		Log:            ctrl.Log.WithName("controllers").WithName("Predictor"),
 		MMService:      mmService,
 		RegistryLookup: registryMap,
-	}).SetupWithManager(mgr, modelEventStream, enableTMWatch); err != nil {
+	}).SetupWithManager(mgr, modelEventStream, enableTMWatch, predictorControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Predictor")
 		os.Exit(1)
 	}
 
 	if err = (&controllers.ServingRuntimeReconciler{
-		Client:                  mgr.GetClient(),
-		Log:                     ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
-		Scheme:                  mgr.GetScheme(),
-		ConfigProvider:          cp,
-		ConfigMapName:           types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
-		DeploymentNamespace:     ControllerNamespace,
-		DeploymentName:          controllerDeploymentName,
-		EnableTrainedModelWatch: enableTMWatch,
-	}).SetupWithManager(mgr); err != nil {
+		Client:              mgr.GetClient(),
+		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
+		Scheme:              mgr.GetScheme(),
+		ConfigProvider:      cp,
+		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
+		DeploymentNamespace: ControllerNamespace,
+		DeploymentName:      controllerDeploymentName,
+		RegistryMap:         registryMap,
+	}).SetupWithManager(mgr, enableTMWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)
 	}
