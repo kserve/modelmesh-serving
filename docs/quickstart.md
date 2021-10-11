@@ -65,8 +65,8 @@ are:
 
 With ModelMesh Serving now installed, try deploying a model using the `Predictor` CRD.
 
-> **Note**: ModelMesh Serving also supports deployment using KFServing's TrainedModel interface.
-> Please refer to [these instructions](./trainedmodel.md) for information on alternatively using TrainedModels.
+> **Note**: ModelMesh Serving also supports deployment using KServe's InferenceService interface.
+> Please refer to [these instructions](./inferenceservice.md) for information on alternatively using InferenceServices.
 
 Here, we deploy an SKLearn MNIST model which is served from the local MinIO container:
 
@@ -138,7 +138,7 @@ file can be used with `localhost:8033`. A ready-to-use Python example of this ca
 Alternatively, you can test inference with [grpcurl](https://github.com/fullstorydev/grpcurl). This can easily be installed with `brew install grpcurl` if on macOS.
 
 With `grpcurl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your Predictor/TrainedModel.
+variable below is set to the name of your Predictor/InferenceService.
 
 ```shell
 MODEL_NAME=example-mnist-predictor
@@ -179,7 +179,7 @@ kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8008 -n modelme
 ```
 
 With `curl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your Predictor/TrainedModel.
+variable below is set to the name of your Predictor/InferenceService.
 
 ```shell
 MODEL_NAME=example-mnist-predictor
