@@ -383,7 +383,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager, watchTrain
 	if watchTrainedModels {
 		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				p := o.(*kfsv1alpha1.TrainedModel).BuildPredictorWithBase()
+				p := predictor_source.BuildBasePredictorFromTrainedModel(o.(*kfsv1alpha1.TrainedModel))
 				return r.runtimeRequestsForPredictor(p, "TrainedModel")
 			}))
 	}
@@ -391,7 +391,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager, watchTrain
 	if watchInferenceServices {
 		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				if p, _ := o.(*servingv1beta1.InferenceService).BuildPredictorWithBase(); p != nil {
+				if p, _ := predictor_source.BuildBasePredictorFromInferenceService(o.(*servingv1beta1.InferenceService)); p != nil {
 					return r.runtimeRequestsForPredictor(p, "InferenceService")
 				}
 				return []reconcile.Request{}

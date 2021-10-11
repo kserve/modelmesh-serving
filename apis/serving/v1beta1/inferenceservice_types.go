@@ -18,8 +18,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"errors"
-
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,38 +97,6 @@ type PredictorExtensionSpec struct {
 	StorageURI *string `json:"storageUri,omitempty"`
 	// +optional
 	RuntimeVersion *string `json:"runtimeVersion,omitempty"`
-}
-
-func (isvc *InferenceService) BuildPredictorWithBase() (*v1alpha1.Predictor, error) {
-	p := &v1alpha1.Predictor{}
-
-	// Check if resource should be reconciled.
-	if isvc.ObjectMeta.Annotations[DeploymentModeAnnotation] != MMDeploymentModeVal {
-		return nil, nil
-	}
-
-	framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
-	if frameworkSpec == nil {
-		return nil, errors.New("No valid InferenceService predictor framework found")
-	}
-
-	p.Spec = v1alpha1.PredictorSpec{
-		Model: v1alpha1.Model{
-			Type: v1alpha1.ModelType{
-				Name: framework,
-			},
-		},
-	}
-
-	// If explicit ServingRuntime was passed in through an annotation
-	if runtime, ok := isvc.ObjectMeta.Annotations[RuntimeAnnotation]; ok {
-		p.Spec.Runtime = &v1alpha1.PredictorRuntime{
-			RuntimeRef: &v1alpha1.RuntimeRef{
-				Name: runtime,
-			},
-		}
-	}
-	return p, nil
 }
 
 func (s *InferenceServicePredictorSpec) GetPredictorFramework() (string, *PredictorExtensionSpec) {

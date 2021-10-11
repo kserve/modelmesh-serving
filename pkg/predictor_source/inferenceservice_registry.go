@@ -18,6 +18,7 @@ package predictor_source
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -35,6 +36,38 @@ type InferenceServiceRegistry struct {
 	Client client.Client
 }
 
+func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1alpha1.Predictor, error) {
+	p := &v1alpha1.Predictor{}
+
+	// Check if resource should be reconciled.
+	if isvc.ObjectMeta.Annotations[v1beta1.DeploymentModeAnnotation] != v1beta1.MMDeploymentModeVal {
+		return nil, nil
+	}
+
+	framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
+	if frameworkSpec == nil {
+		return nil, errors.New("No valid InferenceService predictor framework found")
+	}
+
+	p.Spec = v1alpha1.PredictorSpec{
+		Model: v1alpha1.Model{
+			Type: v1alpha1.ModelType{
+				Name: framework,
+			},
+		},
+	}
+
+	// If explicit ServingRuntime was passed in through an annotation
+	if runtime, ok := isvc.ObjectMeta.Annotations[v1beta1.RuntimeAnnotation]; ok {
+		p.Spec.Runtime = &v1alpha1.PredictorRuntime{
+			RuntimeRef: &v1alpha1.RuntimeRef{
+				Name: runtime,
+			},
+		}
+	}
+	return p, nil
+}
+
 func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.NamespacedName) (*v1alpha1.Predictor, error) {
 	inferenceService := &v1beta1.InferenceService{}
 
@@ -42,12 +75,14 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 		return nil, err
 	}
 
-	p, err := inferenceService.BuildPredictorWithBase()
+	p, err := BuildBasePredictorFromInferenceService(inferenceService)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// This is the case where an InferenceService was found, but the
+	// ModelMesh annotation was not set.
 	if p == nil {
 		return nil, nil
 	}
@@ -61,11 +96,8 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := *frameworkSpec.StorageURI
-	if !strings.HasPrefix(storageUri, "s3://") {
-		p.Spec.Storage = &v1alpha1.Storage{
-			S3: nil,
-		}
-	} else {
+	p.Spec.Storage = &v1alpha1.Storage{}
+	if strings.HasPrefix(storageUri, "s3://") {
 		s3Uri := strings.TrimPrefix(storageUri, "s3://")
 		urlParts := strings.Split(s3Uri, "/")
 		bucket := urlParts[0]
@@ -74,11 +106,9 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 		if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
 			p.Spec.SchemaPath = &schemaPath
 		}
-		p.Spec.Storage = &v1alpha1.Storage{
-			S3: &v1alpha1.S3StorageSource{
-				SecretKey: secretKey,
-				Bucket:    &bucket,
-			},
+		p.Spec.Storage.S3 = &v1alpha1.S3StorageSource{
+			SecretKey: secretKey,
+			Bucket:    &bucket,
 		}
 		p.Spec.Path = modelPath
 	}
@@ -90,13 +120,12 @@ func (isvcr InferenceServiceRegistry) Find(ctx context.Context, namespace string
 	predicate func(*v1alpha1.Predictor) bool) (bool, error) {
 
 	list := &v1beta1.InferenceServiceList{}
-	err := isvcr.Client.List(ctx, list, client.InNamespace(namespace))
-	if err != nil {
+	if err := isvcr.Client.List(ctx, list, client.InNamespace(namespace)); err != nil {
 		return false, err
 	}
 
 	for i := range list.Items {
-		p, _ := (&list.Items[i]).BuildPredictorWithBase()
+		p, _ := BuildBasePredictorFromInferenceService(&list.Items[i])
 		if p != nil && predicate(p) {
 			return true, nil
 		}

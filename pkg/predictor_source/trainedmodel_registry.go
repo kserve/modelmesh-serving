@@ -32,6 +32,26 @@ type TrainedModelRegistry struct {
 	Client client.Client
 }
 
+func BuildBasePredictorFromTrainedModel(tm *kfsapi.TrainedModel) *api.Predictor {
+	p := &api.Predictor{}
+	p.Spec = api.PredictorSpec{
+		Model: api.Model{
+			Type: api.ModelType{
+				Name: tm.Spec.Model.Framework,
+			},
+		},
+	}
+
+	if tm.Spec.InferenceService != "" {
+		p.Spec.Runtime = &api.PredictorRuntime{
+			RuntimeRef: &api.RuntimeRef{
+				Name: tm.Spec.InferenceService,
+			},
+		}
+	}
+	return p
+}
+
 func (tmr TrainedModelRegistry) Find(ctx context.Context, namespace string,
 	predicate func(*api.Predictor) bool) (bool, error) {
 	list := &kfsapi.TrainedModelList{}
@@ -40,7 +60,7 @@ func (tmr TrainedModelRegistry) Find(ctx context.Context, namespace string,
 		return false, err
 	}
 	for i := range list.Items {
-		if predicate((&list.Items[i]).BuildPredictorWithBase()) {
+		if predicate(BuildBasePredictorFromTrainedModel(&list.Items[i])) {
 			return true, nil
 		}
 	}
@@ -55,7 +75,7 @@ func (tmr TrainedModelRegistry) Get(ctx context.Context, nname types.NamespacedN
 		return nil, err
 	}
 
-	p := trainedModel.BuildPredictorWithBase()
+	p := BuildBasePredictorFromTrainedModel(trainedModel)
 	p.TypeMeta = trainedModel.TypeMeta
 	p.ObjectMeta = trainedModel.ObjectMeta
 	p.Status = trainedModel.Status.PredictorStatus
