@@ -11,21 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/*
-
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 
 package main
 
@@ -60,13 +45,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	servingv1alpha1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	"github.com/kserve/modelmesh-serving/controllers"
-	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
-	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	kfsv1alpha1 "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
+	servingv1alpha1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
+	"github.com/kserve/modelmesh-serving/controllers"
+	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
+	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -89,6 +75,7 @@ const (
 	LeaderLockName                 = "modelmesh-controller-leader-lock"
 	LeaderForLifeLockName          = "modelmesh-controller-leader-for-life-lock"
 	EnableTrainedModelEnvVar       = "ENABLE_KSTM_WATCH"
+	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
 )
 
 func init() {
@@ -101,6 +88,7 @@ func init() {
 	_ = batchv1.AddToScheme(scheme)
 	_ = servingv1alpha1.AddToScheme(scheme)
 	_ = kfsv1alpha1.AddToScheme(scheme)
+	_ = servingv1beta1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -286,27 +274,35 @@ func main() {
 		controllers.PredictorCRSourceId: predictor_source.PredictorCRRegistry{Client: mgr.GetClient()},
 	}
 
-	// Watch TrainedModels only if env var is explicitly set to "true" or if
-	// env var is unset/empty and TrainedModel CRD is present and accessible.
-	enableTMWatch := false
-	envVarVal, _ := os.LookupEnv(EnableTrainedModelEnvVar)
-	if envVarVal != "false" {
-		tm := &kfsv1alpha1.TrainedModel{}
-		err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, tm)
-		if err == nil || errors.IsNotFound(err) {
-			enableTMWatch = true
-			registryMap[controllers.TrainedModelCRSourceId] = predictor_source.TrainedModelRegistry{Client: mgr.GetClient()}
-			setupLog.Info("Reconciliation of TrainedModels is enabled")
-		} else if envVarVal == "true" {
-			// If env var is explicitly true, require that TrainedModel CRD is present
-			setupLog.Error(err, "Unable to access TrainedModel Custom Resource")
-			os.Exit(1)
-		} else if meta.IsNoMatchError(err) {
-			setupLog.Info("TrainedModel CRD not found, will not reconcile")
-		} else {
-			setupLog.Error(err, "TrainedModel CRD not accessible, will not reconcile")
+	// Function checks if env var is explicitly set to "true" or if
+	// env var is unset/empty and InferenceService CRD is present and accessible.
+	checkEnvVar := func(envVar string, resourceName string, resourceObject client.Object,
+		registryKey string, registryValue predictor_source.PredictorRegistry) bool {
+
+		envVarVal, _ := os.LookupEnv(envVar)
+		if envVarVal != "false" {
+			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
+			if err == nil || errors.IsNotFound(err) {
+				registryMap[registryKey] = registryValue
+				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
+				return true
+			} else if envVarVal == "true" {
+				// If env var is explicitly true, require that specified CRD is present
+				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
+				os.Exit(1)
+			} else if meta.IsNoMatchError(err) {
+				setupLog.Info(fmt.Sprintf("%s CRD not found, will not reconcile", resourceName))
+			} else {
+				setupLog.Error(err, fmt.Sprintf("%s CRD not accessible, will not reconcile", resourceName))
+			}
 		}
+		return false
 	}
+
+	enableTMWatch := checkEnvVar(EnableTrainedModelEnvVar, "TrainedModel", &kfsv1alpha1.TrainedModel{},
+		controllers.TrainedModelCRSourceId, predictor_source.TrainedModelRegistry{Client: mgr.GetClient()})
+	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &servingv1beta1.InferenceService{},
+		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
@@ -356,7 +352,7 @@ func main() {
 		Log:            ctrl.Log.WithName("controllers").WithName("Predictor"),
 		MMService:      mmService,
 		RegistryLookup: registryMap,
-	}).SetupWithManager(mgr, modelEventStream, enableTMWatch, predictorControllerEvents); err != nil {
+	}).SetupWithManager(mgr, modelEventStream, enableTMWatch, enableIsvcWatch, predictorControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Predictor")
 		os.Exit(1)
 	}
@@ -370,7 +366,7 @@ func main() {
 		DeploymentNamespace: ControllerNamespace,
 		DeploymentName:      controllerDeploymentName,
 		RegistryMap:         registryMap,
-	}).SetupWithManager(mgr, enableTMWatch, runtimeControllerEvents); err != nil {
+	}).SetupWithManager(mgr, enableTMWatch, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)
 	}

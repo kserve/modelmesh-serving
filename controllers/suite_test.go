@@ -174,7 +174,7 @@ var _ = BeforeSuite(func(done Done) {
 		ConfigProvider:      configProvider,
 		DeploymentName:      "modelmesh-controller",
 		DeploymentNamespace: namespace,
-	}).SetupWithManager(k8sManager, false, nil)
+	}).SetupWithManager(k8sManager, false, false, nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	// TODO: create PredictorReconciler when Predictor tests are added
