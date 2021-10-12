@@ -31,7 +31,7 @@ restProxy:
   port: 8008
   image:
     name: kserve/rest-proxy
-    tag: v0.1.0
+    tag: v0.1.1
   resources:
     requests:
       cpu: "50m"
