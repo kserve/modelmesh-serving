@@ -263,6 +263,11 @@ func (pr *PredictorReconciler) handlePredictorNotFound(ctx context.Context,
 	_, err := mmc.DeleteVModel(deleteCtx, &mmeshapi.DeleteVModelRequest{VModelId: name.Name, Owner: sourceId})
 	if err != nil {
 		if isNoAddresses(err) {
+			// Work-around to prevent Non-MM InferenceService indefinite reconcile loop.
+			if sourceId == InferenceServiceCRSourceId {
+				pr.Log.Info("Ignoring InferenceService")
+				return ctrl.Result{}, nil
+			}
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 		err = fmt.Errorf("failed to remove corresponding VModel for deleted Predictor %s: %w", name, err)
