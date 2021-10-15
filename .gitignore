@@ -27,6 +27,7 @@ bin
 .idea
 *.swp
 *.swo
+.vscode
 *~
 
 devbuild
