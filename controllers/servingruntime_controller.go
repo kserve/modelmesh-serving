@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	kfsv1alpha1 "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
@@ -352,7 +351,7 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	return srnns, nil
 }
 
-func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager, watchTrainedModels bool,
+func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		Named("ServingRuntimeReconciler").
@@ -379,14 +378,6 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager, watchTrain
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
-
-	if watchTrainedModels {
-		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				p := predictor_source.BuildBasePredictorFromTrainedModel(o.(*kfsv1alpha1.TrainedModel))
-				return r.runtimeRequestsForPredictor(p, "TrainedModel")
-			}))
-	}
 
 	if watchInferenceServices {
 		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}},

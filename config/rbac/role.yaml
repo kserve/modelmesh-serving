@@ -15,7 +15,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  creationTimestamp: null
   name: controller-role
 rules:
   - apiGroups:
@@ -145,32 +144,6 @@ rules:
       - serving.kserve.io
     resources:
       - servingruntimes/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - serving.kubeflow.org
-    resources:
-      - trainedmodels
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - serving.kubeflow.org
-    resources:
-      - trainedmodels/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - serving.kubeflow.org
-    resources:
-      - trainedmodels/status
     verbs:
       - get
       - patch

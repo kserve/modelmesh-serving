@@ -38,7 +38,6 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	kfsv1alpha1 "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
@@ -52,7 +51,6 @@ import (
 const (
 	InferenceServiceCRSourceId = "isvc"
 	PredictorCRSourceId        = "ksp"
-	TrainedModelCRSourceId     = "kstm"
 )
 
 // PredictorReconciler reconciles Predictors
@@ -70,9 +68,6 @@ type PredictorReconciler struct {
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/finalizers,verbs=get;update;patch
 // +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/status,verbs=get;update;patch
-// +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels/status,verbs=get;update;patch
-// +kubebuilder:rbac:namespace=model-serving,groups=serving.kubeflow.org,resources=trainedmodels/finalizers,verbs=update
 // This one is used by the kube-based grpc resolver but need to set it here so that kubebuilder picks it up
 // +kubebuilder:rbac:namespace=model-serving,groups="",resources=endpoints,verbs=get;list;watch
 
@@ -507,7 +502,7 @@ func Hash(predictorSpec *api.PredictorSpec) string {
 // ---------
 
 func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *mmesh.ModelMeshEventStream,
-	watchTrainedModels bool, watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
+	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&api.Predictor{}).
 		Watches(&source.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
@@ -516,9 +511,6 @@ func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *m
 		builder.Watches(&source.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
 	}
 
-	if watchTrainedModels {
-		builder = builder.Watches(&source.Kind{Type: &kfsv1alpha1.TrainedModel{}}, prefixName(TrainedModelCRSourceId))
-	}
 	if watchInferenceServices {
 		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
 	}
