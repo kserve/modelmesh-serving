@@ -1,7 +1,7 @@
 # InferenceService Deployment
 
 ModelMesh Serving supports deploying models using KServe's
-[InferenceService interface](https://github.com/kserve/kserve/blob/master/config/crd/serving.kserve.io_inferenceservices.yaml).
+[InferenceService interface](/config/crd/bases/serving.kserve.io_inferenceservices.yaml).
 
 By default, the ModelMesh controller will reconcile InferenceService resources if the
 `inferenceservices.serving.kserve.io` CRD is accessible on the cluster. This CRD comes with the installation of
@@ -34,6 +34,28 @@ spec:
 EOF
 ```
 
+Or, if you deployed the latest KServe's [InferenceService interface](/config/crd/bases/serving.kserve.io_inferenceservices.yaml) with the new storage interface. Try applying an SKLearn MNIST model with the latest storage Spec:
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: example-sklearn-isvc
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
+spec:
+  predictor:
+    sklearn:
+      storage:
+        key: localMinIO
+        path: sklearn/mnist-svm.joblib
+        # schemaPath: null
+        parameters:
+          bucket: modelmesh-example-models
+EOF
+```
+
 Currently, only S3 based storage is supported. S3 credentials are expected to be stored in a secret called [`storage-config`](https://github.com/kserve/modelmesh-serving/blob/main/config/default/storage-secret.yaml). This means that the `storage-config` secret can contain a map of several keys that correspond to various credentials.
 
 In the InferenceService metadata, the annotation `serving.kserve.io/secretKey` is used as a placeholder for this needed secret key field.
@@ -42,7 +64,8 @@ Some other optional annotations that can be used are:
 
 - `serving.kserve.io/schemaPath`: The path within the object storage of a schema file. This allows specifying the input and output schema of ML models.
   - For example, if your model `storageURI` was `s3://modelmesh-example-models/pytorch/pytorch-cifar` the schema file would currently need to be in the
-    same bucket (`modelmesh-example-models`). The path within this bucket is what would be specified in this annotation (e.g. `pytorch/schema/schema.json`)
+    same bucket (`modelmesh-example-models`). The path within this bucket is what would be specified in this annotation (e.g. `pytorch/schema/schema.json`
+  - Instead of using annotations to specify the schemaPath parameter, the same parameter can be specified using the `schemaPath` value in the inference service storage spec.
 - `serving.kserve.io/servingRuntime`: A ServingRuntime name can be specified explicitly to have the InferenceService use that.
 
 You can find storage layout information for various model types [here](https://github.com/kserve/modelmesh-serving/tree/main/docs/model-types). This might come in handy when specifying a `storageUri` in the InferenceService.
@@ -91,3 +114,17 @@ Status:
 
 For instructions on how to perform inference on the newly deployed InferenceService, please refer back to the
 [quickstart instructions](./quickstart.md#3-perform-an-inference-request).
+
+```shell
+kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
+```
+
+```shell
+MODEL_NAME=example-sklearn-isvc
+grpcurl \
+  -plaintext \
+  -proto fvt/proto/kfs_inference_v2.proto \
+  -d '{ "model_name": "'"${MODEL_NAME}"'", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
+  localhost:8033 \
+  inference.GRPCInferenceService.ModelInfer
+```

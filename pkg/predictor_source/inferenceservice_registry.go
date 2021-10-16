@@ -19,6 +19,7 @@ package predictor_source
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -68,6 +69,58 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 	return p, nil
 }
 
+// Return secretKey, bucket, modelPath, and error
+func ProcessInferenceServiceStorage(secretKey *string, bucket *string, modelPath *string, schemaPath *string,
+	inferenceService *v1beta1.InferenceService, nname types.NamespacedName) error {
+	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
+	storageUri := frameworkSpec.StorageURI
+	storageSpec := frameworkSpec.Storage
+	pathError := fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
+	if storageUri == nil {
+		if storageSpec != nil {
+			if storageSpec.Path != nil {
+				*modelPath = *storageSpec.Path
+				if storageSpec.SchemaPath != nil {
+					*schemaPath = *storageSpec.SchemaPath
+				}
+			} else {
+				return pathError
+			}
+		} else {
+			return pathError
+		}
+	} else {
+		if !strings.HasPrefix(*storageUri, "s3://") {
+			return nil
+		}
+		s3Uri := strings.TrimPrefix(*storageUri, "s3://")
+		urlParts := strings.Split(s3Uri, "/")
+		*bucket = urlParts[0]
+		*modelPath = strings.Join(urlParts[1:], "/")
+		if storageSpec != nil {
+			if storageSpec.Path != nil {
+				return fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
+			}
+		}
+	}
+	if storageSpec != nil {
+		if storageSpec.StorageKey != nil {
+			*secretKey = *storageSpec.StorageKey
+		}
+		if storageSpec.Parameters != nil {
+			for k, v := range *storageSpec.Parameters {
+				if k == "bucket" {
+					*bucket = v
+				}
+			}
+		}
+	}
+	if *secretKey == "" {
+		*secretKey = "default"
+	}
+	return nil
+}
+
 func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.NamespacedName) (*v1alpha1.Predictor, error) {
 	inferenceService := &v1beta1.InferenceService{}
 
@@ -94,24 +147,31 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 		p.Status.ActiveModelState = v1alpha1.Pending
 	}
 
-	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
-	storageUri := *frameworkSpec.StorageURI
 	p.Spec.Storage = &v1alpha1.Storage{}
-	if strings.HasPrefix(storageUri, "s3://") {
-		s3Uri := strings.TrimPrefix(storageUri, "s3://")
-		urlParts := strings.Split(s3Uri, "/")
-		bucket := urlParts[0]
-		modelPath := strings.Join(urlParts[1:], "/")
-		secretKey := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
-		if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
-			p.Spec.SchemaPath = &schemaPath
-		}
-		p.Spec.Storage.S3 = &v1alpha1.S3StorageSource{
-			SecretKey: secretKey,
-			Bucket:    &bucket,
-		}
-		p.Spec.Path = modelPath
+	secretKey := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
+	if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
+		p.Spec.SchemaPath = &schemaPath
 	}
+	var bucket string
+	var modelPath string
+	var schemaPath string
+	err = ProcessInferenceServiceStorage(&secretKey, &bucket, &modelPath, &schemaPath, inferenceService, nname)
+	if err != nil {
+		return nil, err
+	}
+	// If secretKey is empty, it means the storageSpec or the storageUri is not supported.
+	if secretKey == "" {
+		return p, nil
+	}
+	if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
+		p.Spec.SchemaPath = &schemaPath
+	}
+	p.Spec.Storage.S3 = &v1alpha1.S3StorageSource{
+		SecretKey: secretKey,
+		Bucket:    &bucket,
+	}
+	p.Spec.Path = modelPath
+
 	return p, nil
 
 }
