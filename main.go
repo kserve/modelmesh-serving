@@ -306,7 +306,7 @@ func main() {
 		dispatchers := make([]func(), 0, len(sources))
 		for _, s := range sources {
 			sid := s.GetSourceId()
-			if sid == "" || sid == controllers.PredictorCRSourceId {
+			if sid == "" || sid == controllers.PredictorCRSourceId || sid == controllers.InferenceServiceCRSourceId {
 				setupLog.Error(nil, "Invalid predictor source plugin id",
 					"sourceId", sid)
 				os.Exit(1)
