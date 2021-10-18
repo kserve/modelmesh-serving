@@ -47,7 +47,6 @@ import (
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	kfsv1alpha1 "github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1"
 	servingv1alpha1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers"
@@ -74,7 +73,6 @@ const (
 	serviceMonitorCRDName          = "servicemonitors.monitoring.coreos.com"
 	LeaderLockName                 = "modelmesh-controller-leader-lock"
 	LeaderForLifeLockName          = "modelmesh-controller-leader-for-life-lock"
-	EnableTrainedModelEnvVar       = "ENABLE_KSTM_WATCH"
 	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
 )
 
@@ -87,7 +85,6 @@ func init() {
 	}
 	_ = batchv1.AddToScheme(scheme)
 	_ = servingv1alpha1.AddToScheme(scheme)
-	_ = kfsv1alpha1.AddToScheme(scheme)
 	_ = servingv1beta1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
@@ -299,8 +296,6 @@ func main() {
 		return false
 	}
 
-	enableTMWatch := checkEnvVar(EnableTrainedModelEnvVar, "TrainedModel", &kfsv1alpha1.TrainedModel{},
-		controllers.TrainedModelCRSourceId, predictor_source.TrainedModelRegistry{Client: mgr.GetClient()})
 	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &servingv1beta1.InferenceService{},
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
@@ -311,7 +306,7 @@ func main() {
 		dispatchers := make([]func(), 0, len(sources))
 		for _, s := range sources {
 			sid := s.GetSourceId()
-			if sid == "" || sid == controllers.PredictorCRSourceId || sid == controllers.TrainedModelCRSourceId {
+			if sid == "" || sid == controllers.PredictorCRSourceId || sid == controllers.InferenceServiceCRSourceId {
 				setupLog.Error(nil, "Invalid predictor source plugin id",
 					"sourceId", sid)
 				os.Exit(1)
@@ -352,7 +347,7 @@ func main() {
 		Log:            ctrl.Log.WithName("controllers").WithName("Predictor"),
 		MMService:      mmService,
 		RegistryLookup: registryMap,
-	}).SetupWithManager(mgr, modelEventStream, enableTMWatch, enableIsvcWatch, predictorControllerEvents); err != nil {
+	}).SetupWithManager(mgr, modelEventStream, enableIsvcWatch, predictorControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Predictor")
 		os.Exit(1)
 	}
@@ -366,7 +361,7 @@ func main() {
 		DeploymentNamespace: ControllerNamespace,
 		DeploymentName:      controllerDeploymentName,
 		RegistryMap:         registryMap,
-	}).SetupWithManager(mgr, enableTMWatch, enableIsvcWatch, runtimeControllerEvents); err != nil {
+	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)
 	}

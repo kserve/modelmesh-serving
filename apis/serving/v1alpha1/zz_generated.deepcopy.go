@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -54,14 +54,14 @@ func (in *Container) DeepCopyInto(out *Container) {
 	in.Resources.DeepCopyInto(&out.Resources)
 	if in.Env != nil {
 		in, out := &in.Env, &out.Env
-		*out = make([]corev1.EnvVar, len(*in))
+		*out = make([]v1.EnvVar, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.LivenessProbe != nil {
 		in, out := &in.LivenessProbe, &out.LivenessProbe
-		*out = new(corev1.Probe)
+		*out = new(v1.Probe)
 		(*in).DeepCopyInto(*out)
 	}
 }
@@ -384,12 +384,12 @@ func (in *ServingRuntimePodSpec) DeepCopyInto(out *ServingRuntimePodSpec) {
 	}
 	if in.Affinity != nil {
 		in, out := &in.Affinity, &out.Affinity
-		*out = new(corev1.Affinity)
+		*out = new(v1.Affinity)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations
-		*out = make([]corev1.Toleration, len(*in))
+		*out = make([]v1.Toleration, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -479,7 +479,7 @@ func (in *Storage) DeepCopyInto(out *Storage) {
 	*out = *in
 	if in.PersistentVolumeClaim != nil {
 		in, out := &in.PersistentVolumeClaim, &out.PersistentVolumeClaim
-		*out = new(corev1.PersistentVolumeClaimVolumeSource)
+		*out = new(v1.PersistentVolumeClaimVolumeSource)
 		**out = **in
 	}
 	if in.S3 != nil {

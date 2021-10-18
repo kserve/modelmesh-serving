@@ -21,15 +21,6 @@ resources:
 - api:
     crdVersion: v1
     namespaced: true
-  controller: true
-  domain: kubeflow.org
-  group: serving
-  kind: TrainedModel
-  path: github.com/kserve/modelmesh-serving/apis/kfserving/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
   controller: false
   domain: kserve.io
   group: serving
