@@ -101,7 +101,6 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	if (predictor == nil && err == nil) || errors.IsNotFound(err) {
 		return pr.handlePredictorNotFound(ctx, nname, sourceId)
 	}
-
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to fetch CR from kubebuilder cache for predictor %s: %w",
 			nname.Name, err)
@@ -112,7 +111,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	updateStatus := false
 	mmc := pr.MMService.MMClient()
 	var finalErr error
-	if predictor.Spec.Storage != nil && predictor.Spec.Storage.S3 == nil {
+	if predictor.Spec.Storage != nil && (predictor.Spec.Storage.S3 == nil || predictor.Spec.Storage.PersistentVolumeClaim != nil) {
 		log.Info("Only S3 Storage currently supported", "Storage", predictor.Spec.Storage)
 		if mmc != nil {
 			// Don't update invalid spec but still check vmodel status to sync the existing model states
@@ -322,9 +321,12 @@ func concreteModelName(predictor *api.Predictor, sourceId string) string {
 const noHomeMessage string = "There are no running instances that meet the label requirements of type "
 
 func decodeModelState(status *mmeshapi.ModelStatusInfo) (api.ModelState, api.FailureReason, string) {
-	state := modelStateMap[status.Status]
 	reason := api.FailureReason("")
 	msg := ""
+	if status == nil {
+		return api.Pending, reason, msg // vmodel not found case
+	}
+	state := modelStateMap[status.Status]
 	if len(status.Errors) > 0 {
 		reason, msg = api.ModelLoadFailed, status.Errors[0]
 	}
@@ -349,8 +351,12 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 	ts := transitionStatusMap[vModelState.Status]
 	ams, amfr, amm := decodeModelState(vModelState.ActiveModelStatus)
 	if ams == "" {
+		status := mmeshapi.ModelStatusInfo_NOT_FOUND
+		if vModelState.ActiveModelStatus != nil {
+			status = vModelState.ActiveModelStatus.Status
+		}
 		pr.Log.Error(nil, "Unexpected Model State returned from SetVModel",
-			"namespacedName", name, "Status", vModelState.ActiveModelStatus.Status)
+			"namespacedName", name, "Status", status)
 	} else if status.ActiveModelState != ams {
 		status.ActiveModelState = ams
 		changed = true
@@ -359,7 +365,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 	tmsBefore := status.TargetModelState
 	counts := [3]int{}
 	if amfr == "" || amfr == api.ModelLoadFailed {
-		countModelCopyStates(vModelState.ActiveModelStatus.ModelCopyInfos, &counts)
+		countModelCopyStates(vModelState.ActiveModelStatus, &counts)
 	}
 	var targetModelStatus *mmeshapi.ModelStatusInfo
 	var targetModelFailureReason api.FailureReason
@@ -378,7 +384,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 			// Ignore returned ModelCopyInfos in cases where there can't be any copies (due to model-mesh "bug"
 			// where a ModelCopyInfo can be returned with non-copy related failure information)
 			if targetModelFailureReason == "" || targetModelFailureReason == api.ModelLoadFailed {
-				countModelCopyStates(targetModelStatus.ModelCopyInfos, &counts)
+				countModelCopyStates(targetModelStatus, &counts)
 			}
 		} else {
 			pr.Log.Error(nil, "No TargetModelStatus returned from SetVModel",
@@ -413,7 +419,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 					ModelId: vModelState.TargetModelId,
 					Message: targetModelMessage,
 				}
-				// Only fill in location if it's applicable to the the failure reason
+				// Only fill in location if it's applicable to the failure reason
 				if targetModelFailureReason == api.ModelLoadFailed {
 					for _, info := range targetModelStatus.ModelCopyInfos {
 						if info != nil && info.CopyStatus == mmeshapi.ModelStatusInfo_LOADING_FAILED {
@@ -472,8 +478,11 @@ func setStatusFailureInfo(crStatus *api.PredictorStatus, info *api.FailureInfo) 
 	return true
 }
 
-func countModelCopyStates(copyInfos []*mmeshapi.ModelStatusInfo_ModelCopyInfo, counts *[3]int) {
-	for _, info := range copyInfos {
+func countModelCopyStates(statusInfo *mmeshapi.ModelStatusInfo, counts *[3]int) {
+	if statusInfo == nil {
+		return
+	}
+	for _, info := range statusInfo.ModelCopyInfos {
 		if info != nil {
 			switch info.CopyStatus {
 			case mmeshapi.ModelStatusInfo_LOADING:
