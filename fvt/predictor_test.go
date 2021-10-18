@@ -797,7 +797,7 @@ var _ = Describe("Invalid Predictors", func() {
 				ExpectPredictorFailureInfo(obj, "ModelLoadFailed", true, true, "")
 			})
 
-			It("should fail to load with invalid storage bucket", func() {
+			It("predictor should fail to load with invalid storage bucket", func() {
 				// modify the object with an invalid storage bucket
 				SetString(predictorObject, "invalidBucket", "spec", "storage", "s3", "bucket")
 
@@ -808,7 +808,7 @@ var _ = Describe("Invalid Predictors", func() {
 				// TODO can we check for a more detailed error message?
 			})
 
-			It("should fail to load with invalid storage key", func() {
+			It("predictor should fail to load with invalid storage key", func() {
 				// modify the object with an invalid storage path
 				SetString(predictorObject, "invalidKey", "spec", "storage", "s3", "secretKey")
 
@@ -819,6 +819,23 @@ var _ = Describe("Invalid Predictors", func() {
 				// TODO can we check for a more detailed error message?
 			})
 
+			It("predictor should fail to load with unsupported storage type", func() {
+				// modify the object with a PVC storage type, which isn't yet supported
+				err := unstructured.SetNestedField(predictorObject.Object, nil, "spec", "storage", "s3")
+				Expect(err).ToNot(HaveOccurred())
+
+				err = unstructured.SetNestedField(predictorObject.Object, map[string]interface{}{
+					"claimName": "not-yet-supported",
+				}, "spec", "storage", "persistentVolumeClaim")
+				Expect(err).ToNot(HaveOccurred())
+
+				obj := CreatePredictorAndWaitAndExpectInvalidSpec(predictorObject)
+
+				By("Asserting on the predictor state")
+				ExpectPredictorFailureInfo(obj, "InvalidPredictorSpec", false, false,
+					"Only S3 Storage is currently supported")
+			})
+
 			It("predictor should fail to load with unrecognized model type", func() {
 				// modify the object with an unrecognized model type
 				SetString(predictorObject, "invalidModelType", "spec", "modelType", "name")
@@ -826,7 +843,8 @@ var _ = Describe("Invalid Predictors", func() {
 				obj := CreatePredictorAndWaitAndExpectFailed(predictorObject)
 
 				By("Verifying the predictor")
-				ExpectPredictorFailureInfo(obj, "NoSupportingRuntime", false, true, "No ServingRuntime supports specified model type")
+				ExpectPredictorFailureInfo(obj, "NoSupportingRuntime", false, true,
+					"No ServingRuntime supports specified model type")
 			})
 
 			It("predictor should fail to load with unrecognized runtime type", func() {
@@ -836,7 +854,8 @@ var _ = Describe("Invalid Predictors", func() {
 				obj := CreatePredictorAndWaitAndExpectFailed(predictorObject)
 
 				By("Verifying the predictor")
-				ExpectPredictorFailureInfo(obj, "RuntimeNotRecognized", false, true, "Specified runtime name not recognized")
+				ExpectPredictorFailureInfo(obj, "RuntimeNotRecognized", false, true,
+					"Specified runtime name not recognized")
 			})
 		})
 	}
