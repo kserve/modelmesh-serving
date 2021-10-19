@@ -71,9 +71,9 @@ func (t KeyEventType) String() string {
 }
 
 type KeyEvent struct {
-	Type  KeyEventType
 	Key   string
 	Value []byte
+	Type  KeyEventType
 }
 
 type KeyEventChan chan KeyEvent
@@ -100,7 +100,7 @@ func (r *EtcdRangeWatcher) Start(ctx context.Context, keysOnly bool, listener Kv
 	log.Info("EtcdRangeWatcher starting")
 	go func() {
 		initSent := false
-		cache := make(map[string]cacheEntry)
+		cache := make(map[string]*cacheEntry)
 	refresh_loop:
 		for {
 			client := r.etcdClient
@@ -134,7 +134,7 @@ func (r *EtcdRangeWatcher) Start(ctx context.Context, keysOnly bool, listener Kv
 						for _, kv := range gr.Kvs {
 							k := key(kv, prefixBytes)
 							if current, ok := cache[k]; !ok || kv.ModRevision > current.kv.ModRevision {
-								cache[k] = cacheEntry{kv: kv, found: true}
+								cache[k] = &cacheEntry{kv: kv, found: true}
 								listener(UPDATE, k, kv.Value)
 							} else {
 								current.found = true
@@ -166,7 +166,7 @@ func (r *EtcdRangeWatcher) Start(ctx context.Context, keysOnly bool, listener Kv
 					k := key(kv, prefixBytes)
 					switch event.Type {
 					case etcd3kv.PUT:
-						cache[k] = cacheEntry{kv: kv}
+						cache[k] = &cacheEntry{kv: kv}
 						listener(UPDATE, k, kv.Value)
 					case etcd3kv.DELETE:
 						if prev, ok := cache[k]; ok {
