@@ -25,14 +25,16 @@ Release branches serve several purposes:
 
 It's generally a good idea to search the repo or control-f for strings of the old version number and replace them with the new, keeping in mind conflicts with other library version numbers.
 
-1. Update `modelmesh`, `modelmesh-runtime-adapter`, and `modelmesh-controller` image tags to the corresponding release version numbers.
+1. Update `modelmesh`, `modelmesh-runtime-adapter`, `modelmesh-controller`, and `rest-proxy` image tags to the corresponding release version numbers.
    - Edit `newTag` in `config/manager/kustomization.yaml`.
-   - Edit the the `modelmesh` and `modelmesh-runtime-adapter` image tags in `config/default/config-defaults.yaml`.
+   - Edit the the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags in `config/default/config-defaults.yaml`.
+   - Edit the `docs/component-versions.md` file with the version and component versions.
 1. Submit your PR to the release branch and wait for it to merge.
+1. Update `docs/component-versions.md` in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
 1. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
    - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
-   - `cp config/dependencies/quickstart.yaml modelmesh-optional-dependencies.yaml`
+   - `cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml`
 1. Once everything has settled, tag and push the release with `git tag $VERSION` and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
    - The `modelmesh-controller` image will be published via GitHub Actions.
 1. Upload generated install manifests to GitHub release assets.
