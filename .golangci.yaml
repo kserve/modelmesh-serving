@@ -200,6 +200,8 @@ linters-settings:
     enable-all: true
     # disable:
     #   - shadow
+    disable:
+      - fieldalignment
     disable-all: false
   unused:
     # treat code as a program (not a library) and report unused exported identifiers; default is false.
