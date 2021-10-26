@@ -22,7 +22,7 @@ images:
 
   - name: mlserver-0
     newName: seldonio/mlserver
-    newTag: 0.3.2
+    newTag: 0.5.2
 
 transformers:
   - ../default/metadataLabelTransformer.yaml

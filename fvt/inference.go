@@ -92,13 +92,7 @@ func ExpectSuccessfulInference_sklearnMnistSvm(predictorName string) {
 
 	// this example model takes 8x8 floating point images as input flattened
 	// to a 64 float array
-	image := []float32{
-		0., 0., 1., 11., 14., 15., 3., 0., 0., 1., 13., 16., 12.,
-		16., 8., 0., 0., 8., 16., 4., 6., 16., 5., 0., 0., 5.,
-		15., 11., 13., 14., 0., 0., 0., 0., 2., 12., 16., 13., 0.,
-		0., 0., 0., 0., 13., 16., 16., 6., 0., 0., 0., 0., 16.,
-		16., 16., 7., 0., 0., 0., 0., 11., 13., 12., 1., 0.,
-	}
+	image := []float32{0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0}
 
 	inferInput := &inference.ModelInferRequest_InferInputTensor{
 		Name:     "predict",
@@ -116,7 +110,9 @@ func ExpectSuccessfulInference_sklearnMnistSvm(predictorName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
-	Expect(inferResponse.Outputs[0].Contents.Fp32Contents[0]).To(BeEquivalentTo(8))
+	Expect(inferResponse.Outputs).To(Not(BeEmpty()))
+	Expect(inferResponse.Outputs[0].Contents.Int64Contents).To(Not(BeEmpty()))
+	Expect(inferResponse.Outputs[0].Contents.Int64Contents[0]).To(BeEquivalentTo(8))
 }
 
 // Tensorflow MNIST
@@ -163,7 +159,7 @@ func ExpectSuccessfulInference_lightgbmMushroom(predictorName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// check that the model predicted a value close to 0
-	Expect(math.Round(float64(inferResponse.Outputs[0].Contents.Fp32Contents[0])*10) / 10).To(BeEquivalentTo(0.0))
+	Expect(math.Round(float64(inferResponse.Outputs[0].Contents.Fp64Contents[0])*10) / 10).To(BeEquivalentTo(0.0))
 }
 
 // XGBoost Mushroom
