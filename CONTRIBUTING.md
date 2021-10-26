@@ -3,6 +3,10 @@
 We'd love to accept your patches and contributions to this project. There are
 just a few small guidelines you need to follow.
 
+## Developer guide
+
+Check out the [developer guide](docs/developer.md) to learn about development practices for the project.
+
 ## Code reviews
 
 All submissions, including submissions by project members, require review. We
