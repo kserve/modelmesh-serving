@@ -641,7 +641,7 @@ var _ = Describe("Predictor", func() {
 
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: Invalid input to LightGBM"))
+			Expect(err.Error()).To(ContainSubstring("Unexpected <class 'ValueError'>: cannot reshape array"))
 		})
 	})
 
