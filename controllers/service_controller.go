@@ -40,17 +40,13 @@ import (
 
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 
-	bld "sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 
 	"github.com/go-logr/logr"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,11 +96,11 @@ type ServiceReconciler struct {
 	ServiceMonitorCRDExists bool
 }
 
-func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bool) (*mmesh.MMService, *config.Config, bool) {
-	mms, newSvc := r.MMServices.GetOrCreate(r.ControllerDeployment.Namespace, r.tlsConfigFromSecret)
+func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bool, namespace string) (*mmesh.MMService, *config.Config, bool) {
+	mms, newSvc := r.MMServices.GetOrCreate(namespace, r.tlsConfigFromSecret)
 	if newSvc || newConfig {
 		if newSvc {
-			r.Log.Info("MMService created for namespace", "namespace", r.ControllerDeployment.Namespace)
+			r.Log.Info("MMService created for namespace", "namespace", namespace)
 		}
 		cfg, changed := mms.UpdateConfig(cp)
 		return mms, cfg, changed
@@ -112,35 +108,46 @@ func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bo
 	return mms, cp.GetConfig(), false
 }
 
-// +kubebuilder:rbac:namespace="model-serving",groups="",resources=services;services/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services;services/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.V(1).Info("Service reconciler called", "name", req.NamespacedName)
 
-	d := &appsv1.Deployment{}
-	if err := r.Client.Get(ctx, r.ControllerDeployment, d); err != nil {
-		if k8serr.IsNotFound(err) {
-			// No need to delete because the Deployment is the owner
-			if mms := r.MMServices.Get(req.Namespace); mms != nil {
-				mms.Disconnect()
+	namespace := req.NamespacedName.Name
+
+	mms, cfg, _ := r.getMMService(r.ConfigProvider, false, namespace)
+
+	n := &corev1.Namespace{}
+	if err := r.Client.Get(ctx, req.NamespacedName, n); err != nil {
+		return ctrl.Result{}, err
+	}
+	if !r.modelMeshEnabled(n) {
+		sl := &corev1.ServiceList{}
+		err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace))
+		if err == nil {
+			for i := range sl.Items {
+				s := &sl.Items[i]
+				if err2 := r.Delete(ctx, s); err2 != nil && err == nil {
+					err = err2
+				}
 			}
-			return ctrl.Result{}, nil
 		}
-		return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
+		// Disconnect and remove MMService
+		if mms != nil {
+			mms.Disconnect()
+			(*sync.Map)(r.MMServices).Delete(namespace)
+		}
+		return ctrl.Result{}, err
 	}
 
-	mms, cfg, _ := r.getMMService(r.ConfigProvider, false)
-
-	var s *corev1.Service
-	svc, err2, requeue := r.reconcileService(ctx, mms, d)
+	s, err2, requeue := r.reconcileService(ctx, mms, n)
 	if err2 != nil || requeue {
 		//TODO probably shorter requeue time (immediate?) for service recreate case
 		return RequeueResult, err2
 	}
-	s = svc
 
-	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, req.Namespace); err != nil {
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, namespace); err != nil {
 		return RequeueResult, err
 	}
 
@@ -153,6 +160,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return RequeueResult, err
 		}
 	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -165,13 +173,13 @@ func (r *ServiceReconciler) tlsConfigFromSecret(ctx context.Context, secretName 
 		Name:      secretName,
 		Namespace: r.ControllerDeployment.Namespace}, &tlsSecret)
 	if err != nil {
-		r.Log.Error(err, "Unable to access TLS secret", "secretName", secretName)
+		r.Log.Error(err, "Unable to access TLS secret", "secretName", secretName, "namespace", r.ControllerDeployment.Namespace)
 		return nil, fmt.Errorf("unable to access TLS secret '%s': %v", secretName, err)
 	}
 	cert, ok2 := tlsSecret.Data[modelmesh.TLSSecretCertKey]
 	key, ok := tlsSecret.Data[modelmesh.TLSSecretKeyKey]
 	if !ok || !ok2 {
-		r.Log.Error(err, "TLS secret missing required keys", "secretName", secretName)
+		r.Log.Error(err, "TLS secret missing required keys", "secretName", secretName, "namespace", r.ControllerDeployment.Namespace)
 		return nil, fmt.Errorf("TLS secret '%s' missing %s and/or %s",
 			secretName, modelmesh.TLSSecretCertKey, modelmesh.TLSSecretKeyKey)
 	}
@@ -190,13 +198,14 @@ func (r *ServiceReconciler) tlsConfigFromSecret(ctx context.Context, secretName 
 	return &tls.Config{Certificates: []tls.Certificate{certificate}, RootCAs: certPool}, nil
 }
 
-func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMService, d *appsv1.Deployment) (*corev1.Service, error, bool) {
+func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMService, n *corev1.Namespace) (*corev1.Service, error, bool) {
 	serviceName, target := mms.GetNameAndSpec()
 	if serviceName == "" || target == nil {
 		return nil, errors.New("unexpected state - MMService uninitialized"), false
 	}
 
-	namespace := r.ControllerDeployment.Namespace
+	namespace := n.GetName()
+
 	sl := &corev1.ServiceList{}
 	if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
 		return nil, err, false
@@ -231,7 +240,7 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 			},
 			Spec: *target,
 		}
-		if err := controllerutil.SetControllerReference(d, s, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(n, s, r.Scheme); err != nil {
 			return nil, fmt.Errorf("could not set Service owner reference: %w", err), false
 		}
 		if err := r.Create(ctx, s); err != nil {
@@ -287,9 +296,9 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 			Namespace: owner.GetNamespace(),
 		},
 	}
-	serviceName := owner.GetName()
 
 	err := r.Client.Get(ctx, client.ObjectKey{Name: serviceMonitorName, Namespace: owner.GetNamespace()}, sm)
+
 	exists := true
 	if k8serr.IsNotFound(err) {
 		// Create the ServiceMonitor if not found
@@ -323,7 +332,7 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 	}
 
 	targetSpec := monitoringv1.ServiceMonitorSpec{
-		Selector:          metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": serviceName}},
+		Selector:          metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": owner.GetName()}},
 		NamespaceSelector: monitoringv1.NamespaceSelector{MatchNames: []string{sm.Namespace}},
 		Endpoints: []monitoringv1.Endpoint{{
 			Interval: "30s",
@@ -368,28 +377,46 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 	return nil, false
 }
 
-func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	filter := func(meta metav1.Object) bool {
-		return meta.GetName() == r.ControllerDeployment.Name &&
-			meta.GetNamespace() == r.ControllerDeployment.Namespace
+func (r *ServiceReconciler) modelMeshEnabled(n *corev1.Namespace) bool {
+	if n == nil {
+		return false
 	}
+	if v, ok := n.Labels["modelmesh-enabled"]; ok {
+		return v == "true"
+	} else {
+		return n.Name == r.ControllerDeployment.Namespace
+	}
+}
+
+func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		Named("ServiceReconciler").
-		For(&appsv1.Deployment{}, bld.WithPredicates(predicate.Funcs{
-			CreateFunc: func(event event.CreateEvent) bool { return filter(event.Object) },
-			UpdateFunc: func(event event.UpdateEvent) bool { return filter(event.ObjectNew) },
-			DeleteFunc: func(event event.DeleteEvent) bool { return false },
-		})).
+		For(&corev1.Namespace{}).
 		Owns(&corev1.Service{}).
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				if _, _, changed := r.getMMService(r.ConfigProvider, true); changed {
+				if _, _, changed := r.getMMService(r.ConfigProvider, true, r.ControllerDeployment.Namespace); changed {
 					r.Log.Info("Triggering service reconciliation after config change")
-					return []reconcile.Request{{NamespacedName: r.ControllerDeployment}}
+
+					list := &corev1.NamespaceList{}
+					if err := r.Client.List(context.TODO(), list); err != nil {
+						r.Log.Error(err, "Error listing Namespaces to reconcile after config change")
+						return []reconcile.Request{}
+					}
+					requests := make([]reconcile.Request, 0, len(list.Items))
+					for i := range list.Items {
+						if n := &list.Items[i]; r.modelMeshEnabled(n) {
+							requests = append(requests, reconcile.Request{
+								NamespacedName: types.NamespacedName{Name: n.Name, Namespace: n.Namespace},
+							})
+						}
+					}
+					return requests
 				}
 				return []reconcile.Request{}
 			}, r.ConfigProvider, &r.Client))
 
+	//TODO TBD
 	// Enable ServiceMonitor watch if ServiceMonitorCRDExists
 	if r.ServiceMonitorCRDExists {
 		builder.Watches(&source.Kind{Type: &monitoringv1.ServiceMonitor{}},

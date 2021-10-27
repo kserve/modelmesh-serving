@@ -29,12 +29,14 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/kserve/modelmesh-serving/pkg/config"
 
+	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -85,11 +87,11 @@ var builtInServerTypes = map[api.ServerType]interface{}{
 	api.MLServer: nil, api.Triton: nil,
 }
 
-// +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
-// +kubebuilder:rbac:namespace="model-serving",groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("servingruntime", req.NamespacedName)
@@ -106,6 +108,10 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if err = r.Client.List(ctx, runtimes); err != nil {
 			return RequeueResult, err
 		}
+		//err := r.List(ctx, runtimes, client.InNamespace(req.Namespace))
+		//if err != nil {
+		//	return RequeueResult, err
+		//}
 	}
 
 	cc := modelmesh.ClusterConfig{Runtimes: runtimes, Scheme: r.Scheme}
@@ -117,6 +123,88 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	//  read etcd secret from controller namespace, replace rootprefix with ns-specific one
 	//  and the create/update etcd secret (with same name) in _this_ namespace
 	//  and include an "ownership" label similar to the tc-config configmap
+
+	// Reconcile the model mesh cluster config map and etcd secret
+
+	// Delete etcd secret and configmap when there is no ServingRuntimes in a
+	// namespace
+	if len(runtimes.Items) == 0 {
+		// We don't delete the etcd secret in the controller namespace
+		if req.Namespace != r.ControllerNamespace {
+			s := &corev1.Secret{}
+			err = r.Client.Get(ctx, types.NamespacedName{
+				Name:      r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+				Namespace: req.Namespace,
+			}, s)
+
+			if err == nil {
+				err = r.Delete(ctx, s)
+			} else if errors.IsNotFound(err) {
+				err = nil
+			}
+			if err != nil {
+				return RequeueResult, err
+			}
+		}
+
+		cm := &corev1.ConfigMap{}
+		err = r.Client.Get(ctx, types.NamespacedName{
+			Name:      modelmesh.InternalConfigMapName,
+			Namespace: req.Namespace,
+		}, cm)
+		if err == nil {
+			err = r.Delete(ctx, cm)
+		} else if errors.IsNotFound(err) {
+			err = nil
+		}
+
+		return RequeueResult, err
+	}
+
+	// cc := modelmesh.ClusterConfig{
+	// 	Runtimes:  runtimes,
+	// 	Namespace: req.Namespace,
+	// 	Scheme:    r.Scheme,
+	// }
+
+	// if err = cc.Apply(ctx, r.Client); err != nil {
+	// 	return RequeueResult, fmt.Errorf("Could not apply the modelmesh type-constraints configmap: %w", err)
+	// }
+
+	// If not controller namespace then read etcd secret from controller namespace,
+	// replace rootprefix with ns-specific one, and then create/update etcd secret (with same name)
+	// in _this_ namespace and include labels similar to the tc-config configmap
+
+	if req.Namespace != r.ControllerNamespace {
+		// get the controller secret
+		s := &corev1.Secret{}
+		err = r.Client.Get(ctx, types.NamespacedName{
+			Name:      r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+			Namespace: r.ControllerNamespace,
+		}, s)
+		if err != nil {
+			return RequeueResult, fmt.Errorf("Could not get the controller etcd secret: %w", err)
+		}
+
+		data := s.Data[modelmesh.EtcdSecretKey]
+		etcdConfig := mmesh.EtcdConfig{}
+		if err = json.Unmarshal(data, &etcdConfig); err != nil {
+			return RequeueResult, fmt.Errorf("failed to parse etcd config json: %w", err)
+		}
+
+		es := mmesh.EtcdSecret{
+			Log:                 ctrl.Log.WithName("etcdSecret"),
+			Name:                r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+			Namespace:           req.Namespace,
+			ControllerNamespace: r.ControllerNamespace,
+			EtcdConfig:          &etcdConfig,
+			Scheme:              r.Scheme,
+		}
+
+		if err = es.Apply(ctx, r.Client); err != nil {
+			return RequeueResult, fmt.Errorf("Could not apply the modelmesh etcd secret: %w", err)
+		}
+	}
 
 	//reconcile this serving runtime
 	rt := &api.ServingRuntime{}
@@ -189,7 +277,9 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return RequeueResult, fmt.Errorf("could not determine replicas: %w", err)
 	}
 	mmDeployment.Replicas = replicas
-	if err = mmDeployment.Apply(ctx); err != nil {
+	err = mmDeployment.Apply(ctx)
+
+	if err != nil {
 		if errors.IsConflict(err) {
 			// this can occur during normal operations if the deployment was updated
 			// during this reconcile loop
@@ -202,6 +292,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
+
 	if rt.Spec.BuiltInAdapter == nil {
 		return nil // nothing to check
 	}
@@ -223,7 +314,6 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 	var err error
 	const scaledToZero = uint16(0)
 	scaledUp := r.determineReplicas(rt)
-
 	if !config.ScaleToZero.Enabled {
 		return scaledUp, time.Duration(0), nil
 	}
@@ -292,6 +382,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 }
 
 func (r *ServingRuntimeReconciler) determineReplicas(rt *api.ServingRuntime) uint16 {
+
 	if rt.Spec.Replicas == nil {
 		return r.ConfigProvider.GetConfig().PodsPerRuntime
 	}
@@ -326,6 +417,7 @@ func runtimeSupportsPredictor(rt *api.ServingRuntime, p *api.Predictor) bool {
 //
 // A predictor may be supported by multiple runtimes.
 func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Context, p *api.Predictor) ([]types.NamespacedName, error) {
+
 	// list all runtimes
 	runtimes := &api.ServingRuntimeList{}
 	if err := r.Client.List(ctx, runtimes, client.InNamespace(p.Namespace)); err != nil {
@@ -336,14 +428,26 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
 		if runtimeSupportsPredictor(rt, p) {
-			srnns = append(srnns, types.NamespacedName{
+			srnn := types.NamespacedName{
 				Name:      rt.GetName(),
 				Namespace: p.Namespace,
-			})
+			}
+			srnns = append(srnns, srnn)
 		}
 	}
 
 	return srnns, nil
+}
+
+func (r *ServingRuntimeReconciler) modelMeshEnabled(n *corev1.Namespace) bool {
+	if n == nil {
+		return false
+	}
+	if v, ok := n.Labels["modelmesh-enabled"]; ok {
+		return v == "true"
+	} else {
+		return n.Name == r.ControllerNamespace
+	}
 }
 
 func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
