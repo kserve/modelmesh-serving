@@ -49,7 +49,7 @@ func TestProcessInferenceServicelStorage(t *testing.T) {
 			},
 		},
 	}
-	err := ProcessInferenceServiceStorage(&secretKey, &bucket, &modelPath, &schemaPath, inferenceService, nname)
+	secretKey, bucket, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
 	if err != nil {
 		fmt.Println(err)
 	}

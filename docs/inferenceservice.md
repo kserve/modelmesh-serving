@@ -64,7 +64,7 @@ Some other optional annotations that can be used are:
 
 - `serving.kserve.io/schemaPath`: The path within the object storage of a schema file. This allows specifying the input and output schema of ML models.
   - For example, if your model `storageURI` was `s3://modelmesh-example-models/pytorch/pytorch-cifar` the schema file would currently need to be in the
-    same bucket (`modelmesh-example-models`). The path within this bucket is what would be specified in this annotation (e.g. `pytorch/schema/schema.json`
+    same bucket (`modelmesh-example-models`). The path within this bucket is what would be specified in this annotation (e.g. `pytorch/schema/schema.json`)
   - Instead of using annotations to specify the schemaPath parameter, the same parameter can be specified using the `schemaPath` value in the inference service storage spec.
 - `serving.kserve.io/servingRuntime`: A ServingRuntime name can be specified explicitly to have the InferenceService use that.
 

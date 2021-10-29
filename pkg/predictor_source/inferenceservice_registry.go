@@ -69,56 +69,53 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 	return p, nil
 }
 
-// Return secretKey, bucket, modelPath, and error
-func ProcessInferenceServiceStorage(secretKey *string, bucket *string, modelPath *string, schemaPath *string,
-	inferenceService *v1beta1.InferenceService, nname types.NamespacedName) error {
+// Return secretKey, bucket, modelPath, schemaPath, and error
+func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (string, string, string, string, error) {
+	var bucket string
+	var modelPath string
+	var schemaPath string
+	secretKey := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
-	pathError := fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
 	if storageUri == nil {
-		if storageSpec != nil {
-			if storageSpec.Path != nil {
-				*modelPath = *storageSpec.Path
-				if storageSpec.SchemaPath != nil {
-					*schemaPath = *storageSpec.SchemaPath
-				}
-			} else {
-				return pathError
+		if storageSpec != nil && storageSpec.Path != nil {
+			modelPath = *storageSpec.Path
+			if storageSpec.SchemaPath != nil {
+				schemaPath = *storageSpec.SchemaPath
 			}
 		} else {
-			return pathError
+			return "", "", "", "", fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
 		}
 	} else {
+		if storageSpec != nil && storageSpec.Path != nil {
+			return "", "", "", "", fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
+		}
 		if !strings.HasPrefix(*storageUri, "s3://") {
-			return nil
+			return "", "", "", "", nil
 		}
 		s3Uri := strings.TrimPrefix(*storageUri, "s3://")
 		urlParts := strings.Split(s3Uri, "/")
-		*bucket = urlParts[0]
-		*modelPath = strings.Join(urlParts[1:], "/")
-		if storageSpec != nil {
-			if storageSpec.Path != nil {
-				return fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
-			}
-		}
+		bucket = urlParts[0]
+		modelPath = strings.Join(urlParts[1:], "/")
+		schemaPath = inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
 	}
 	if storageSpec != nil {
 		if storageSpec.StorageKey != nil {
-			*secretKey = *storageSpec.StorageKey
+			secretKey = *storageSpec.StorageKey
 		}
 		if storageSpec.Parameters != nil {
 			for k, v := range *storageSpec.Parameters {
 				if k == "bucket" {
-					*bucket = v
+					bucket = v
 				}
 			}
 		}
 	}
-	if *secretKey == "" {
-		*secretKey = "default"
+	if secretKey == "" {
+		secretKey = "default"
 	}
-	return nil
+	return secretKey, bucket, modelPath, schemaPath, nil
 }
 
 func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.NamespacedName) (*v1alpha1.Predictor, error) {
@@ -148,14 +145,7 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	}
 
 	p.Spec.Storage = &v1alpha1.Storage{}
-	secretKey := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
-	if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
-		p.Spec.SchemaPath = &schemaPath
-	}
-	var bucket string
-	var modelPath string
-	var schemaPath string
-	err = ProcessInferenceServiceStorage(&secretKey, &bucket, &modelPath, &schemaPath, inferenceService, nname)
+	secretKey, bucket, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +153,7 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	if secretKey == "" {
 		return p, nil
 	}
-	if schemaPath, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
-		p.Spec.SchemaPath = &schemaPath
-	}
+	p.Spec.SchemaPath = &schemaPath
 	p.Spec.Storage.S3 = &v1alpha1.S3StorageSource{
 		SecretKey: secretKey,
 		Bucket:    &bucket,
