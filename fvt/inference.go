@@ -210,7 +210,7 @@ func LoadCifarImage(index int) []float32 {
 	var imageFloat [3 * 32 * 32]float32
 	for i, v := range imageBytes {
 		// the test PyTorch CIFAR model was trained based on:
-		// - https://github.com/kubeflow/kfserving/tree/master/docs/samples/v1alpha2/pytorch
+		// - https://github.com/kserve/kserve/tree/release-0.6/docs/samples/v1alpha2/pytorch
 		// - https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 		// These models are trained on images with pixels normalized to the range
 		// [-1 1]. The testdata contains images with pixels in bytes [0 255] that

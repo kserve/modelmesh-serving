@@ -132,7 +132,7 @@ To test out **gRPC** inference requests, you can port-forward the headless servi
 kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
 ```
 
-Then a gRPC client generated from the KFServing [grpc_predict_v2.proto](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)
+Then a gRPC client generated from the KServe [grpc_predict_v2.proto](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)
 file can be used with `localhost:8033`. A ready-to-use Python example of this can be found [here](https://github.com/pvaneck/model-serving-sandbox/tree/main/grpc-predict).
 
 Alternatively, you can test inference with [grpcurl](https://github.com/fullstorydev/grpcurl). This can easily be installed with `brew install grpcurl` if on macOS.
