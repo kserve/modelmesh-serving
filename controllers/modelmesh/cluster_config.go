@@ -62,12 +62,12 @@ func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl clien
 		},
 	}
 	cc.addConstraints(cc.Runtimes, m)
-	err := controllerutil.SetControllerReference(owner, m, cc.Scheme)
-	if err != nil {
+	if err := controllerutil.SetControllerReference(owner, m, cc.Scheme); err != nil {
 		return err
 	}
 
-	if err = cl.Create(ctx, m); err != nil && errors.IsAlreadyExists(err) {
+	err := cl.Create(ctx, m)
+	if err != nil && errors.IsAlreadyExists(err) {
 		err = cl.Update(ctx, m)
 	}
 
