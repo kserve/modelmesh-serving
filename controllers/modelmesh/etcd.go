@@ -39,11 +39,11 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 			}
 
 			volumeMountExists := false
-			for _, volumeMount := range container.VolumeMounts {
-				if volumeMount.Name == etcdVolume {
+			for i := range container.VolumeMounts {
+				if container.VolumeMounts[i].Name == etcdVolume {
 					volumeMountExists = true
-					volumeMount.ReadOnly = true
-					volumeMount.MountPath = etcdMountPath
+					container.VolumeMounts[i].ReadOnly = true
+					container.VolumeMounts[i].MountPath = etcdMountPath
 				}
 			}
 			if !volumeMountExists {
