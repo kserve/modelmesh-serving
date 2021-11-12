@@ -99,12 +99,20 @@ type KubeResolver struct {
 
 func (kr *KubeResolver) Build(target resolver.Target, cc resolver.ClientConn,
 	_ resolver.BuildOptions) (resolver.Resolver, error) {
-	if target.Scheme != KUBE_SCHEME {
-		return nil, fmt.Errorf("unsupported scheme: %s", target.Scheme)
+	if target.URL.Scheme != KUBE_SCHEME {
+		return nil, fmt.Errorf("unsupported scheme: %s", target.URL.Scheme)
 	}
-	parts := strings.Split(target.Endpoint, ":")
+	host := target.URL.Host
+	if host == "" {
+		ep := target.URL.Path
+		if ep == "" {
+			ep = target.URL.Opaque
+		}
+		host = strings.TrimPrefix(ep, "/")
+	}
+	parts := strings.Split(host, ":")
 	if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
-		return nil, fmt.Errorf("target must be of form: %s:///servicename:port", target.Scheme)
+		return nil, fmt.Errorf("target must be of form: %s:///servicename:port", KUBE_SCHEME)
 	}
 
 	nameParts := strings.Split(parts[0], ".")

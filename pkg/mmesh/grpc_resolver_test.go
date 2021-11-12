@@ -16,6 +16,7 @@ package mmesh
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,7 +85,7 @@ func Test_KubeResolver_AddRemove(t *testing.T) {
 	}
 
 	fmt.Println("Build r1")
-	r1, err := kr.Build(resolver.Target{Scheme: "kube", Endpoint: "modelmesh-serving:8033"}, mCC, resolver.BuildOptions{})
+	r1, err := kr.Build(resolver.Target{URL: url.URL{Scheme: "kube", Host: "modelmesh-serving:8033"}}, mCC, resolver.BuildOptions{})
 	assert.Nil(t, err)
 	assert.NotNil(t, r1)
 	assert.True(t, updateStateCalled)
@@ -104,7 +105,7 @@ func Test_KubeResolver_AddRemove(t *testing.T) {
 	}
 
 	fmt.Println("Build r2")
-	r2, err := kr.Build(resolver.Target{Scheme: "kube", Endpoint: "modelmesh-serving:8033"}, mCC2, resolver.BuildOptions{})
+	r2, err := kr.Build(resolver.Target{URL: url.URL{Scheme: "kube", Host: "modelmesh-serving:8033"}}, mCC2, resolver.BuildOptions{})
 	assert.Nil(t, err)
 	assert.NotNil(t, r2)
 	assert.False(t, updateStateCalled)

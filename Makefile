@@ -23,7 +23,7 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
-CONTROLLER_GEN_VERSION ?= "v0.6.0"
+CONTROLLER_GEN_VERSION ?= "v0.7.0"
 
 # Model Mesh gRPC API Proto Generation
 PROTO_FILES = $(shell find proto/ -iname "*.proto")

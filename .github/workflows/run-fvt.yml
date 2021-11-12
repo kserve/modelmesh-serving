@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17.3'
       - name: Setup Minikube
         run: |
           wget --no-verbose https://github.com/kubernetes/minikube/releases/download/v1.21.0/minikube-linux-amd64

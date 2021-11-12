@@ -13,11 +13,11 @@
 # limitations under the License.
 repos:
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.42.1
+    rev: v1.43.0
     hooks:
       - id: golangci-lint
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.1.2
+    rev: v2.4.1
     hooks:
       - id: prettier
         exclude: ^(.github/|.tekton/)
