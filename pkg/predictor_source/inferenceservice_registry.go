@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -70,22 +71,19 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 }
 
 // Return secretKey, bucket, modelPath, schemaPath, and error
-func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (string, string, string, string, error) {
-	var bucket string
-	var modelPath string
-	var schemaPath string
-	secretKey := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
+func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (
+	secretKey, bucket, modelPath, schemaPath string, err error) {
+	secretKey = inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
 	if storageUri == nil {
-		if storageSpec != nil && storageSpec.Path != nil {
-			modelPath = *storageSpec.Path
-			if storageSpec.SchemaPath != nil {
-				schemaPath = *storageSpec.SchemaPath
-			}
-		} else {
+		if storageSpec == nil || storageSpec.Path == nil {
 			return "", "", "", "", fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
+		}
+		modelPath = *storageSpec.Path
+		if storageSpec.SchemaPath != nil {
+			schemaPath = *storageSpec.SchemaPath
 		}
 	} else {
 		if storageSpec != nil && storageSpec.Path != nil {
@@ -94,10 +92,12 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		if !strings.HasPrefix(*storageUri, "s3://") {
 			return "", "", "", "", nil
 		}
-		s3Uri := strings.TrimPrefix(*storageUri, "s3://")
-		urlParts := strings.Split(s3Uri, "/")
-		bucket = urlParts[0]
-		modelPath = strings.Join(urlParts[1:], "/")
+		u, err := url.Parse(*storageUri)
+		if err != nil {
+			return "", "", "", "", err
+		}
+		bucket = u.Host
+		modelPath = u.Path
 		schemaPath = inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
 	}
 	if storageSpec != nil {
