@@ -141,19 +141,15 @@ func newMmClient(mmeshEndpoint string, tlsConfig *tls.Config,
 	grpcCtx, cancel := context.WithCancel(context.Background()) //TODO
 	defer cancel()
 
-	var tlsOption grpc.DialOption
+	dialOpts := make([]grpc.DialOption, 1, 3)
+	dialOpts[0] = grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`)
 	if tlsConfig == nil {
-		tlsOption = grpc.WithInsecure()
+		dialOpts = append(dialOpts, grpc.WithInsecure())
 	} else {
 		tc := credentials.NewTLS(tlsConfig)
-		if err := tc.OverrideServerName(serviceName); err != nil {
-			(*logger).Error(err, "Error overriding TLS server name", "serverName", serviceName)
-			// continue anyhow
-		}
-		tlsOption = grpc.WithTransportCredentials(tc)
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tc), grpc.WithAuthority(serviceName))
 	}
-	grpcConn, err := grpc.DialContext(grpcCtx, mmeshEndpoint, tlsOption,
-		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
+	grpcConn, err := grpc.DialContext(grpcCtx, mmeshEndpoint, dialOpts...)
 	if err != nil {
 		//logger.Error(err, "failed to connect to model mesh service")
 		return nil, err
