@@ -188,9 +188,9 @@ func ownerIDFromVModelRecord(data []byte) (string, error) {
 }
 
 func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName string) error {
+	var err error
 	etcdSecret := v12.Secret{}
-	err := mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.namespace}, &etcdSecret)
-	if err != nil {
+	if err = mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.namespace}, &etcdSecret); err != nil {
 		return fmt.Errorf("Unable to access etcd secret with name '%s': %w", secretName, err)
 	}
 	etcdSecretJsonData, ok := etcdSecret.Data[modelmesh.EtcdSecretKey]
@@ -199,13 +199,11 @@ func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName s
 	}
 
 	var etcdConfig EtcdConfig
-	err = json.Unmarshal(etcdSecretJsonData, &etcdConfig)
-	if err != nil {
+	if err = json.Unmarshal(etcdSecretJsonData, &etcdConfig); err != nil {
 		return fmt.Errorf("Failed to Parse Etcd Config Json: %w", err)
 	}
 
-	mes.etcdClient, err = CreateEtcdClient(etcdConfig, etcdSecret.Data, mes.logger)
-	if err != nil {
+	if mes.etcdClient, err = CreateEtcdClient(etcdConfig, etcdSecret.Data, mes.logger); err != nil {
 		return fmt.Errorf("Failed to connect to Etcd: %w", err)
 	}
 	mes.etcdRootPrefix = etcdConfig.RootPrefix

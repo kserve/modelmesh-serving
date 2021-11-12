@@ -103,8 +103,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	d := &appsv1.Deployment{}
-	err := r.Client.Get(ctx, r.ControllerDeployment, d)
-	if err != nil {
+	if err := r.Client.Get(ctx, r.ControllerDeployment, d); err != nil {
 		if k8serr.IsNotFound(err) {
 			// No need to delete because the Deployment is the owner
 			return ctrl.Result{}, nil
@@ -120,8 +119,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	err = r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), r.ModelMeshService.Name)
-	if err != nil {
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), r.ModelMeshService.Name); err != nil {
 		return RequeueResult, err
 	}
 
@@ -227,8 +225,7 @@ func (r *ServiceReconciler) applyService(ctx context.Context, d *appsv1.Deployme
 		})
 	}
 
-	err = controllerutil.SetControllerReference(d, s, r.Scheme)
-	if err != nil {
+	if err = controllerutil.SetControllerReference(d, s, r.Scheme); err != nil {
 		return fmt.Errorf("Could not set owner reference: %w", err), false
 	}
 
@@ -237,17 +234,14 @@ func (r *ServiceReconciler) applyService(ctx context.Context, d *appsv1.Deployme
 			s.Spec.ClusterIP = "None"
 		}
 		r.ModelMeshService.Disconnect()
-		err = r.Create(ctx, s)
-		if err != nil {
+		if err = r.Create(ctx, s); err != nil {
 			r.Log.Error(err, "Could not create service")
 		}
 	} else {
-		err = r.ModelMeshService.Connect()
-		if err != nil {
+		if err = r.ModelMeshService.Connect(); err != nil {
 			r.Log.Error(err, "Error establishing model-mesh gRPC conn")
 		}
-		err2 := r.Update(ctx, s)
-		if err2 != nil {
+		if err2 := r.Update(ctx, s); err2 != nil {
 			r.Log.Error(err, "Could not update service")
 			if err == nil {
 				err = err2
@@ -354,6 +348,5 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return []reconcile.Request{}
 			}))
 	}
-	err := builder.Complete(r)
-	return err
+	return builder.Complete(r)
 }

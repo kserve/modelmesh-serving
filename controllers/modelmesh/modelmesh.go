@@ -145,8 +145,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 		m.Log.Info(string(b))
 	}
 
-	err = manifest.Apply()
-	if err != nil {
+	if err = manifest.Apply(); err != nil {
 		return err
 	}
 
@@ -160,8 +159,7 @@ func (m *Deployment) Delete(ctx context.Context, client client.Client) error {
 
 func (m *Deployment) transform(deployment *appsv1.Deployment, funcs ...func(deployment *appsv1.Deployment) error) error {
 	for _, f := range funcs {
-		err := f(deployment)
-		if err != nil {
+		if err := f(deployment); err != nil {
 			return err
 		}
 	}
