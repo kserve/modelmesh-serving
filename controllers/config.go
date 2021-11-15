@@ -324,7 +324,8 @@ func init() {
 func NewMergedConfigFromConfigMap(m corev1.ConfigMap) (*Config, error) {
 	configYaml, ok := m.Data["config.yaml"]
 	if !ok {
-		return nil, fmt.Errorf("User ConfigMap must contain a key named config.yaml")
+		err := fmt.Errorf("User ConfigMap must contain a key named config.yaml")
+		return nil, err
 	}
 
 	return NewMergedConfigFromString(configYaml)

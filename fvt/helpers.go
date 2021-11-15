@@ -74,19 +74,6 @@ func CreatePredictorAndWaitAndExpectFailed(predictorManifest *unstructured.Unstr
 	return resultingPredictor
 }
 
-func CreatePredictorAndWaitAndExpectInvalidSpec(predictorManifest *unstructured.Unstructured) *unstructured.Unstructured {
-	predictorName := predictorManifest.GetName()
-
-	By("Creating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
-	defer watcher.Stop()
-	createdPredictor := fvtClient.CreatePredictorExpectSuccess(predictorManifest)
-	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
-
-	By("Waiting for predictor" + predictorName + " to have transitionStatus 'InvalidSpec'")
-	return WaitForLastStateInExpectedList("transitionStatus", []string{"UpToDate", "InvalidSpec"}, watcher)
-}
-
 func UpdatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstructured) *unstructured.Unstructured {
 	predictorName := predictorManifest.GetName()
 
