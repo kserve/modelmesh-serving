@@ -146,7 +146,8 @@ func newMmClient(mmeshEndpoint string, tlsConfig *tls.Config,
 		tlsOption = grpc.WithInsecure()
 	} else {
 		tc := credentials.NewTLS(tlsConfig)
-		if err := tc.OverrideServerName(serviceName); err != nil {
+		err := tc.OverrideServerName(serviceName)
+		if err != nil {
 			(*logger).Error(err, "Error overriding TLS server name", "serverName", serviceName)
 			// continue anyhow
 		}
