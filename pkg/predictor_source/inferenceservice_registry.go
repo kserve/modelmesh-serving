@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
@@ -73,7 +72,6 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 // Return secretKey, bucket, modelPath, schemaPath, and error
 func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (
 	secretKey, bucket, modelPath, schemaPath string, err error) {
-	secretKey = inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
@@ -82,23 +80,16 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 			return "", "", "", "", fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
 		}
 		modelPath = *storageSpec.Path
-		if storageSpec.SchemaPath != nil {
-			schemaPath = *storageSpec.SchemaPath
-		}
 	} else {
 		if storageSpec != nil && storageSpec.Path != nil {
 			return "", "", "", "", fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
 		}
-		if !strings.HasPrefix(*storageUri, "s3://") {
-			return "", "", "", "", nil
-		}
 		u, err := url.Parse(*storageUri)
-		if err != nil {
+		if err != nil || u.Scheme != "s3" {
 			return "", "", "", "", err
 		}
 		bucket = u.Host
 		modelPath = u.Path
-		schemaPath = inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
 	}
 	if storageSpec != nil {
 		if storageSpec.StorageKey != nil {
@@ -111,11 +102,17 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 				}
 			}
 		}
+		if storageSpec.SchemaPath != nil {
+			schemaPath = *storageSpec.SchemaPath
+		}
 	}
 	if secretKey == "" {
-		secretKey = "default"
+		secretKey = inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
 	}
-	return secretKey, bucket, modelPath, schemaPath, nil
+	if schemaPath == "" {
+		schemaPath = inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
+	}
+	return
 }
 
 func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.NamespacedName) (*v1alpha1.Predictor, error) {

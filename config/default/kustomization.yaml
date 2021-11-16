@@ -94,4 +94,3 @@ resources:
   - ../crd
   - ../rbac
   - ../manager
-namespace: modelmesh-serving
