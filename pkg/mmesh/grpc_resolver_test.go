@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 type mockClient struct {
@@ -140,14 +139,6 @@ func reconcile(t *testing.T, kr *KubeResolver) {
 		Namespace: "namespace", Name: "modelmesh-serving",
 	}})
 	assert.Nil(t, err)
-}
-
-func makeKubeResolver(namespace string, client client.Client) *KubeResolver {
-	return &KubeResolver{
-		namespace: namespace, Client: client,
-		resolvers: make(map[string][]*serviceResolver, 2),
-		logger:    zap.New(zap.UseDevMode(true)).WithName("KubeResolver"),
-	}
 }
 
 // Unused mock funcs
