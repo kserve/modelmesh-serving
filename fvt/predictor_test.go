@@ -666,16 +666,20 @@ var _ = Describe("Predictor", func() {
 			xgboostPredictorName = xgboostPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
+			// Create TLS secrets if they don't yet exist
+			fvtClient.CreateTLSSecrets()
 		})
 
 		AfterEach(func() {
 			fvtClient.DeletePredictor(xgboostPredictorName)
 			fvtClient.DeleteConfigMap(userConfigMapName)
+			fvtClient.DeleteTLSSecrets()
 			time.Sleep(time.Second * 10)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
-			fvtClient.UpdateConfigMapTLS("san-tls-secret", "optional")
+			fvtClient.UpdateConfigMapTLS("basic-tls-secret", "optional")
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
@@ -710,7 +714,7 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should successfully run an inference with mutual TLS", func() {
-			fvtClient.UpdateConfigMapTLS("san-tls-secret-client-auth", "require")
+			fvtClient.UpdateConfigMapTLS("mutual-tls-secret", "require")
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
@@ -744,7 +748,7 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should fail to run inference when the server has mutual TLS but the client does not present a certificate", func() {
-			fvtClient.UpdateConfigMapTLS("san-tls-secret-client-auth", "require")
+			fvtClient.UpdateConfigMapTLS("mutual-tls-secret", "require")
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()

@@ -114,6 +114,11 @@ var (
 		Version:  "v1",
 		Resource: "configmaps", // this must be the plural form
 	}
+	gvrSecret = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "secrets", // this must be the plural form
+	}
 	gvrDeployment = schema.GroupVersionResource{
 		Group:    "apps",
 		Version:  "v1",
@@ -363,6 +368,28 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
+func (fvt *FVTClient) CreateTLSSecrets() {
+	secretExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "basic-tls-secret", metav1.GetOptions{})
+	if secretExists == nil {
+		secretObj := DecodeResourceFromFile("testdata/basic-tls-secret.yaml")
+		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(obj).ToNot(BeNil())
+		Expect(obj.GetKind()).To(Equal(SecretKind))
+		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
+	}
+
+	secretExists, _ = fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "mutual-tls-secret", metav1.GetOptions{})
+	if secretExists == nil {
+		secretObj := DecodeResourceFromFile("testdata/mutual-tls-secret.yaml")
+		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(obj).ToNot(BeNil())
+		Expect(obj.GetKind()).To(Equal(SecretKind))
+		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
+	}
+}
+
 func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
 	configMapObj := DecodeResourceFromFile("testdata/user-configmap.yaml")
 	configMapContents := GetString(configMapObj, "data", "config.yaml")
@@ -471,6 +498,25 @@ func (fvt *FVTClient) DeleteConfigMap(resourceName string) error {
 		fvt.log.Info(fmt.Sprintf("Found configmap '%s'", resourceName))
 		fvt.log.Info(fmt.Sprintf("Deleting config map '%s' ...", resourceName))
 		return fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
+	}
+	return nil
+}
+
+func (fvt FVTClient) DeleteTLSSecrets() error {
+	err := fvt.DeleteSecret("basic-tls-secret")
+	if err != nil {
+		return err
+	}
+
+	return fvt.DeleteSecret("mutual-tls-secret")
+}
+
+func (fvt *FVTClient) DeleteSecret(resourceName string) error {
+	secretExists, _ := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
+	if secretExists != nil {
+		fvt.log.Info(fmt.Sprintf("Found secret '%s'", resourceName))
+		fvt.log.Info(fmt.Sprintf("Deleting secret '%s' ...", resourceName))
+		return fvt.Resource(gvrSecret).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
 	}
 	return nil
 }
