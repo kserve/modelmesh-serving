@@ -16,7 +16,8 @@ annotation, and will defer under the assumption that the ModelMesh controller wi
 
 ## Deploy an InferenceService
 
-First Set your namespace context to `modelmesh-serving`
+First, Set your namespace context to `modelmesh-serving`.
+
 ```shell
 kubectl config set-context --current --namespace=modelmesh-serving
 ```
