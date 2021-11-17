@@ -22,6 +22,7 @@ const (
 	ServingRuntimeKind     = "ServingRuntime"
 	PredictorKind          = "Predictor"
 	ConfigMapKind          = "ConfigMap"
+	SecretKind             = "Secret"
 	DefaultTestNamespace   = "modelmesh-serving"
 	DefaultTestServiceName = "modelmesh-serving"
 	userConfigMapName      = "model-serving-config"
