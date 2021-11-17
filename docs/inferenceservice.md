@@ -39,7 +39,9 @@ spec:
 EOF
 ```
 
-Or, if you deployed the latest KServe's [InferenceService interface](https://github.com/kserve/kserve/blob/master/config/crd/serving.kserve.io_inferenceservices.yaml) with the new storage interface. Try applying an SKLearn MNIST model with the latest storage Spec:
+Or, if you deployed the latest KServe's
+[InferenceService interface](https://github.com/kserve/kserve/blob/master/config/crd/serving.kserve.io_inferenceservices.yaml)
+with the new storage interface. Try applying an SKLearn MNIST model with the latest storage Spec:
 
 ```shell
 kubectl apply -f - <<EOF
