@@ -666,15 +666,11 @@ var _ = Describe("Predictor", func() {
 			xgboostPredictorName = xgboostPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
-
-			// Create TLS secrets if they don't yet exist
-			fvtClient.CreateTLSSecrets()
 		})
 
 		AfterEach(func() {
 			fvtClient.DeletePredictor(xgboostPredictorName)
 			fvtClient.DeleteConfigMap(userConfigMapName)
-			fvtClient.DeleteTLSSecrets()
 			time.Sleep(time.Second * 10)
 		})
 

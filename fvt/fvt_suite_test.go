@@ -67,10 +67,19 @@ var _ = BeforeSuite(func() {
 	// cleanup any predictors if they exist
 	fvtClient.DeleteAllPredictors()
 
+	// Create TLS secrets if they don't yet exist
+	fvtClient.CreateTLSSecrets()
+
 	log.Info("Setup completed")
 }, 60)
 
 var _ = AfterSuite(func() {
+	// Clean up any custom TLS secrets generated for this testing
+	err := fvtClient.DeleteTLSSecrets()
+	if err != nil {
+		log.Info("Error deleting test-specific TLS secrets", "error", err)
+	}
+
 	// ensure we cleanup any port-forward
 	fvtClient.DisconnectFromModelServing()
 })
