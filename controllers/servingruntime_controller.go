@@ -379,7 +379,17 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	}
 
 	if sourcePluginEvents != nil {
-		builder.Watches(&source.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
+		builder.Watches(&source.Channel{Source: sourcePluginEvents},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				nn, source := predictor_source.ResolveSource(types.NamespacedName{
+					Name: o.GetName(), Namespace: o.GetNamespace()}, PredictorCRSourceId)
+				if registry, ok := r.RegistryMap[source]; ok {
+					if p, _ := registry.Get(context.TODO(), nn); p != nil {
+						return r.runtimeRequestsForPredictor(p, registry.GetSourceName())
+					}
+				}
+				return []reconcile.Request{}
+			}))
 	}
 
 	return builder.Complete(r)

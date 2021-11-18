@@ -15,6 +15,7 @@ package predictor_source
 
 import (
 	"context"
+	"strings"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
@@ -52,4 +53,15 @@ type PredictorRegistry interface {
 	UpdateStatus(ctx context.Context, predictor *api.Predictor) (bool, error)
 
 	GetSourceName() string
+}
+
+func ResolveSource(nn types.NamespacedName, defaultSource string) (types.NamespacedName, string) {
+	namespace := nn.Namespace
+	// Check if namespace has a source prefix
+	i := strings.LastIndex(namespace, "_")
+	nn.Namespace = namespace[i+1:]
+	if i <= 0 {
+		return nn, defaultSource
+	}
+	return nn, namespace[:i]
 }

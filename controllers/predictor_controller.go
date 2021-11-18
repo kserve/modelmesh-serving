@@ -72,16 +72,8 @@ type PredictorReconciler struct {
 // +kubebuilder:rbac:namespace=model-serving,groups="",resources=endpoints,verbs=get;list;watch
 
 func (pr *PredictorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	nname := req.NamespacedName
-	namespace := nname.Namespace
-	// Check if namespace has a source prefix
-	i := strings.LastIndex(namespace, "_")
-	nname.Namespace = namespace[i+1:]
-	source := PredictorCRSourceId // if none we default to "ksp" (for Predictor CR)
-	if i > 0 {
-		source = namespace[:i]
-	}
-
+	// if no explict source prefix we default to "ksp" (for Predictor CR)
+	nname, source := predictor_source.ResolveSource(req.NamespacedName, PredictorCRSourceId)
 	registry, ok := pr.RegistryLookup[source]
 	if !ok {
 		pr.Log.Error(nil, "Ignoring reconciliation event from unrecognized source",
