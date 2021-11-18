@@ -78,7 +78,8 @@ type runtimeInfo struct {
 }
 
 var builtInServerTypes = map[api.ServerType]interface{}{
-	api.MLServer: nil, api.Triton: nil}
+	api.MLServer: nil, api.Triton: nil,
+}
 
 // +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
@@ -102,17 +103,16 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Namespace: r.DeploymentNamespace,
 	}, d)
 	if err != nil {
-		return RequeueResult, fmt.Errorf("Could not get the controller deployment: %w", err)
+		return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
 	}
 
 	cc := modelmesh.ClusterConfig{
-		Runtimes:  runtimes,
-		Namespace: req.Namespace,
-		Scheme:    r.Scheme,
+		Runtimes: runtimes,
+		Scheme:   r.Scheme,
 	}
 
 	if err = cc.Apply(ctx, d, r.Client); err != nil {
-		return RequeueResult, fmt.Errorf("Could not apply the modelmesh type-constraints configmap: %w", err)
+		return RequeueResult, fmt.Errorf("could not apply the modelmesh type-constraints configmap: %w", err)
 	}
 
 	//reconcile this serving runtime
@@ -356,9 +356,9 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 				requests := make([]reconcile.Request, len(list.Items))
 				for i := range list.Items {
 					rt := &list.Items[i]
-					requests = append(requests, reconcile.Request{
+					requests[i] = reconcile.Request{
 						NamespacedName: types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace},
-					})
+					}
 				}
 				return requests
 			}, r.ConfigProvider, &r.Client)).
