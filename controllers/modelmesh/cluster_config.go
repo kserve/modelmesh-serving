@@ -43,9 +43,8 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
 // A ClusterConfig represents the configuration shared across
 // a logical model mesh cluster
 type ClusterConfig struct {
-	Runtimes  *api.ServingRuntimeList
-	Namespace string
-	Scheme    *runtime.Scheme
+	Runtimes *api.ServingRuntimeList
+	Scheme   *runtime.Scheme
 }
 
 func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl client.Client) error {
@@ -53,7 +52,7 @@ func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl clien
 	m := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      InternalConfigMapName,
-			Namespace: cc.Namespace,
+			Namespace: owner.GetNamespace(),
 			Labels: map[string]string{
 				"app.kubernetes.io/instance":   commonLabelValue,
 				"app.kubernetes.io/managed-by": commonLabelValue,
@@ -67,10 +66,9 @@ func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl clien
 	}
 
 	err := cl.Create(ctx, m)
-	if err != nil && errors.IsAlreadyExists(err) {
+	if errors.IsAlreadyExists(err) {
 		err = cl.Update(ctx, m)
 	}
-
 	return err
 }
 
