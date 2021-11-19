@@ -53,10 +53,11 @@ type Deployment struct {
 	RESTProxyResources *corev1.ResourceRequirements
 	RESTProxyPort      uint16
 	// internal fields used when templating
-	ModelMeshLimitCPU       string
-	ModelMeshRequestsCPU    string
-	ModelMeshLimitMemory    string
-	ModelMeshRequestsMemory string
+	ModelMeshLimitCPU          string
+	ModelMeshRequestsCPU       string
+	ModelMeshLimitMemory       string
+	ModelMeshRequestsMemory    string
+	ModelMeshAdditionalEnvVars []corev1.EnvVar
 	// end internal fields
 	PullerImage         string
 	PullerImageCommand  []string
@@ -186,6 +187,14 @@ func (m *Deployment) addMMDomainSocketMount(deployment *appsv1.Deployment) error
 }
 
 func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
+	// start with the "additional" env vars so that they are overwritten by
+	// the values set below
+	for _, envvar := range m.ModelMeshAdditionalEnvVars {
+		if err := setEnvironmentVar(ModelMeshContainer, envvar.Name, envvar.Value, deployment); err != nil {
+			return err
+		}
+	}
+
 	rt := m.Owner
 	if rt.Spec.GrpcDataEndpoint != nil {
 		e, err := ParseEndpoint(*rt.Spec.GrpcDataEndpoint)
@@ -193,21 +202,18 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 			return err
 		}
 		if tcpE, ok := e.(TCPEndpoint); ok {
-			err = setEnvironmentVar(ModelMeshContainer, ServeGrpcPortEnvVar, tcpE.Port, deployment)
-			if err != nil {
+			if err = setEnvironmentVar(ModelMeshContainer, ServeGrpcPortEnvVar, tcpE.Port, deployment); err != nil {
 				return err
 			}
 		} else if udsE, ok := e.(UnixEndpoint); ok {
-			err = setEnvironmentVar(ModelMeshContainer, ServeGrpcUdsPathEnvVar, udsE.Path, deployment)
-			if err != nil {
+			if err = setEnvironmentVar(ModelMeshContainer, ServeGrpcUdsPathEnvVar, udsE.Path, deployment); err != nil {
 				return err
 			}
 		}
 	}
 
 	if useStorageHelper(rt) {
-		err := setEnvironmentVar(ModelMeshContainer, GrpcPortEnvVar, strconv.Itoa(PullerPortNumber), deployment)
-		if err != nil {
+		if err := setEnvironmentVar(ModelMeshContainer, GrpcPortEnvVar, strconv.Itoa(PullerPortNumber), deployment); err != nil {
 			return err
 		}
 	} else {
@@ -216,13 +222,11 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 			return err
 		}
 		if tcpE, ok := e.(TCPEndpoint); ok {
-			err = setEnvironmentVar(ModelMeshContainer, GrpcPortEnvVar, tcpE.Port, deployment)
-			if err != nil {
+			if err = setEnvironmentVar(ModelMeshContainer, GrpcPortEnvVar, tcpE.Port, deployment); err != nil {
 				return err
 			}
 		} else if udsE, ok := e.(UnixEndpoint); ok {
-			err = setEnvironmentVar(ModelMeshContainer, GrpcUdsPathEnvVar, udsE.Path, deployment)
-			if err != nil {
+			if err = setEnvironmentVar(ModelMeshContainer, GrpcUdsPathEnvVar, udsE.Path, deployment); err != nil {
 				return err
 			}
 		}
@@ -230,8 +234,7 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 
 	if m.EnableAccessLogging {
 		//See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L52
-		err := setEnvironmentVar(ModelMeshContainer, "MM_LOG_EACH_INVOKE", "true", deployment)
-		if err != nil {
+		if err := setEnvironmentVar(ModelMeshContainer, "MM_LOG_EACH_INVOKE", "true", deployment); err != nil {
 			return err
 		}
 	}
@@ -244,13 +247,11 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 	}
 
 	// See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L31
-	err := setEnvironmentVar(ModelMeshContainer, "MM_KVSTORE_PREFIX", ModelMeshEtcdPrefix, deployment)
-	if err != nil {
+	if err := setEnvironmentVar(ModelMeshContainer, "MM_KVSTORE_PREFIX", ModelMeshEtcdPrefix, deployment); err != nil {
 		return err
 	}
 	// See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L65
-	err = setEnvironmentVar(ModelMeshContainer, "MM_DEFAULT_VMODEL_OWNER", m.DefaultVModelOwner, deployment)
-	if err != nil {
+	if err := setEnvironmentVar(ModelMeshContainer, "MM_DEFAULT_VMODEL_OWNER", m.DefaultVModelOwner, deployment); err != nil {
 		return err
 	}
 

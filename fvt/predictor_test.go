@@ -105,8 +105,19 @@ var _ = Describe("Predictor", func() {
 	Specify("Preparing the cluster for Predictor tests", func() {
 		// ensure configuration has scale-to-zero disabled
 		config := map[string]interface{}{
+			// disable scale-to-zero to prevent pods flapping as
+			// Predictors are created and deleted
 			"scaleToZero": map[string]interface{}{
 				"enabled": false,
+			},
+			// disable the model-mesh bootstrap failure check so
+			// that the expected failures for invalid predictor
+			// tests do not trigger it
+			"internalModelMeshEnvVars": []map[string]interface{}{
+				{
+					"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
+					"value": "0",
+				},
 			},
 		}
 		fvtClient.ApplyUserConfigMap(config)
@@ -762,10 +773,20 @@ var _ = Describe("Invalid Predictors", func() {
 	var predictorObject *unstructured.Unstructured
 
 	Specify("Preparing the cluster for Invalid Predictor tests", func() {
-		// ensure configuration has scale-to-zero disabled
 		config := map[string]interface{}{
+			// disable scale-to-zero to prevent pods flapping as
+			// Predictors are created and deleted
 			"scaleToZero": map[string]interface{}{
 				"enabled": false,
+			},
+			// disable the model-mesh bootstrap failure check so
+			// that the expected failures for invalid predictor
+			// tests do not trigger it
+			"internalModelMeshEnvVars": []map[string]interface{}{
+				{
+					"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
+					"value": "0",
+				},
 			},
 		}
 		fvtClient.ApplyUserConfigMap(config)
