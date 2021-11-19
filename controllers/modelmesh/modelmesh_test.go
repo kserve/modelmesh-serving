@@ -92,3 +92,33 @@ func TestSetConfigMap(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, m.AnnotationConfigMap)
 }
+
+func TestModelMeshAdditionalEnvVars(t *testing.T) {
+	rt := &api.ServingRuntime{}
+	d := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{
+		Template: corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name: "mm",
+					},
+				},
+			},
+		},
+	}}
+	m := &Deployment{Owner: rt, ModelMeshAdditionalEnvVars: []corev1.EnvVar{
+		{Name: "ENV_VAR", Value: "0"},
+	}}
+	m.addMMEnvVars(d)
+
+	if _, c := findContainer("mm", d); c == nil {
+		t.Fatal("Could not find the model mesh container")
+	} else {
+		for _, env := range c.Env {
+			if env.Name == "ENV_VAR" && env.Value == "0" {
+				return
+			}
+		}
+		t.Fatal("Expected to find an env variable ENV_VAR but not found")
+	}
+}

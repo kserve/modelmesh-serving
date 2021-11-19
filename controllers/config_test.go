@@ -232,3 +232,27 @@ func TestResourceRequirements(t *testing.T) {
 		t.Fatal("Expected a parse error")
 	}
 }
+
+func TestInternalModelMeshEnvVars(t *testing.T) {
+	yaml := `
+internalModelMeshEnvVars:
+  - name: "BOOTSTRAP_CLEARANCE_PERIOD_MS"
+    value: "0"
+`
+	expectedEnvVar := "BOOTSTRAP_CLEARANCE_PERIOD_MS"
+	expectedValue := "0"
+
+	conf, err := NewMergedConfigFromString(yaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	envvar := conf.InternalModelMeshEnvVars.ToKubernetesType()[0]
+	if envvar.Name != expectedEnvVar {
+		t.Fatalf("Expected InternalModelMeshEnvVars to have env var with key [%s], but got [%s]", expectedEnvVar, envvar.Name)
+	}
+
+	if envvar.Value != expectedValue {
+		t.Fatalf("Expected InternalModelMeshEnvVars to have env var with value [%s], but got [%s]", expectedValue, envvar.Value)
+	}
+}

@@ -73,6 +73,27 @@ type Config struct {
 
 	Metrics     PrometheusConfig
 	ScaleToZero ScaleToZeroConfig
+
+	// For internal use only
+	InternalModelMeshEnvVars EnvVarList
+}
+
+type EnvVarList []EnvVar
+
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func (evl EnvVarList) ToKubernetesType() []corev1.EnvVar {
+	env := make([]corev1.EnvVar, len(evl))
+	for idx, e := range evl {
+		env[idx] = corev1.EnvVar{
+			Name:  e.Name,
+			Value: e.Value,
+		}
+	}
+	return env
 }
 
 type PrometheusConfig struct {
