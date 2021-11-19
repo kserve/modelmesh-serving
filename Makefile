@@ -18,8 +18,6 @@ endif
 
 # Image URL to use all building/pushing image targets
 IMG ?= kserve/modelmesh-controller:latest
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
@@ -89,7 +87,7 @@ delete: oc-login
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="./..." output:crd:artifacts:config=config/crd/bases
 	pre-commit run --all-files prettier > /dev/null || true
 
 # Run go fmt against code
@@ -98,7 +96,7 @@ fmt:
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="scripts/controller-gen-header.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="scripts/controller-gen-header.go.tmpl" paths="./..."
 	pre-commit run --all-files prettier > /dev/null || true
 
 # Build the final runtime docker image

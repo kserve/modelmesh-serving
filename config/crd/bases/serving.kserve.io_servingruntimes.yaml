@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.2
+    controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: servingruntimes.serving.kserve.io
 spec:
@@ -379,7 +379,7 @@ spec:
                                       field and the ones listed in the namespaces field.
                                       null selector and null or empty namespaces list
                                       means "this pod's namespace". An empty selector
-                                      ({}) matches all namespaces. This field is alpha-level
+                                      ({}) matches all namespaces. This field is beta-level
                                       and is only honored when PodAffinityNamespaceSelector
                                       feature is enabled.
                                     properties:
@@ -554,7 +554,7 @@ spec:
                                   the ones listed in the namespaces field. null selector
                                   and null or empty namespaces list means "this pod's
                                   namespace". An empty selector ({}) matches all namespaces.
-                                  This field is alpha-level and is only honored when
+                                  This field is beta-level and is only honored when
                                   PodAffinityNamespaceSelector feature is enabled.
                                 properties:
                                   matchExpressions:
@@ -727,7 +727,7 @@ spec:
                                       field and the ones listed in the namespaces field.
                                       null selector and null or empty namespaces list
                                       means "this pod's namespace". An empty selector
-                                      ({}) matches all namespaces. This field is alpha-level
+                                      ({}) matches all namespaces. This field is beta-level
                                       and is only honored when PodAffinityNamespaceSelector
                                       feature is enabled.
                                     properties:
@@ -902,7 +902,7 @@ spec:
                                   the ones listed in the namespaces field. null selector
                                   and null or empty namespaces list means "this pod's
                                   namespace". An empty selector ({}) matches all namespaces.
-                                  This field is alpha-level and is only honored when
+                                  This field is beta-level and is only honored when
                                   PodAffinityNamespaceSelector feature is enabled.
                                 properties:
                                   matchExpressions:
@@ -1034,13 +1034,15 @@ spec:
                             value:
                               description:
                                 'Variable references $(VAR_NAME) are expanded
-                                using the previous defined environment variables in
+                                using the previously defined environment variables in
                                 the container and any service environment variables.
                                 If a variable cannot be resolved, the reference in the
-                                input string will be unchanged. The $(VAR_NAME) syntax
-                                can be escaped with a double $$, ie: $$(VAR_NAME). Escaped
-                                references will never be expanded, regardless of whether
-                                the variable exists or not. Defaults to "".'
+                                input string will be unchanged. Double $$ are reduced
+                                to a single $, which allows for escaping the $(VAR_NAME)
+                                syntax: i.e. "$$(VAR_NAME)" will produce the string
+                                literal "$(VAR_NAME)". Escaped references will never
+                                be expanded, regardless of whether the variable exists
+                                or not. Defaults to "".'
                               type: string
                             valueFrom:
                               description:
@@ -1291,8 +1293,9 @@ spec:
                               this value overrides the value provided by the pod spec.
                               Value must be non-negative integer. The value zero indicates
                               stop immediately via the kill signal (no opportunity to
-                              shut down). This is an alpha field and requires enabling
-                              ProbeTerminationGracePeriod feature gate.
+                              shut down). This is a beta field and requires enabling
+                              ProbeTerminationGracePeriod feature gate. Minimum value
+                              is 1. spec.terminationGracePeriodSeconds is used if unset.
                             format: int64
                             type: integer
                           timeoutSeconds:
