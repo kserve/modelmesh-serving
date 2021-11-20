@@ -29,9 +29,9 @@ func TestProcessInferenceServicelStorage(t *testing.T) {
 	storageSchemaPath := "graph/graph.lib"
 
 	var secretKey string
-	var bucket string
+	var bucket *string
 	var modelPath string
-	var schemaPath string
+	var schemaPath *string
 	nname := types.NamespacedName{Name: "tm-test-model", Namespace: "modelmesh-serving"}
 	inferenceService := &v1beta1.InferenceService{
 		Spec: v1beta1.InferenceServiceSpec{
@@ -53,7 +53,7 @@ func TestProcessInferenceServicelStorage(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	expected := [4]string{secretKey, bucket, modelPath, schemaPath}
+	expected := [4]string{secretKey, *bucket, modelPath, *schemaPath}
 	result := [4]string{storageKey, storageBucket, storagePath, storageSchemaPath}
 	assert.Equal(t, result, expected)
 }
