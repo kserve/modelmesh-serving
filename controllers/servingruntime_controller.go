@@ -33,6 +33,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kserve/modelmesh-serving/pkg/config"
+
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -60,7 +62,7 @@ type ServingRuntimeReconciler struct {
 	client.Client
 	Log                 logr.Logger
 	Scheme              *runtime.Scheme
-	ConfigProvider      *ConfigProvider
+	ConfigProvider      *config.ConfigProvider
 	ConfigMapName       types.NamespacedName
 	DeploymentName      string
 	DeploymentNamespace string
@@ -84,7 +86,7 @@ var builtInServerTypes = map[api.ServerType]interface{}{
 // +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
 // +kubebuilder:rbac:namespace="model-serving",groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups="",resources=services;configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace="model-serving",groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace="model-serving",groups="",resources=secrets,verbs=get;list;watch
 
 func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -213,7 +215,7 @@ func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
 	return fmt.Errorf("Must include runtime Container with name %s", st)
 }
 
-func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger, config *Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
+func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger, config *config.Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
 	var err error
 	const scaledToZero = uint16(0)
 	scaledUp := r.determineReplicas(rt)
@@ -348,7 +350,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		Owns(&appsv1.Deployment{}).
 		// watch the user configmap and reconcile all runtimes when it changes
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
-			ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
+			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				list := &api.ServingRuntimeList{}
 				if err := r.Client.List(context.TODO(), list); err != nil {
 					r.Log.Error(err, "Error listing ServingRuntimes to reconcile")

@@ -22,9 +22,6 @@ import (
 const (
 	// The amount of time failed requests are queued before reattempting
 	DefaultRequeueTime = 5 * time.Second
-
-	ConfigType    = "yaml"
-	MountLocation = "/etc/model-serving/config-defaults.yaml"
 )
 
 var RequeueResult = ctrl.Result{RequeueAfter: DefaultRequeueTime}

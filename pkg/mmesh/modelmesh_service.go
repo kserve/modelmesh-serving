@@ -17,129 +17,240 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"sync"
+	"unsafe"
 
 	"github.com/go-logr/logr"
-	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
+	"github.com/kserve/modelmesh-serving/pkg/config"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
 )
+
+type TLSConfigLookup func(context.Context, string) (*tls.Config, error)
 
 // Encapsulates ModelMesh gRPC service
 type MMService struct {
-	Log logr.Logger
+	// these don't change
+	Log       logr.Logger
+	namespace string
+	tlsConfig TLSConfigLookup
 
-	Name               string
-	Port               uint16
-	ManagementEndpoint string
-	Headless           bool
+	// these protected by mutex
+	name               string
+	port               uint16
+	restPort           uint16
+	managementEndpoint string
+	headless           bool
+	tlsSecretName      string
+	metricsPort        uint16
+	reconnect          bool // indicates dirty client
+	serviceSpec        *v1.ServiceSpec
 
-	tlsSecretName string
-	TLSConfig     *tls.Config
+	// updates protected by mutex, read with atomic load
+	mmClient atomic.UnsafePointer // stores type *mmClient
 
-	mmClient *mmClient
-
-	MetricsPort uint16
-	RESTPort    uint16
+	mutex sync.Mutex
 }
 
-func NewMMService() *MMService {
-	return &MMService{Log: ctrl.Log.WithName("MMService")}
+func NewMMService(namespace string, tlsConfig TLSConfigLookup) *MMService {
+	return &MMService{
+		Log:       ctrl.Log.WithName("MMService").WithValues("namespace", namespace),
+		namespace: namespace,
+		tlsConfig: tlsConfig,
+	}
 }
 
-func (mms *MMService) UpdateConfig(name string, port uint16,
-	endpoint, tlsSecretName string, tlsConfig *tls.Config, headless bool, metricsPort uint16, restPort uint16) bool {
-	changed := false
-	if name != mms.Name {
-		mms.Name = name
-		changed = true
+func (mms *MMService) dnsName() string {
+	return fmt.Sprintf("%s.%s", mms.name, mms.namespace)
+}
+
+func (mms *MMService) GetNameAndSpec() (string, *v1.ServiceSpec) {
+	mms.mutex.Lock()
+	defer mms.mutex.Unlock()
+	return mms.name, mms.serviceSpec
+}
+
+func (mms *MMService) UpdateConfig(cp *config.ConfigProvider) (*config.Config, bool) {
+	mms.mutex.Lock()
+	defer mms.mutex.Unlock()
+
+	cfg := cp.GetConfig()
+
+	specChange, clientChange := false, false
+	if cfg.InferenceServiceName != mms.name {
+		mms.name = cfg.InferenceServiceName
+		specChange = true
+		clientChange = true
 	}
-	if port != mms.Port {
-		mms.Port = port
-		changed = true
+	if cfg.InferenceServicePort != mms.port {
+		mms.port = cfg.InferenceServicePort
+		specChange = true
+		clientChange = true
 	}
+	var restPort uint16
+	if cfg.RESTProxy.Enabled {
+		restPort = cfg.RESTProxy.Port
+	}
+	if restPort != mms.restPort {
+		mms.restPort = restPort
+		specChange = true
+		clientChange = true
+	}
+	endpoint := cfg.ModelMeshEndpoint
 	if endpoint == "" {
-		endpoint = fmt.Sprintf("%s:///%s", KUBE_SCHEME, mms.InferenceEndpoint())
+		endpoint = fmt.Sprintf("%s:///%s:%d", KUBE_SCHEME, mms.dnsName(), mms.port)
 	}
-	if endpoint != mms.ManagementEndpoint {
-		mms.ManagementEndpoint = endpoint
-		changed = true
+	if endpoint != mms.managementEndpoint {
+		mms.managementEndpoint = endpoint
+		clientChange = true
 	}
-	if tlsSecretName != mms.tlsSecretName {
-		mms.TLSConfig = tlsConfig
-		mms.tlsSecretName = tlsSecretName
-		changed = true
+	if cfg.TLS.SecretName != mms.tlsSecretName {
+		mms.tlsSecretName = cfg.TLS.SecretName
+		clientChange = true
 	}
-	if headless != mms.Headless {
-		mms.Headless = headless
-		changed = true
+	if cfg.HeadlessService != mms.headless {
+		mms.headless = cfg.HeadlessService
+		specChange = true
+		clientChange = true // technically not but good to reconnect
 	}
-	if metricsPort != mms.MetricsPort {
-		mms.MetricsPort = metricsPort
-		changed = true
+	var metricsPort uint16 = 0
+	if cfg.Metrics.Enabled {
+		metricsPort = cfg.Metrics.Port
 	}
-	if restPort != mms.RESTPort {
-		mms.RESTPort = restPort
-		changed = true
+	if metricsPort != mms.metricsPort {
+		mms.metricsPort = metricsPort
+		specChange = true
 	}
-	return changed
+
+	if specChange {
+		spec := &v1.ServiceSpec{
+			Selector: map[string]string{"wmlserving-service": mms.name},
+			Ports: []v1.ServicePort{{
+				Name:       "grpc",
+				Port:       int32(mms.port),
+				TargetPort: intstr.FromString("grpc"),
+			}},
+		}
+		if restPort > 0 {
+			spec.Ports = append(spec.Ports, v1.ServicePort{
+				Name:       "http",
+				Port:       int32(restPort),
+				TargetPort: intstr.FromString("http"),
+			})
+		}
+		if mms.headless {
+			spec.ClusterIP = "None"
+		}
+		if metricsPort > 0 {
+			spec.Ports = append(spec.Ports, v1.ServicePort{
+				Name:       "prometheus",
+				Port:       int32(metricsPort),
+				TargetPort: intstr.FromString("prometheus"),
+			})
+		}
+		mms.serviceSpec = spec
+		mms.Log.Info("Updated target ServiceSpec")
+	}
+	if clientChange {
+		mms.reconnect = true
+	}
+
+	return cfg, specChange || clientChange
 }
 
 type mmClient struct {
-	grpcConn    *grpc.ClientConn
-	mmeshClient mmeshapi.ModelMeshClient
+	grpcConn     *grpc.ClientConn
+	mmeshClient  mmeshapi.ModelMeshClient
+	endpoint     string
+	restEndpoint string
 }
 
-func (mms *MMService) InferenceEndpoint() string {
-	return fmt.Sprintf("%s:%d", mms.Name, mms.Port)
+func (mms *MMService) mmc() *mmClient {
+	return (*mmClient)(mms.mmClient.Load())
 }
 
-func (mms *MMService) InferenceRESTEndpoint() string {
-	if mms.RESTPort <= 0 {
-		return ""
+func (mms *MMService) InferenceEndpoints() (grpc, rest string) {
+	if mmc := mms.mmc(); mmc != nil {
+		return mmc.endpoint, mmc.restEndpoint
 	}
-	scheme := "http"
-	if mms.TLSConfig != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s:%d", scheme, mms.Name, mms.RESTPort)
+	return "", ""
 }
 
+// MMClient is called from predictor controller
 func (mms *MMService) MMClient() mmeshapi.ModelMeshClient {
-	mmc := mms.mmClient
-	if mmc == nil {
+	if mmc := mms.mmc(); mmc != nil {
+		return mmc.mmeshClient
+	}
+	return nil
+}
+
+// ConnectIfNeeded is called only in service reconcile
+func (mms *MMService) ConnectIfNeeded(ctx context.Context) error {
+	mms.mutex.Lock()
+
+	if mms.mmc() != nil && !mms.reconnect {
+		mms.mutex.Unlock()
 		return nil
 	}
-	return mmc.mmeshClient
-}
 
-func (mms *MMService) Connect() error {
-	mmc, err := newMmClient(mms.ManagementEndpoint, mms.TLSConfig, mms.Name, &mms.Log)
-	if err == nil {
-		mms.Disconnect()
-		mms.mmClient = mmc
-		mms.Log.Info("Established new MM gRPC connection",
-			"endpoint", mms.ManagementEndpoint, "TLS", mms.TLSConfig != nil)
+	tlsSecret := mms.tlsSecretName
+	endpoint := mms.managementEndpoint
+	dnsName := mms.dnsName()
+	inferenceEndpoint := fmt.Sprintf("grpc://%s:%d", dnsName, mms.port)
+	restEndpoint := ""
+	if mms.restPort > 0 {
+		scheme := "http"
+		if tlsSecret != "" {
+			scheme = "https"
+		}
+		restEndpoint = fmt.Sprintf("%s://%s:%d", scheme, dnsName, mms.restPort)
 	}
-	return err
+	mms.reconnect = false
+	mms.mutex.Unlock()
+
+	var tlsConfig *tls.Config
+	if tlsSecret != "" {
+		var err error
+		if tlsConfig, err = mms.tlsConfig(ctx, tlsSecret); err != nil {
+			return err
+		}
+	}
+
+	mmc, err := newMmClient(ctx, endpoint, tlsConfig, dnsName,
+		inferenceEndpoint, restEndpoint)
+	if err != nil {
+		mms.mutex.Lock()
+		defer mms.mutex.Unlock()
+		mms.reconnect = true
+		return err
+	}
+	mms.Disconnect()
+	mms.mmClient.Store(unsafe.Pointer(mmc))
+	mms.Log.Info("Established new MM gRPC connection",
+		"endpoint", endpoint, "TLS", tlsSecret != "")
+	return nil
 }
 
+// Disconnect is called only in service reconcile
 func (mms *MMService) Disconnect() {
-	if mms.mmClient != nil {
-		err := mms.mmClient.grpcConn.Close()
-		if err == nil {
-			mms.mmClient = nil
+	if mmc := mms.mmc(); mmc != nil {
+		if err := mmc.grpcConn.Close(); err == nil {
+			mms.mmClient.Store(nil)
 		} else {
 			mms.Log.Error(err, "Error closing MM gRPC connection")
 		}
 	}
 }
 
-func newMmClient(mmeshEndpoint string, tlsConfig *tls.Config,
-	serviceName string, logger *logr.Logger) (*mmClient, error) {
-	//grpcCtx, cancel := context.WithTimeout(context.Background(), GrpcDialTimeout)
-	grpcCtx, cancel := context.WithCancel(context.Background()) //TODO
-	defer cancel()
+func newMmClient(ctx context.Context, mmeshEndpoint string, tlsConfig *tls.Config,
+	serviceName, externalEndpoint, restEndpoint string) (*mmClient, error) {
+	//grpcCtx, cancel := context.WithTimeout(context.Background(), GrpcDialTimeout) //TODO TBD
 
 	dialOpts := make([]grpc.DialOption, 1, 3)
 	dialOpts[0] = grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`)
@@ -149,10 +260,10 @@ func newMmClient(mmeshEndpoint string, tlsConfig *tls.Config,
 		tc := credentials.NewTLS(tlsConfig)
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tc), grpc.WithAuthority(serviceName))
 	}
-	grpcConn, err := grpc.DialContext(grpcCtx, mmeshEndpoint, dialOpts...)
+	grpcConn, err := grpc.DialContext(ctx, mmeshEndpoint, dialOpts...)
 	if err != nil {
 		//logger.Error(err, "failed to connect to model mesh service")
 		return nil, err
 	}
-	return &mmClient{grpcConn, mmeshapi.NewModelMeshClient(grpcConn)}, nil
+	return &mmClient{grpcConn, mmeshapi.NewModelMeshClient(grpcConn), externalEndpoint, restEndpoint}, nil
 }

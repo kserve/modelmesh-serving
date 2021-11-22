@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
+	src "sigs.k8s.io/controller-runtime/pkg/source"
 
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
@@ -56,8 +56,8 @@ const (
 // PredictorReconciler reconciles Predictors
 type PredictorReconciler struct {
 	client.Client
-	Log       logr.Logger
-	MMService *mmesh.MMService
+	Log        logr.Logger
+	MMServices *MMServiceMap
 
 	RegistryLookup map[string]predictor_source.PredictorRegistry
 }
@@ -101,7 +101,10 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	status := &predictor.Status
 	waitingBefore := status.WaitingForRuntime()
 	updateStatus := false
-	mmc := pr.MMService.MMClient()
+	var mmc mmeshapi.ModelMeshClient
+	if mms := pr.MMServices.Get(nname.Namespace); mms != nil {
+		mmc = mms.MMClient()
+	}
 	var finalErr error
 	if predictor.Spec.Storage != nil && (predictor.Spec.Storage.S3 == nil || predictor.Spec.Storage.PersistentVolumeClaim != nil) {
 		log.Info("Only S3 Storage currently supported", "Storage", predictor.Spec.Storage)
@@ -240,7 +243,10 @@ var transitionStatusMap = map[mmeshapi.VModelStatusInfo_VModelStatus]api.Transit
 
 func (pr *PredictorReconciler) handlePredictorNotFound(ctx context.Context,
 	name types.NamespacedName, sourceId string) (ctrl.Result, error) {
-	mmc := pr.MMService.MMClient()
+	var mmc mmeshapi.ModelMeshClient
+	if mms := pr.MMServices.Get(name.Namespace); mms != nil {
+		mmc = mms.MMClient()
+	}
 	if mmc == nil {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
@@ -444,8 +450,12 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 
 	status.Available = status.ActiveModelState != "" &&
 		status.ActiveModelState != api.FailedToLoad && !status.WaitingForRuntime()
-	status.GrpcEndpoint = fmt.Sprintf("grpc://%s", pr.MMService.InferenceEndpoint())
-	status.HTTPEndpoint = pr.MMService.InferenceRESTEndpoint()
+	endpoint, httpEndpoint := "", ""
+	if mms := pr.MMServices.Get(name.Namespace); mms != nil {
+		endpoint, httpEndpoint = mms.InferenceEndpoints()
+	}
+	status.GrpcEndpoint = endpoint
+	status.HTTPEndpoint = httpEndpoint
 
 	// This will be reinstated once the loading/loaded counts are added back to the Predictor CRD Status
 	//if counts != [3]int{status.LoadingCopies, status.LoadedCopies, status.FailedCopies} {
@@ -506,14 +516,14 @@ func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *m
 	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&api.Predictor{}).
-		Watches(&source.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
+		Watches(&src.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
 
 	if sourcePluginEvents != nil {
-		builder.Watches(&source.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
+		builder.Watches(&src.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
 	}
 
 	if watchInferenceServices {
-		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
+		builder = builder.Watches(&src.Kind{Type: &servingv1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
 	}
 	return builder.Complete(pr)
 }

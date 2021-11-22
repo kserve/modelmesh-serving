@@ -21,7 +21,6 @@ rules:
       - ""
     resources:
       - configmaps
-      - services
     verbs:
       - create
       - delete
@@ -45,6 +44,19 @@ rules:
     verbs:
       - get
       - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - services/finalizers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
       - watch
   - apiGroups:
       - apps
