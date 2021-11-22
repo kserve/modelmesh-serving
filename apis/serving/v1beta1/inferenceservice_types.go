@@ -97,6 +97,25 @@ type PredictorExtensionSpec struct {
 	StorageURI *string `json:"storageUri,omitempty"`
 	// +optional
 	RuntimeVersion *string `json:"runtimeVersion,omitempty"`
+	// Storage Spec for model location
+	// +optional
+	Storage *StorageSpec `json:"storage,omitempty"`
+}
+
+type StorageSpec struct {
+	// The path to the model object in the storage. It cannot co-exist
+	// with the storageURI.
+	// +optional
+	Path *string `json:"path,omitempty"`
+	// The path to the model schema file in the storage.
+	// +optional
+	SchemaPath *string `json:"schemaPath,omitempty"`
+	// Parameters to override the default storage credentials and config.
+	// +optional
+	Parameters *map[string]string `json:"parameters,omitempty"`
+	// The Storage Key in the secret for this model.
+	// +optional
+	StorageKey *string `json:"key,omitempty"`
 }
 
 func (s *InferenceServicePredictorSpec) GetPredictorFramework() (string, *PredictorExtensionSpec) {
