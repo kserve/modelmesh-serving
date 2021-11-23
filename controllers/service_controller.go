@@ -198,7 +198,7 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 
 	namespace := r.ControllerDeployment.Namespace
 	sl := &corev1.ServiceList{}
-	if err := r.List(ctx, sl, client.HasLabels{"wmlserving-service"}, client.InNamespace(namespace)); err != nil {
+	if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
 		return nil, err, false
 	}
 	var s *corev1.Service

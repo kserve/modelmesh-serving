@@ -130,7 +130,7 @@ func (mms *MMService) UpdateConfig(cp *config.ConfigProvider) (*config.Config, b
 
 	if specChange {
 		spec := &v1.ServiceSpec{
-			Selector: map[string]string{"wmlserving-service": mms.name},
+			Selector: map[string]string{"modelmesh-service": mms.name},
 			Ports: []v1.ServicePort{{
 				Name:       "grpc",
 				Port:       int32(mms.port),
