@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 
@@ -71,10 +72,11 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 
 // Return secretKey, bucket, modelPath, schemaPath, and error
 func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (
-	secretKey string, bucket *string, modelPath string, schemaPath *string, err error) {
+	secretKey string, parameters map[string]string, modelPath string, schemaPath *string, err error) {
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
+	uriParameters := make(map[string]string)
 	if storageUri == nil {
 		if storageSpec == nil || storageSpec.Path == nil {
 			return "", nil, "", nil, fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
@@ -84,30 +86,49 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		if storageSpec != nil && storageSpec.Path != nil {
 			return "", nil, "", nil, fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
 		}
+
 		u, err := url.Parse(*storageUri)
 		if err != nil || u.Scheme != "s3" {
 			return "", nil, "", nil, err
 		}
-		bucket = &u.Host
+		// TODO: Support StorageURI for other types of storage too
 		modelPath = u.Path
+		uriParameters["type"] = "s3"
+		uriParameters["bucket"] = u.Host
 	}
+
+	var storageSpecParameters map[string]string
 	if storageSpec != nil {
 		if storageSpec.StorageKey != nil {
 			secretKey = *storageSpec.StorageKey
 		}
 		if storageSpec.Parameters != nil {
-			for k, v := range *storageSpec.Parameters {
-				if k == "bucket" {
-					bucket = &v
-				}
-			}
+			storageSpecParameters = *storageSpec.Parameters
 		}
 		if storageSpec.SchemaPath != nil {
 			schemaPath = storageSpec.SchemaPath
 		}
 	}
+
+	// resolve the parameters, URI parameters taking precedence
+	if storageSpecParameters != nil {
+		parameters = storageSpecParameters
+		for k, v := range uriParameters {
+			parameters[k] = v
+		}
+	} else {
+		parameters = uriParameters
+	}
+
 	if secretKey == "" {
 		secretKey = inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
+	}
+	if secretKey == "" {
+		if t, ok := parameters["type"]; ok {
+			// default key name for the storage type, used for backwards
+			// compatibility with the changes to the storage spec
+			secretKey = fmt.Sprintf("_%s_default", t)
+		}
 	}
 	if schemaPath == nil {
 		SchemaPathAnnotation := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
@@ -139,11 +160,10 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	p.Status = inferenceService.Status.PredictorStatus
 
 	if p.Status.ActiveModelState == "" {
-		p.Status.ActiveModelState = v1alpha1.Pending
+		p.Status.ActiveModelState = common.Pending
 	}
 
-	p.Spec.Storage = &v1alpha1.Storage{}
-	secretKey, bucket, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
+	secretKey, parameters, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
 	if err != nil {
 		return nil, err
 	}
@@ -151,12 +171,11 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	if secretKey == "" {
 		return p, nil
 	}
-	p.Spec.SchemaPath = schemaPath
-	p.Spec.Storage.S3 = &v1alpha1.S3StorageSource{
-		SecretKey: secretKey,
-		Bucket:    bucket,
-	}
-	p.Spec.Path = modelPath
+	p.Spec.Storage = &v1alpha1.Storage{}
+	p.Spec.Storage.Path = &modelPath
+	p.Spec.Storage.SchemaPath = schemaPath
+	p.Spec.Storage.Parameters = &parameters
+	p.Spec.Storage.StorageKey = &secretKey
 
 	return p, nil
 
