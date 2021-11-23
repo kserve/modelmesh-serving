@@ -38,6 +38,7 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
@@ -125,25 +126,25 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 			}
 		}
 		// Reflect invalid spec in Status (overwrite)
-		if setStatusFailureInfo(status, &api.FailureInfo{
-			Reason:  api.InvalidPredictorSpec,
+		if setStatusFailureInfo(status, &common.FailureInfo{
+			Reason:  common.InvalidPredictorSpec,
 			Message: "Only S3 Storage is currently supported",
 			ModelId: concreteModelName(predictor, sourceId),
 		}) {
 			updateStatus = true
 		}
-		if status.TransitionStatus != api.InvalidSpec {
-			status.TransitionStatus = api.InvalidSpec
+		if status.TransitionStatus != common.InvalidSpec {
+			status.TransitionStatus = common.InvalidSpec
 			updateStatus = true
 		}
 	} else if mmc != nil {
 		// This determines whether we should trigger an explicit load of the model
 		// as part of the update, e.g. if the predictor is new or transitioning
 		loadNow := predictor.DeletionTimestamp == nil &&
-			(status.ActiveModelState == api.Pending ||
-				status.ActiveModelState == api.FailedToLoad ||
+			(status.ActiveModelState == common.Pending ||
+				status.ActiveModelState == common.FailedToLoad ||
 				status.TargetModelState != "" ||
-				(status.ActiveModelState == api.Loading && status.WaitingForRuntime()))
+				(status.ActiveModelState == common.Loading && status.WaitingForRuntime()))
 
 		// Update vModel - idempotent
 		vModelState, err := pr.setVModel(ctx, mmc, predictor, loadNow, sourceId)
@@ -153,16 +154,16 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 
 			updateStatus = pr.updatePredictorStatusFromVModel(status, vModelState, nname, true)
 		} else if isNoAddresses(err) {
-			updateStatus = setStatusFailureInfo(status, &api.FailureInfo{
-				Reason:  api.RuntimeUnhealthy,
+			updateStatus = setStatusFailureInfo(status, &common.FailureInfo{
+				Reason:  common.RuntimeUnhealthy,
 				Message: "Waiting for runtime Pod to become available",
 				ModelId: concreteModelName(predictor, sourceId),
 			})
 		} else if grpcstatus.Convert(err).Code() == codes.AlreadyExists {
 			//TODO here should also extract the conflicting owner string, and also trigger a reconcile with that
 			// other source id (in case it no longer exists)
-			updateStatus = setStatusFailureInfo(status, &api.FailureInfo{
-				Reason:  api.InvalidPredictorSpec,
+			updateStatus = setStatusFailureInfo(status, &common.FailureInfo{
+				Reason:  common.InvalidPredictorSpec,
 				Message: "Predictor already exists with the same name from a different source",
 			})
 			finalErr = fmt.Errorf("failed to create vmodel %s for %s because one already exists"+
@@ -202,7 +203,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 		// since it will trigger a load of the model automatically and this will result in an etcd event.
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil //TODO maybe some back-off
 	}
-	if status.ActiveModelState == api.Loading {
+	if status.ActiveModelState == common.Loading {
 		// This is currently required since there's no explicit event in model-mesh etcd
 		// corresponding to loading completion. We plan to change this but in the meantime
 		// must "poll" to detect it. The same is not required for the target model state
@@ -226,19 +227,19 @@ const (
 	K8sStatusUpdateTimeout = 10 * time.Second
 )
 
-var modelStateMap = map[mmeshapi.ModelStatusInfo_ModelStatus]api.ModelState{
-	mmeshapi.ModelStatusInfo_NOT_LOADED:     api.Standby,
-	mmeshapi.ModelStatusInfo_LOADING:        api.Loading,
-	mmeshapi.ModelStatusInfo_LOADED:         api.Loaded,
-	mmeshapi.ModelStatusInfo_LOADING_FAILED: api.FailedToLoad,
-	//mmeshapi.ModelStatusInfo_NOT_FOUND:    api.Pending,
-	//mmeshapi.ModelStatusInfo_UNKNOWN:      api.Pending,
+var modelStateMap = map[mmeshapi.ModelStatusInfo_ModelStatus]common.ModelState{
+	mmeshapi.ModelStatusInfo_NOT_LOADED:     common.Standby,
+	mmeshapi.ModelStatusInfo_LOADING:        common.Loading,
+	mmeshapi.ModelStatusInfo_LOADED:         common.Loaded,
+	mmeshapi.ModelStatusInfo_LOADING_FAILED: common.FailedToLoad,
+	//mmeshapi.ModelStatusInfo_NOT_FOUND:    common.Pending,
+	//mmeshapi.ModelStatusInfo_UNKNOWN:      common.Pending,
 }
 
-var transitionStatusMap = map[mmeshapi.VModelStatusInfo_VModelStatus]api.TransitionStatus{
-	mmeshapi.VModelStatusInfo_DEFINED:           api.UpToDate,
-	mmeshapi.VModelStatusInfo_TRANSITIONING:     api.InProgress,
-	mmeshapi.VModelStatusInfo_TRANSITION_FAILED: api.BlockedByFailedLoad,
+var transitionStatusMap = map[mmeshapi.VModelStatusInfo_VModelStatus]common.TransitionStatus{
+	mmeshapi.VModelStatusInfo_DEFINED:           common.UpToDate,
+	mmeshapi.VModelStatusInfo_TRANSITIONING:     common.InProgress,
+	mmeshapi.VModelStatusInfo_TRANSITION_FAILED: common.BlockedByFailedLoad,
 }
 
 func (pr *PredictorReconciler) handlePredictorNotFound(ctx context.Context,
@@ -318,33 +319,33 @@ func concreteModelName(predictor *api.Predictor, sourceId string) string {
 // "There are no running instances that meet the label requirements of type _default: [_no_runtime]"
 const noHomeMessage string = "There are no running instances that meet the label requirements of type "
 
-func decodeModelState(status *mmeshapi.ModelStatusInfo) (api.ModelState, api.FailureReason, string) {
-	reason := api.FailureReason("")
+func decodeModelState(status *mmeshapi.ModelStatusInfo) (common.ModelState, common.FailureReason, string) {
+	reason := common.FailureReason("")
 	msg := ""
 	if status == nil {
-		return api.Pending, reason, msg // vmodel not found case
+		return common.Pending, reason, msg // vmodel not found case
 	}
 	state := modelStateMap[status.Status]
 	if len(status.Errors) > 0 {
-		reason, msg = api.ModelLoadFailed, status.Errors[0]
+		reason, msg = common.ModelLoadFailed, status.Errors[0]
 	}
-	if state != api.FailedToLoad {
+	if state != common.FailedToLoad {
 		return state, reason, msg
 	}
 	if !strings.HasPrefix(msg, noHomeMessage) {
-		return api.FailedToLoad, api.ModelLoadFailed, msg
+		return common.FailedToLoad, common.ModelLoadFailed, msg
 	}
 	if !strings.HasSuffix(msg, "["+modelmesh.ModelTypeLabelThatNoRuntimeSupports+"]") {
-		return api.Loading, api.RuntimeUnhealthy, "Waiting for supporting runtime Pod to become available"
+		return common.Loading, common.RuntimeUnhealthy, "Waiting for supporting runtime Pod to become available"
 	}
 	if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
-		return api.FailedToLoad, api.RuntimeNotRecognized, "Specified runtime name not recognized"
+		return common.FailedToLoad, common.RuntimeNotRecognized, "Specified runtime name not recognized"
 	}
-	return api.FailedToLoad, api.NoSupportingRuntime, "No ServingRuntime supports specified model type"
+	return common.FailedToLoad, common.NoSupportingRuntime, "No ServingRuntime supports specified model type"
 }
 
 // Returns true if any changes were made to the Status, false otherwise
-func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.PredictorStatus,
+func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *common.PredictorStatus,
 	vModelState *mmeshapi.VModelStatusInfo, name types.NamespacedName, includeTransitionAndFailure bool) (changed bool) {
 	ts := transitionStatusMap[vModelState.Status]
 	ams, amfr, amm := decodeModelState(vModelState.ActiveModelStatus)
@@ -362,11 +363,11 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 
 	tmsBefore := status.TargetModelState
 	counts := [3]int{}
-	if amfr == "" || amfr == api.ModelLoadFailed {
+	if amfr == "" || amfr == common.ModelLoadFailed {
 		countModelCopyStates(vModelState.ActiveModelStatus, &counts)
 	}
 	var targetModelStatus *mmeshapi.ModelStatusInfo
-	var targetModelFailureReason api.FailureReason
+	var targetModelFailureReason common.FailureReason
 	var targetModelMessage string
 	if vModelState.ActiveModelId == vModelState.TargetModelId {
 		targetModelStatus = vModelState.ActiveModelStatus
@@ -381,7 +382,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 			status.TargetModelState, targetModelFailureReason, targetModelMessage = decodeModelState(targetModelStatus)
 			// Ignore returned ModelCopyInfos in cases where there can't be any copies (due to model-mesh "bug"
 			// where a ModelCopyInfo can be returned with non-copy related failure information)
-			if targetModelFailureReason == "" || targetModelFailureReason == api.ModelLoadFailed {
+			if targetModelFailureReason == "" || targetModelFailureReason == common.ModelLoadFailed {
 				countModelCopyStates(targetModelStatus, &counts)
 			}
 		} else {
@@ -394,17 +395,17 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 	}
 
 	if includeTransitionAndFailure {
-		if ts == api.BlockedByFailedLoad && targetModelStatus != nil &&
+		if ts == common.BlockedByFailedLoad && targetModelStatus != nil &&
 			targetModelStatus.Status == mmeshapi.ModelStatusInfo_LOADING {
 			// This is for the case where we have converted the "nowhere to load model of this type"
 			// failure back to Loading
-			ts = api.InProgress
+			ts = common.InProgress
 		}
 		if status.TransitionStatus != ts {
 			status.TransitionStatus = ts
 			changed = true
 		}
-		var fi *api.FailureInfo = nil
+		var fi *common.FailureInfo = nil
 		if targetModelStatus != nil && targetModelStatus.Status != mmeshapi.ModelStatusInfo_LOADED {
 			if targetModelFailureReason == "" {
 				if status.WaitingForRuntime() {
@@ -412,13 +413,13 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 					fi = status.LastFailureInfo
 				}
 			} else {
-				fi = &api.FailureInfo{
+				fi = &common.FailureInfo{
 					Reason:  targetModelFailureReason,
 					ModelId: vModelState.TargetModelId,
 					Message: targetModelMessage,
 				}
 				// Only fill in location if it's applicable to the failure reason
-				if targetModelFailureReason == api.ModelLoadFailed {
+				if targetModelFailureReason == common.ModelLoadFailed {
 					for _, info := range targetModelStatus.ModelCopyInfos {
 						if info != nil && info.CopyStatus == mmeshapi.ModelStatusInfo_LOADING_FAILED {
 							fi.Location = info.Location
@@ -449,7 +450,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 	}
 
 	status.Available = status.ActiveModelState != "" &&
-		status.ActiveModelState != api.FailedToLoad && !status.WaitingForRuntime()
+		status.ActiveModelState != common.FailedToLoad && !status.WaitingForRuntime()
 	endpoint, httpEndpoint := "", ""
 	if mms := pr.MMServices.Get(name.Namespace); mms != nil {
 		endpoint, httpEndpoint = mms.InferenceEndpoints()
@@ -472,7 +473,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *api.Predi
 }
 
 // returns true if changed
-func setStatusFailureInfo(crStatus *api.PredictorStatus, info *api.FailureInfo) bool {
+func setStatusFailureInfo(crStatus *common.PredictorStatus, info *common.FailureInfo) bool {
 	if reflect.DeepEqual(info, crStatus.LastFailureInfo) {
 		return false
 	}

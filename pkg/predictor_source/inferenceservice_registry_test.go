@@ -17,7 +17,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -37,7 +39,7 @@ func TestProcessInferenceServicelStorage(t *testing.T) {
 		Spec: v1beta1.InferenceServiceSpec{
 			Predictor: v1beta1.InferenceServicePredictorSpec{
 				SKLearn: &v1beta1.PredictorExtensionSpec{
-					Storage: &v1beta1.StorageSpec{
+					Storage: &common.StorageSpec{
 						StorageKey: &storageKey,
 						Path:       &storagePath,
 						SchemaPath: &storageSchemaPath,
