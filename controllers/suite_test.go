@@ -38,10 +38,10 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
-	"unsafe"
+
+	config2 "github.com/kserve/modelmesh-serving/pkg/config"
 
 	"github.com/kserve/modelmesh-serving/controllers/config"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
@@ -80,10 +80,10 @@ var k8sManager ctrl.Manager
 var testEnv *envtest.Environment
 
 // need to hold the provider reference to allow config to be edited
-var configProvider *ConfigProvider
+var configProvider *config2.ConfigProvider
 
 // pointer to the config for editing, to be used in tests
-var reconcilerConfig *Config
+var reconcilerConfig *config2.Config
 
 func SnapshotMatcher() *goldga.Matcher {
 	matcher := goldga.Match()
@@ -155,15 +155,13 @@ var _ = BeforeSuite(func(done Done) {
 	// main usually sets this
 	modelmesh.StorageSecretName = "storage-config"
 
-	os.Setenv(EnvEtcdSecretName, "secret")
+	os.Setenv(config2.EnvEtcdSecretName, "secret")
 
 	// Create the ConfigProvider object that will be used by the reconciler
 	// Instead of creating the user configmap and reacting to watch events on the
 	// configmap, tests can edit the Config object directly. This means that
 	// config changes are seen by the controller immediately.
-	configProvider = &ConfigProvider{
-		c: sync.Cond{L: &sync.Mutex{}},
-	}
+	configProvider = config2.NewConfigProviderForTest()
 	resetReconcilerConfig()
 
 	// create the reconciler and add it to the manager
@@ -223,14 +221,14 @@ func resetReconcilerConfig() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	config, err := NewMergedConfigFromString(string(defaultTestConfigFileContents))
+	config, err := config2.NewMergedConfigFromString(string(defaultTestConfigFileContents))
 	Expect(err).ToNot(HaveOccurred())
 
 	// re-assign the reference to the config
 	reconcilerConfig = config
 
 	// inject the reference into the provider used by the reconciler
-	configProvider.config = (unsafe.Pointer)(reconcilerConfig)
+	config2.SetConfigForTest(configProvider, config)
 }
 
 type YAMLSerializer struct{}

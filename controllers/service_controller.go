@@ -33,10 +33,14 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"reflect"
+	"sync"
+
+	"github.com/kserve/modelmesh-serving/pkg/config"
 
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 
-	"sigs.k8s.io/controller-runtime/pkg/builder"
+	bld "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -52,7 +56,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -64,70 +67,88 @@ const (
 	serviceMonitorName = "modelmesh-metrics-monitor"
 )
 
+// This is a map in preparation for multi-namespace support
+type MMServiceMap sync.Map // string->*mmesh.MMService
+
+func (m *MMServiceMap) Get(namespace string) *mmesh.MMService {
+	if v, ok := (*sync.Map)(m).Load(namespace); ok {
+		return v.(*mmesh.MMService)
+	}
+	return nil
+}
+
+func (m *MMServiceMap) GetOrCreate(namespace string, tlsConfig mmesh.TLSConfigLookup) (*mmesh.MMService, bool) {
+	if mms := m.Get(namespace); mms != nil {
+		return mms, false
+	}
+	v, loaded := (*sync.Map)(m).LoadOrStore(namespace, mmesh.NewMMService(namespace, tlsConfig))
+	return v.(*mmesh.MMService), !loaded
+}
+
 // ServiceReconciler reconciles a ServingRuntime object
 type ServiceReconciler struct {
 	client.Client
 	Log                  logr.Logger
 	Scheme               *runtime.Scheme
-	ConfigProvider       *ConfigProvider
+	ConfigProvider       *config.ConfigProvider
 	ConfigMapName        types.NamespacedName
 	ControllerDeployment types.NamespacedName
 
-	ModelMeshService *mmesh.MMService
+	MMServices       *MMServiceMap
 	ModelEventStream *mmesh.ModelMeshEventStream
 
 	ServiceMonitorCRDExists bool
 }
 
+func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bool) (*mmesh.MMService, *config.Config, bool) {
+	mms, newSvc := r.MMServices.GetOrCreate(r.ControllerDeployment.Namespace, r.tlsConfigFromSecret)
+	if newSvc || newConfig {
+		if newSvc {
+			r.Log.Info("MMService created for namespace", "namespace", r.ControllerDeployment.Namespace)
+		}
+		cfg, changed := mms.UpdateConfig(cp)
+		return mms, cfg, changed
+	}
+	return mms, cp.GetConfig(), false
+}
+
+// +kubebuilder:rbac:namespace="model-serving",groups="",resources=services;services/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:namespace="model-serving",groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.Log.V(1).Info("Service reconciler called")
-	cfg := r.ConfigProvider.GetConfig()
-	var changed bool
-	if req.NamespacedName == r.ConfigMapName || !r.ModelEventStream.IsWatching() {
-		tlsConfig, err := r.tlsConfigFromSecret(ctx, cfg.TLS.SecretName)
-		if err != nil {
-			return RequeueResult, err
-		}
-		var metricsPort, restProxyPort uint16 = 0, 0
-		if cfg.Metrics.Enabled {
-			metricsPort = cfg.Metrics.Port
-		}
-		if cfg.RESTProxy.Enabled {
-			restProxyPort = cfg.RESTProxy.Port
-		}
-		changed = r.ModelMeshService.UpdateConfig(
-			cfg.InferenceServiceName, cfg.InferenceServicePort,
-			cfg.ModelMeshEndpoint, cfg.TLS.SecretName, tlsConfig, cfg.HeadlessService, metricsPort, restProxyPort)
-	}
+	r.Log.V(1).Info("Service reconciler called", "name", req.NamespacedName)
 
 	d := &appsv1.Deployment{}
 	if err := r.Client.Get(ctx, r.ControllerDeployment, d); err != nil {
 		if k8serr.IsNotFound(err) {
 			// No need to delete because the Deployment is the owner
+			if mms := r.MMServices.Get(req.Namespace); mms != nil {
+				mms.Disconnect()
+			}
 			return ctrl.Result{}, nil
 		}
-		return RequeueResult, fmt.Errorf("Could not get the controller deployment: %w", err)
+		return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
 	}
 
-	if (changed || req.NamespacedName != r.ConfigMapName) && req.Name != serviceMonitorName {
-		err2, requeue := r.applyService(ctx, d)
-		if err2 != nil || requeue {
-			//TODO probably shorter requeue time (immediate?) for service recreate case
-			return RequeueResult, err2
-		}
-	}
+	mms, cfg, _ := r.getMMService(r.ConfigProvider, false)
 
-	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), r.ModelMeshService.Name); err != nil {
+	var s *corev1.Service
+	svc, err2, requeue := r.reconcileService(ctx, mms, d)
+	if err2 != nil || requeue {
+		//TODO probably shorter requeue time (immediate?) for service recreate case
+		return RequeueResult, err2
+	}
+	s = svc
+
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName); err != nil {
 		return RequeueResult, err
 	}
 
 	// Service Monitor reconciliation should be called towards the end of the Service Reconcile method so that
 	// errors returned from here should not impact any other functions.
-	if r.ServiceMonitorCRDExists {
+	if s != nil && r.ServiceMonitorCRDExists {
 		// Reconcile Service Monitor if the ServiceMonitor CRD exists
-		err, requeue := r.ReconcileServiceMonitor(ctx, cfg.Metrics, d)
+		err, requeue := r.reconcileServiceMonitor(ctx, cfg.Metrics, s)
 		if err != nil || requeue {
 			return RequeueResult, err
 		}
@@ -169,153 +190,181 @@ func (r *ServiceReconciler) tlsConfigFromSecret(ctx context.Context, secretName 
 	return &tls.Config{Certificates: []tls.Certificate{certificate}, RootCAs: certPool}, nil
 }
 
-func (r *ServiceReconciler) applyService(ctx context.Context, d *appsv1.Deployment) (error, bool) {
-	s := &corev1.Service{}
-	serviceName := r.ModelMeshService.Name
-	exists := true
-	err := r.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: r.ControllerDeployment.Namespace}, s)
-	if k8serr.IsNotFound(err) {
-		exists = false
-		s.Name = serviceName
-		s.Namespace = r.ControllerDeployment.Namespace
-	} else if err != nil {
-		return err, false
+func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMService, d *appsv1.Deployment) (*corev1.Service, error, bool) {
+	serviceName, target := mms.GetNameAndSpec()
+	if serviceName == "" || target == nil {
+		return nil, errors.New("unexpected state - MMService uninitialized"), false
 	}
 
-	headless := r.ModelMeshService.Headless
-	if exists && (s.Spec.ClusterIP == "None") != headless {
-		r.Log.Info("Deleting/recreating Service because headlessness changed",
-			"service", serviceName, "headless", headless)
-		// Have to recreate since ClusterIP field is immutable
-		if err = r.Delete(ctx, s); err != nil {
-			return err, false
+	namespace := r.ControllerDeployment.Namespace
+	sl := &corev1.ServiceList{}
+	if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
+		return nil, err, false
+	}
+	var s *corev1.Service
+	for i := range sl.Items {
+		ss := &sl.Items[i]
+		if ss.GetName() == serviceName {
+			s = ss
+		} else if err := r.Delete(ctx, ss); err != nil {
+			return nil, err, false
+		} else {
+			r.Log.V(1).Info("Deleted Service with label but different name", "name", ss.GetName(), "namespace", ss.GetNamespace())
 		}
-		// This will trigger immediate re-reconcilation
-		return nil, true
 	}
 
-	s.Labels = map[string]string{
+	labelMap := map[string]string{
 		"modelmesh-service":            serviceName,
 		"app.kubernetes.io/instance":   commonLabelValue,
 		"app.kubernetes.io/managed-by": commonLabelValue,
 		"app.kubernetes.io/name":       commonLabelValue,
 	}
-	s.Spec.Selector = map[string]string{"modelmesh-service": serviceName}
-	s.Spec.Ports = []corev1.ServicePort{
-		{
-			Name:       "grpc",
-			Port:       int32(r.ModelMeshService.Port),
-			TargetPort: intstr.FromString("grpc"),
-		},
-	}
 
-	if r.ModelMeshService.MetricsPort > 0 {
-		s.Spec.Ports = append(s.Spec.Ports, corev1.ServicePort{
-			Name:       "prometheus",
-			Port:       int32(r.ModelMeshService.MetricsPort),
-			TargetPort: intstr.FromString("prometheus"),
-		})
-	}
-
-	if r.ModelMeshService.RESTPort > 0 {
-		s.Spec.Ports = append(s.Spec.Ports, corev1.ServicePort{
-			Name:       "http",
-			Port:       int32(r.ModelMeshService.RESTPort),
-			TargetPort: intstr.FromString("http"),
-		})
-	}
-
-	if err = controllerutil.SetControllerReference(d, s, r.Scheme); err != nil {
-		return fmt.Errorf("Could not set owner reference: %w", err), false
-	}
-
-	if !exists {
-		if headless {
-			s.Spec.ClusterIP = "None"
+	if s == nil {
+		mms.Disconnect()
+		s = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceName,
+				Namespace: namespace,
+				Labels:    labelMap,
+			},
+			Spec: *target,
 		}
-		r.ModelMeshService.Disconnect()
-		if err = r.Create(ctx, s); err != nil {
-			r.Log.Error(err, "Could not create service")
+		if err := controllerutil.SetControllerReference(d, s, r.Scheme); err != nil {
+			return nil, fmt.Errorf("could not set Service owner reference: %w", err), false
 		}
-	} else {
-		if err = r.ModelMeshService.Connect(); err != nil {
-			r.Log.Error(err, "Error establishing model-mesh gRPC conn")
+		if err := r.Create(ctx, s); err != nil {
+			return nil, fmt.Errorf("could not create service: %w", err), false
 		}
-		if err2 := r.Update(ctx, s); err2 != nil {
-			r.Log.Error(err, "Could not update service")
-			if err == nil {
-				err = err2
-			}
+		r.Log.Info("Created Kube Service", "name", serviceName, "namespace", namespace)
+		return s, nil, false
+	}
+
+	var origClusterIp = s.Spec.ClusterIP
+	if origClusterIp != "None" {
+		// Kube sets this when non-headless, so zero-out for comparison
+		s.Spec.ClusterIP = ""
+	}
+
+	var err error
+	if !reflect.DeepEqual(s.Spec, target) || !reflect.DeepEqual(s.Labels, labelMap) {
+		if s.Spec.ClusterIP != target.ClusterIP {
+			r.Log.Info("Deleting/recreating Service because headlessness changed",
+				"service", serviceName, "headless", target.ClusterIP == "None")
+			// Have to recreate since ClusterIP field is immutable
+			err2 := r.Delete(ctx, s)
+			// This will trigger immediate re-reconcilation
+			return nil, err2, true
+		}
+		s.Labels = labelMap
+		s.Spec = *target
+		s.Spec.ClusterIP = origClusterIp
+		if err = r.Update(ctx, s); err != nil {
+			r.Log.Error(err, "Could not update Kube Service", "name", serviceName, "namespace", namespace)
+		} else {
+			r.Log.Info("Updated Kube Service", "name", serviceName, "namespace", namespace)
 		}
 	}
 
-	return err, false
+	if err2 := mms.ConnectIfNeeded(ctx); err2 != nil {
+		if err == nil {
+			err = fmt.Errorf("error establishing model-mesh gRPC conn: %w", err2)
+		} else {
+			r.Log.Error(err2, "error establishing model-mesh gRPC conn")
+		}
+	}
+
+	return s, err, false
 }
 
-func (r *ServiceReconciler) ReconcileServiceMonitor(ctx context.Context, metrics PrometheusConfig, owner metav1.Object) (error, bool) {
-	r.Log.V(1).Info("Applying Service Monitor")
+func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics config.PrometheusConfig, owner *corev1.Service) (error, bool) {
+	r.Log.V(1).Info("Reconciling Service Monitor", "namespace", owner.GetNamespace())
 
-	sm := &monitoringv1.ServiceMonitor{}
-	serviceName := r.ModelMeshService.Name
+	sm := &monitoringv1.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceMonitorName,
+			Namespace: owner.GetNamespace(),
+		},
+	}
+	serviceName := owner.GetName()
 
-	err := r.Client.Get(ctx, client.ObjectKey{Name: serviceMonitorName, Namespace: r.ControllerDeployment.Namespace}, sm)
+	err := r.Client.Get(ctx, client.ObjectKey{Name: serviceMonitorName, Namespace: owner.GetNamespace()}, sm)
 	exists := true
 	if k8serr.IsNotFound(err) {
 		// Create the ServiceMonitor if not found
 		exists = false
-		sm.Name = serviceMonitorName
-		sm.Namespace = r.ControllerDeployment.Namespace
 	} else if err != nil {
-		r.Log.Error(err, "Unable to access service monitor", "serviceMonitorName", serviceMonitorName)
-		return nil, false
+		return fmt.Errorf("unable to get service monitor %s: %w", serviceMonitorName, err), false
 	}
 
 	// Check if the prometheus operator support is enabled
 	if metrics.DisablePrometheusOperatorSupport || !metrics.Enabled {
-		r.Log.V(1).Info("Configuration parameter 'DisablePrometheusOperatorSupport' is set to true (or) Metrics is disabled", "DisablePrometheusOperatorSupport", metrics.DisablePrometheusOperatorSupport, "metrics.Enabled", metrics.Enabled)
+		r.Log.V(1).Info("Configuration parameter 'DisablePrometheusOperatorSupport' is set to true or Metrics is disabled",
+			"DisablePrometheusOperatorSupport", metrics.DisablePrometheusOperatorSupport, "metrics.Enabled", metrics.Enabled)
 		if exists {
 			// Delete ServiceMonitor CR if already exists
 			if err = r.Client.Delete(ctx, sm); err != nil {
-				r.Log.Error(err, "Unable to delete service monitor", "serviceMonitorName", serviceMonitorName)
+				return fmt.Errorf("unable to delete service monitor %s: %w", serviceMonitorName, err), false
 			}
 		}
 		return nil, false
 	}
 
+	crBefore := sm.GetOwnerReferences()
 	if err = controllerutil.SetControllerReference(owner, sm, r.Scheme); err != nil {
-		return fmt.Errorf("Could not set owner reference: %w", err), false
+		return fmt.Errorf("could not set ServiceMonitor owner reference: %w", err), false
+	}
+	changed := reflect.DeepEqual(crBefore, sm.GetOwnerReferences())
+
+	if !reflect.DeepEqual(sm.Labels, owner.Labels) {
+		sm.Labels = owner.Labels
+		changed = true
 	}
 
-	sm.ObjectMeta.Labels = map[string]string{
-		"modelmesh-service":            serviceName,
-		"app.kubernetes.io/instance":   commonLabelValue,
-		"app.kubernetes.io/managed-by": commonLabelValue,
-		"app.kubernetes.io/name":       commonLabelValue,
-	}
-	sm.Spec.Selector = metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": serviceName}}
-	sm.Spec.Endpoints = []monitoringv1.Endpoint{{
-		Interval: "30s",
-		Port:     "prometheus",
-		Scheme:   metrics.Scheme,
-		TLSConfig: &monitoringv1.TLSConfig{
-			SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: true}, //TODO: Update the TLSConfig to use cacert
-		}},
+	targetSpec := monitoringv1.ServiceMonitorSpec{
+		Selector:          metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": serviceName}},
+		NamespaceSelector: monitoringv1.NamespaceSelector{MatchNames: []string{sm.Namespace}},
+		Endpoints: []monitoringv1.Endpoint{{
+			Interval: "30s",
+			Port:     "prometheus",
+			Scheme:   metrics.Scheme,
+			TLSConfig: &monitoringv1.TLSConfig{
+				SafeTLSConfig: monitoringv1.SafeTLSConfig{InsecureSkipVerify: true}, //TODO: Update the TLSConfig to use cacert
+			}},
+		},
 	}
 
-	if !exists {
-		err = r.Client.Create(ctx, sm)
-	} else {
-		err = r.Client.Update(ctx, sm)
+	// Compare individual fields so that others can be set manually without getting reverted
+	if !reflect.DeepEqual(sm.Spec.Selector, targetSpec.Selector) {
+		sm.Spec.Selector = targetSpec.Selector
+		changed = true
 	}
-	if err != nil {
+	if !reflect.DeepEqual(sm.Spec.NamespaceSelector, targetSpec.NamespaceSelector) {
+		sm.Spec.NamespaceSelector = targetSpec.NamespaceSelector
+		changed = true
+	}
+	if !reflect.DeepEqual(sm.Spec.Endpoints, targetSpec.Endpoints) {
+		sm.Spec.Endpoints = targetSpec.Endpoints
+		changed = true
+	}
+
+	if changed {
+		if !exists {
+			err = r.Client.Create(ctx, sm)
+		} else {
+			err = r.Client.Update(ctx, sm)
+		}
 		if k8serr.IsConflict(err) {
 			// this can occur during normal operations if the Service Monitor was updated during this reconcile loop
-			r.Log.Info("Could not create (or) update service monitor due to resource conflict")
+			r.Log.Info("Could not create (or) update service monitor due to resource conflict", "namespace", sm.Namespace)
 			return nil, true
+		} else if err != nil {
+			return fmt.Errorf("could not create (or) update service monitor %s: %w", serviceMonitorName, err), false
+		} else {
+			r.Log.Info("Created or Updated ServiceMonitor", "name", serviceMonitorName, "namespace", sm.Namespace)
 		}
-		r.Log.Error(err, "Could not create (or) update service monitor", "serviceMonitorName", serviceMonitorName)
 	}
-	return err, false
+	return nil, false
 }
 
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -325,15 +374,19 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	builder := ctrl.NewControllerManagedBy(mgr).
 		Named("ServiceReconciler").
-		For(&appsv1.Deployment{}, builder.WithPredicates(predicate.Funcs{
+		For(&appsv1.Deployment{}, bld.WithPredicates(predicate.Funcs{
 			CreateFunc: func(event event.CreateEvent) bool { return filter(event.Object) },
 			UpdateFunc: func(event event.UpdateEvent) bool { return filter(event.ObjectNew) },
 			DeleteFunc: func(event event.DeleteEvent) bool { return false },
 		})).
 		Owns(&corev1.Service{}).
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
-			ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				return []reconcile.Request{{NamespacedName: r.ConfigMapName}}
+			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
+				if _, _, changed := r.getMMService(r.ConfigProvider, true); changed {
+					r.Log.Info("Triggering service reconciliation after config change")
+					return []reconcile.Request{{NamespacedName: r.ControllerDeployment}}
+				}
+				return []reconcile.Request{}
 			}, r.ConfigProvider, &r.Client))
 
 	// Enable ServiceMonitor watch if ServiceMonitorCRDExists
@@ -341,9 +394,7 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		builder.Watches(&source.Kind{Type: &monitoringv1.ServiceMonitor{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
 				if o.GetName() == serviceMonitorName && o.GetNamespace() == r.ControllerDeployment.Namespace {
-					return []reconcile.Request{{
-						NamespacedName: types.NamespacedName{Name: serviceMonitorName, Namespace: r.ConfigMapName.Namespace},
-					}}
+					return []reconcile.Request{{NamespacedName: r.ControllerDeployment}}
 				}
 				return []reconcile.Request{}
 			}))

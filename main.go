@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"time"
 
+	config2 "github.com/kserve/modelmesh-serving/pkg/config"
+
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -135,7 +137,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cp, err := controllers.NewConfigProvider(context.Background(), cl, types.NamespacedName{Name: UserConfigMapName, Namespace: ControllerNamespace})
+	cp, err := config2.NewConfigProvider(context.Background(), cl, types.NamespacedName{Name: UserConfigMapName, Namespace: ControllerNamespace})
 	if err != nil {
 		setupLog.Error(err, "Error loading user config from configmap", "ConfigMapName", UserConfigMapName)
 		os.Exit(1)
@@ -228,7 +230,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	mmService := mmesh.NewMMService()
+	mmServiceMap := &controllers.MMServiceMap{}
 
 	modelEventStream, err := mmesh.NewModelEventStream(ctrl.Log.WithName("ModelMeshEventStream"),
 		mgr.GetClient(), ControllerNamespace)
@@ -254,7 +256,7 @@ func main() {
 		Log:                     ctrl.Log.WithName("controllers").WithName("Service"),
 		Scheme:                  mgr.GetScheme(),
 		ControllerDeployment:    types.NamespacedName{Namespace: ControllerNamespace, Name: controllerDeploymentName},
-		ModelMeshService:        mmService,
+		MMServices:              mmServiceMap,
 		ModelEventStream:        modelEventStream,
 		ConfigProvider:          cp,
 		ConfigMapName:           types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
@@ -328,11 +330,11 @@ func main() {
 					if !ok {
 						break
 					}
-					event := event.GenericEvent{Object: &v1.PartialObjectMetadata{ObjectMeta: v1.ObjectMeta{
+					evnt := event.GenericEvent{Object: &v1.PartialObjectMetadata{ObjectMeta: v1.ObjectMeta{
 						Name: pe.Name, Namespace: fmt.Sprintf("%s_%s", sid, pe.Namespace)},
 					}}
-					predictorControllerEvents <- event
-					runtimeControllerEvents <- event
+					predictorControllerEvents <- evnt
+					runtimeControllerEvents <- evnt
 				}
 				setupLog.Info("Predictor source plugin event channel closed", "sourceId", sid)
 			})
@@ -345,7 +347,7 @@ func main() {
 	if err = (&controllers.PredictorReconciler{
 		Client:         mgr.GetClient(),
 		Log:            ctrl.Log.WithName("controllers").WithName("Predictor"),
-		MMService:      mmService,
+		MMServices:     mmServiceMap,
 		RegistryLookup: registryMap,
 	}).SetupWithManager(mgr, modelEventStream, enableIsvcWatch, predictorControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Predictor")

@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package controllers
+package config
 
 import (
 	"context"
@@ -39,6 +39,9 @@ import (
 const (
 	EnvEtcdSecretName     = "ETCD_SECRET_NAME"
 	DefaultEtcdSecretName = "model-serving-etcd"
+
+	ConfigType    = "yaml"
+	MountLocation = "/etc/model-serving/config-defaults.yaml"
 )
 
 var (
@@ -46,7 +49,7 @@ var (
 	configLog     = ctrl.Log.WithName("config")
 )
 
-// Type Config holds process global configuration information
+// Config holds process global configuration information
 type Config struct {
 	// System config
 	EtcdSecretName    string // DEPRECATED - should be removed in the future
@@ -138,7 +141,7 @@ func (c *Config) GetEtcdSecretName() string {
 	return secretName
 }
 
-// Type Config holds process global configuration information
+// ConfigProvider provides immutable snapshots of current config
 type ConfigProvider struct {
 	config                unsafe.Pointer
 	c                     sync.Cond
@@ -159,6 +162,16 @@ func NewConfigProvider(ctx context.Context, cl client.Client, name types.Namespa
 
 func (cp *ConfigProvider) GetConfig() *Config {
 	return (*Config)(atomic.LoadPointer(&cp.config))
+}
+
+// NewConfigProviderForTest is only for tests
+func NewConfigProviderForTest() *ConfigProvider {
+	return &ConfigProvider{c: sync.Cond{L: &sync.Mutex{}}}
+}
+
+// SetConfigForTest is only for tests
+func SetConfigForTest(cp *ConfigProvider, cfg *Config) {
+	atomic.StorePointer(&cp.config, (unsafe.Pointer)(cfg))
 }
 
 func (cp *ConfigProvider) ReloadConfigMap(ctx context.Context, c client.Client, name types.NamespacedName) error {
@@ -333,7 +346,7 @@ func init() {
 	if _, filename, _, ok := runtime.Caller(0); !ok {
 		panic("Unable to get the caller")
 	} else {
-		filepath := path.Join(path.Dir(filename), "../config/default")
+		filepath := path.Join(path.Dir(filename), "../../config/default")
 		defaultConfig.AddConfigPath(filepath)
 	}
 
