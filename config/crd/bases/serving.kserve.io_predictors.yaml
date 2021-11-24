@@ -145,7 +145,6 @@ spec:
                   type: object
               required:
                 - modelType
-                - path
               type: object
             status:
               default:
