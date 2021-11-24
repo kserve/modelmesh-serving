@@ -360,8 +360,8 @@ func main() {
 		Scheme:              mgr.GetScheme(),
 		ConfigProvider:      cp,
 		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
-		DeploymentNamespace: ControllerNamespace,
-		DeploymentName:      controllerDeploymentName,
+		ControllerNamespace: ControllerNamespace,
+		ControllerName:      controllerDeploymentName,
 		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")

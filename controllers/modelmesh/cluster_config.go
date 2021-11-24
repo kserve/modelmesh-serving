@@ -17,6 +17,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -47,17 +49,28 @@ type ClusterConfig struct {
 	Scheme   *runtime.Scheme
 }
 
-func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl client.Client) error {
+func (cc ClusterConfig) Reconcile(ctx context.Context, owner *corev1.Namespace, cl client.Client) error {
+	m := &corev1.ConfigMap{}
+	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: owner.GetName()}, m)
+	notfound := errors.IsNotFound(err)
+	if err != nil && !notfound {
+		return err
+	}
+	if cc.Runtimes == nil || len(cc.Runtimes.Items) == 0 {
+		if !notfound {
+			return cl.Delete(ctx, m)
+		}
+		return nil
+	}
+
 	commonLabelValue := "modelmesh-controller"
-	m := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      InternalConfigMapName,
-			Namespace: owner.GetNamespace(),
-			Labels: map[string]string{
-				"app.kubernetes.io/instance":   commonLabelValue,
-				"app.kubernetes.io/managed-by": commonLabelValue,
-				"app.kubernetes.io/name":       commonLabelValue,
-			},
+	m.ObjectMeta = metav1.ObjectMeta{
+		Name:      InternalConfigMapName,
+		Namespace: owner.GetName(),
+		Labels: map[string]string{
+			"app.kubernetes.io/instance":   commonLabelValue,
+			"app.kubernetes.io/managed-by": commonLabelValue,
+			"app.kubernetes.io/name":       commonLabelValue,
 		},
 	}
 	cc.addConstraints(cc.Runtimes, m)
@@ -65,11 +78,11 @@ func (cc ClusterConfig) Apply(ctx context.Context, owner metav1.Object, cl clien
 		return err
 	}
 
-	err := cl.Create(ctx, m)
-	if errors.IsAlreadyExists(err) {
-		err = cl.Update(ctx, m)
+	if notfound {
+		return cl.Create(ctx, m)
+	} else {
+		return cl.Update(ctx, m)
 	}
-	return err
 }
 
 // Add constraint data to the provided config map
