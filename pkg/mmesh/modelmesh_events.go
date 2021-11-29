@@ -119,8 +119,7 @@ func (mes *ModelMeshEventStream) UpdateWatchedService(ctx context.Context,
 			w.cancelWatch()
 		}
 		if mes.etcdClient != nil {
-			err := mes.etcdClient.Close()
-			if err != nil {
+			if err := mes.etcdClient.Close(); err != nil {
 				mes.logger.Error(err, "Could not close existing etcd client")
 			}
 		}
