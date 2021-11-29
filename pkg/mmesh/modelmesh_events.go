@@ -175,13 +175,14 @@ func (mes *ModelMeshEventStream) refreshWatches(nw *namespaceWatch, namespace, s
 				return
 			}
 			if owner, err := ownerIDFromVModelRecord(value); err == nil {
+				encodedNamespace := namespace
 				if owner != "" {
-					namespace = fmt.Sprintf("%s_%s", owner, namespace)
+					encodedNamespace = fmt.Sprintf("%s_%s", owner, namespace)
 				}
 				logger.V(1).Info("ModelMesh VModel Event",
 					"vModelId", key, "owner", owner, "event", eventType)
 				mes.MMEvents <- event.GenericEvent{Object: &v1.PartialObjectMetadata{
-					ObjectMeta: v1.ObjectMeta{Name: key, Namespace: namespace},
+					ObjectMeta: v1.ObjectMeta{Name: key, Namespace: encodedNamespace},
 				}}
 			} else {
 				logger.Error(err, "Error parsing VModel record to determine owner, ignoring event",
