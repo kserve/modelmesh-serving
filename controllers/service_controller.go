@@ -140,7 +140,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	s = svc
 
-	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName); err != nil {
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, req.Namespace); err != nil {
 		return RequeueResult, err
 	}
 
@@ -209,6 +209,7 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 		} else if err := r.Delete(ctx, ss); err != nil {
 			return nil, err, false
 		} else {
+			r.ModelEventStream.RemoveWatchedService(ss.GetName(), ss.GetNamespace())
 			r.Log.V(1).Info("Deleted Service with label but different name", "name", ss.GetName(), "namespace", ss.GetNamespace())
 		}
 	}

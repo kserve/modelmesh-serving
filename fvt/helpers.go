@@ -176,8 +176,8 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 	ch := watcher.ResultChan()
 	targetStateReached := false
 	var obj *unstructured.Unstructured
-	var targetState string = expectedStates[len(expectedStates)-1]
-	var lastState string
+	targetState := expectedStates[len(expectedStates)-1]
+	lastState := "UNSEEN"
 	var predictorName string
 
 	timeout := time.After(predictorTimeout)
