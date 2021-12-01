@@ -13,15 +13,26 @@
 // limitations under the License.
 package controllers
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"context"
 
-func modelMeshEnabled(n *corev1.Namespace, controllerNamespace string) bool {
-	if n == nil {
-		return false
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+func modelMeshEnabled(ctx context.Context, namespace, controllerNamespace string,
+	client client.Client, clusterScope bool) (bool, error) {
+
+	// don't attempt to access namespace resource if not cluster scope
+	if clusterScope {
+		n := &corev1.Namespace{}
+		if err := client.Get(ctx, types.NamespacedName{Name: namespace}, n); err != nil {
+			return false, err
+		}
+		if v, ok := n.Labels["modelmesh-enabled"]; ok {
+			return v == "true", nil
+		}
 	}
-	if v, ok := n.Labels["modelmesh-enabled"]; ok {
-		return v == "true"
-	} else {
-		return n.Name == controllerNamespace
-	}
+	return namespace == controllerNamespace, nil
 }

@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	config2 "github.com/kserve/modelmesh-serving/pkg/config"
 
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
@@ -301,6 +303,14 @@ func main() {
 	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &servingv1beta1.InferenceService{},
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
+	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
+	clusterScopeEnabled := err == nil || errors.IsNotFound(err)
+	if clusterScopeEnabled {
+		setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
+	} else {
+		setupLog.Info("Unable to access Namespace resources, controller operating in own-namespace only mode")
+	}
+
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
 		predictorControllerEvents = make(chan event.GenericEvent, 256)
@@ -362,6 +372,7 @@ func main() {
 		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
 		ControllerNamespace: ControllerNamespace,
 		ControllerName:      controllerDeploymentName,
+		HasNamespaceAccess:  clusterScopeEnabled,
 		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")

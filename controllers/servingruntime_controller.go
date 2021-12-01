@@ -66,6 +66,8 @@ type ServingRuntimeReconciler struct {
 	ConfigMapName       types.NamespacedName
 	ControllerName      string
 	ControllerNamespace string
+	// whether the controller has RBAC permission to read namespaces
+	HasNamespaceAccess bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -94,20 +96,20 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.V(1).Info("ServingRuntime reconciler called")
 
 	// Make sure the namespace has serving enabled
-	n := &corev1.Namespace{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: req.Namespace}, n); err != nil {
+	mmEnabled, err := modelMeshEnabled(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+	if err != nil {
 		return RequeueResult, err
 	}
 	var runtimes *api.ServingRuntimeList
-	if modelMeshEnabled(n, r.ControllerNamespace) {
+	if mmEnabled {
 		runtimes = &api.ServingRuntimeList{}
-		if err := r.Client.List(ctx, runtimes); err != nil {
+		if err = r.Client.List(ctx, runtimes); err != nil {
 			return RequeueResult, err
 		}
 	}
 
 	cc := modelmesh.ClusterConfig{Runtimes: runtimes, Scheme: r.Scheme}
-	if err := cc.Reconcile(ctx, n, r.Client); err != nil {
+	if err = cc.Reconcile(ctx, req.Namespace, r.Client); err != nil {
 		return RequeueResult, fmt.Errorf("could not reconcile the modelmesh type-constraints configmap: %w", err)
 	}
 
@@ -118,7 +120,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	//reconcile this serving runtime
 	rt := &api.ServingRuntime{}
-	if err := r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
+	if err = r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
 		log.Info("Runtime is not found")
 
 		// remove runtime from info map
@@ -135,7 +137,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Check that ServerType is provided in rt.Spec and that this value matches that of the specified container
-	if err := validateServingRuntimeSpec(rt); err != nil {
+	if err = validateServingRuntimeSpec(rt); err != nil {
 		return ctrl.Result{}, fmt.Errorf("Invalid ServingRuntime Spec: %w", err)
 	}
 
@@ -174,9 +176,9 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// if the runtime is disabled, delete the deployment
-	if rt.Disabled() || !modelMeshEnabled(n, r.ControllerNamespace) {
+	if rt.Disabled() || !mmEnabled {
 		log.Info("Runtime is disabled or namespace is not modelmesh-enabled")
-		if err := mmDeployment.Delete(ctx, r.Client); err != nil {
+		if err = mmDeployment.Delete(ctx, r.Client); err != nil {
 			return ctrl.Result{}, fmt.Errorf("could not delete the model mesh deployment: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -354,21 +356,24 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				return r.requestsForRuntimes("", func(rt *api.ServingRuntime) bool {
-					n := &corev1.Namespace{}
-					err := r.Client.Get(context.TODO(), types.NamespacedName{Name: rt.GetNamespace()}, n)
-					return err != nil || modelMeshEnabled(n, r.ControllerNamespace) // in case of error just reconcile anyhow
+					mme, err := modelMeshEnabled(context.TODO(), rt.GetNamespace(),
+						r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+					return err != nil || mme // in case of error just reconcile anyhow
 				})
 			}, r.ConfigProvider, &r.Client)).
-		// watch namespaces to check the modelmesh-enabled flag
-		Watches(&source.Kind{Type: &corev1.Namespace{}}, handler.EnqueueRequestsFromMapFunc(
-			func(o client.Object) []reconcile.Request {
-				return r.requestsForRuntimes(o.GetName(), nil)
-			})).
 		// watch predictors and reconcile the corresponding runtime(s) it could be assigned to
 		Watches(&source.Kind{Type: &api.Predictor{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
+
+	if r.HasNamespaceAccess {
+		// watch namespaces to check the modelmesh-enabled flag
+		builder = builder.Watches(&source.Kind{Type: &corev1.Namespace{}}, handler.EnqueueRequestsFromMapFunc(
+			func(o client.Object) []reconcile.Request {
+				return r.requestsForRuntimes(o.GetName(), nil)
+			}))
+	}
 
 	if watchInferenceServices {
 		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}},
