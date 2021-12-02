@@ -107,8 +107,11 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 		mmc = mms.MMClient()
 	}
 	var finalErr error
-	if predictor.Spec.Storage != nil && (predictor.Spec.Storage.S3 == nil || predictor.Spec.Storage.PersistentVolumeClaim != nil) {
-		log.Info("Only S3 Storage currently supported", "Storage", predictor.Spec.Storage)
+
+	invalidPredictorMessage := validatePredictor(predictor)
+
+	if invalidPredictorMessage != "" {
+		log.Info("Invalid Predictor specification", "Spec", predictor.Spec)
 		if mmc != nil {
 			// Don't update invalid spec but still check vmodel status to sync the existing model states
 			vModelState, err := mmc.GetVModelStatus(ctx, &mmeshapi.GetVModelStatusRequest{
@@ -128,7 +131,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 		// Reflect invalid spec in Status (overwrite)
 		if setStatusFailureInfo(status, &common.FailureInfo{
 			Reason:  common.InvalidPredictorSpec,
-			Message: "Only S3 Storage is currently supported",
+			Message: invalidPredictorMessage,
 			ModelId: concreteModelName(predictor, sourceId),
 		}) {
 			updateStatus = true
@@ -214,12 +217,43 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	return ctrl.Result{}, nil
 }
 
+// validatePredictor checks if there are incompatibilities in the spec
+// Returns a string describing the reason a Predictor is invalid, empty if valid.
+func validatePredictor(predictor *api.Predictor) string {
+	// if it exists, inspect and validate the storage specification
+	if predictor.Spec.Storage == nil {
+		return ""
+	}
+
+	storage := predictor.Spec.Storage
+	// check the path configuration
+	if storage.Path != nil && predictor.Spec.Path != "" {
+		return "Only one of spec.path and spec.storage.path can be specified"
+	}
+	// check the schemaPath configuration
+	if storage.SchemaPath != nil && predictor.Spec.SchemaPath != nil {
+		return "Only one of spec.schemaPath and spec.storage.schemaPath can be specified"
+	}
+
+	// PersistentVolumeClaim is deprecated and was never supported
+	if storage.PersistentVolumeClaim != nil {
+		return "spec.storage.PersistentVolumeClaim is not currently supported"
+	}
+
+	// S3 is deprecated and can not be specified alongside the new storage fields
+	if storage.S3 != nil && (storage.Path != nil || storage.SchemaPath != nil || storage.Parameters != nil || storage.StorageKey != nil) {
+		return "spec.storage.s3 cannot be specified with any other keys in spec.storage"
+
+	}
+	return ""
+}
+
 // passed in ModelInfo.Key field of registration requests
 type ModelKeyInfo struct {
-	StorageKey *string        `json:"storage_key,omitempty"`
-	Bucket     *string        `json:"bucket,omitempty"`
-	ModelType  *api.ModelType `json:"model_type,omitempty"`
-	SchemaPath *string        `json:"schema_path,omitempty"`
+	StorageKey    *string                `json:"storage_key,omitempty"`
+	StorageParams map[string]interface{} `json:"storage_params,omitempty"`
+	ModelType     *api.ModelType         `json:"model_type,omitempty"`
+	SchemaPath    *string                `json:"schema_path,omitempty"`
 }
 
 const (
@@ -277,15 +311,13 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 	setVmodelCtx, cancel := context.WithTimeout(ctx, GrpcRequestTimeout)
 	defer cancel()
 
-	mki := ModelKeyInfo{
-		ModelType:  &spec.Model.Type,
-		SchemaPath: spec.Model.SchemaPath,
-	}
+	path, schemaPath, storageKey, storageParams := extractModelFields(predictor)
 
-	if spec.Storage != nil && spec.Storage.S3 != nil {
-		//TODO other storage types
-		mki.StorageKey = &spec.Storage.S3.SecretKey
-		mki.Bucket = spec.Storage.S3.Bucket
+	mki := ModelKeyInfo{
+		StorageKey:    storageKey,
+		ModelType:     &spec.Model.Type,
+		SchemaPath:    schemaPath,
+		StorageParams: storageParams,
 	}
 
 	keyJSONBytes, err := json.Marshal(mki)
@@ -301,10 +333,54 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 		LoadNow:               loadNow,
 		ModelInfo: &mmeshapi.ModelInfo{
 			Type: modelmesh.GetPredictorModelTypeLabel(predictor),
-			Path: spec.Path,
+			Path: path,
 			Key:  string(keyJSONBytes),
 		},
 	})
+}
+
+// Extracts fields from the Predictor related to the Model to be loaded
+// Handles backwards compability of fields that have been changed/deprecated.
+func extractModelFields(predictor *api.Predictor) (path string, schemaPath, storageKey *string, storageParams map[string]interface{}) {
+	// path
+	if predictor.Spec.Storage.Path != nil {
+		path = *predictor.Spec.Storage.Path
+	} else {
+		path = predictor.Spec.Path
+	}
+
+	// schemaPath
+	if predictor.Spec.Storage.SchemaPath != nil {
+		schemaPath = predictor.Spec.Storage.SchemaPath
+	} else {
+		schemaPath = predictor.Spec.SchemaPath
+	}
+
+	// storageKey
+	if predictor.Spec.Storage.StorageKey != nil {
+		storageKey = predictor.Spec.Storage.StorageKey
+	} else if predictor.Spec.Storage.S3 != nil {
+		storageKey = &predictor.Spec.Storage.S3.SecretKey
+	}
+
+	// storageParams
+	storageParams = make(map[string]interface{})
+	if predictor.Spec.Storage.Parameters != nil {
+		storageParams = tranformParameters(*predictor.Spec.Storage.Parameters)
+	} else if predictor.Spec.Storage.S3 != nil && predictor.Spec.Storage.S3.Bucket != nil {
+		storageParams["bucket"] = predictor.Spec.Storage.S3.Bucket
+	}
+
+	return
+}
+
+func tranformParameters(input map[string]string) map[string]interface{} {
+	output := map[string]interface{}{}
+	for key, value := range input {
+		output[key] = value
+	}
+
+	return output
 }
 
 // Returns the model-mesh model name corresponding to a particular Predictor and sourceId
