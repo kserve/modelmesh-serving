@@ -165,3 +165,14 @@ spec:
           cpu: 500m
           memory: 1Gi
 ```
+
+### Debugging
+
+To enable easier debugging, add the environment variables `MLSERVER_DEBUG` and `MLSERVER_MODEL_PARALLEL_WORKERS` in the `ServingRuntime` as shown below.
+
+```yaml
+- name: MLSERVER_DEBUG
+  value: "true"
+- name: MLSERVER_MODEL_PARALLEL_WORKERS
+  value: "0"
+```
