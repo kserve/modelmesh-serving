@@ -170,8 +170,8 @@ var _ = BeforeSuite(func(done Done) {
 		Scheme:              k8sManager.GetScheme(),
 		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
 		ConfigProvider:      configProvider,
-		DeploymentName:      "modelmesh-controller",
-		DeploymentNamespace: namespace,
+		ControllerName:      "modelmesh-controller",
+		ControllerNamespace: namespace,
 	}).SetupWithManager(k8sManager, false, nil)
 	Expect(err).ToNot(HaveOccurred())
 

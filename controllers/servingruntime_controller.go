@@ -64,8 +64,10 @@ type ServingRuntimeReconciler struct {
 	Scheme              *runtime.Scheme
 	ConfigProvider      *config.ConfigProvider
 	ConfigMapName       types.NamespacedName
-	DeploymentName      string
-	DeploymentNamespace string
+	ControllerName      string
+	ControllerNamespace string
+	// whether the controller has RBAC permission to read namespaces
+	HasNamespaceAccess bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -93,35 +95,33 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log := r.Log.WithValues("servingruntime", req.NamespacedName)
 	log.V(1).Info("ServingRuntime reconciler called")
 
-	// Reconcile the model mesh cluster config map
-	runtimes := &api.ServingRuntimeList{}
-	if err := r.Client.List(ctx, runtimes); err != nil {
+	// Make sure the namespace has serving enabled
+	mmEnabled, err := modelMeshEnabled(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+	if err != nil {
 		return RequeueResult, err
 	}
-
-	d := &appsv1.Deployment{}
-	err := r.Client.Get(ctx, types.NamespacedName{
-		Name:      r.DeploymentName,
-		Namespace: r.DeploymentNamespace,
-	}, d)
-	if err != nil {
-		return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
+	var runtimes *api.ServingRuntimeList
+	if mmEnabled {
+		runtimes = &api.ServingRuntimeList{}
+		if err = r.Client.List(ctx, runtimes); err != nil {
+			return RequeueResult, err
+		}
 	}
 
-	cc := modelmesh.ClusterConfig{
-		Runtimes: runtimes,
-		Scheme:   r.Scheme,
+	cc := modelmesh.ClusterConfig{Runtimes: runtimes, Scheme: r.Scheme}
+	if err = cc.Reconcile(ctx, req.Namespace, r.Client); err != nil {
+		return RequeueResult, fmt.Errorf("could not reconcile the modelmesh type-constraints configmap: %w", err)
 	}
 
-	if err = cc.Apply(ctx, d, r.Client); err != nil {
-		return RequeueResult, fmt.Errorf("could not apply the modelmesh type-constraints configmap: %w", err)
-	}
+	//TODO(probably) here ... if not controller namespace then
+	//  read etcd secret from controller namespace, replace rootprefix with ns-specific one
+	//  and the create/update etcd secret (with same name) in _this_ namespace
+	//  and include an "ownership" label similar to the tc-config configmap
 
 	//reconcile this serving runtime
 	rt := &api.ServingRuntime{}
-	err = r.Client.Get(ctx, req.NamespacedName, rt)
-	if errors.IsNotFound(err) {
-		r.Log.Info("Runtime is not found")
+	if err = r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
+		log.Info("Runtime is not found")
 
 		// remove runtime from info map
 		r.runtimeInfoMapMutex.Lock()
@@ -132,6 +132,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			delete(r.runtimeInfoMap, req.NamespacedName)
 		}
 		return ctrl.Result{}, nil
+	} else if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error retrieving ServingRuntime %s: %w", req.NamespacedName, err)
 	}
 
 	// Check that ServerType is provided in rt.Spec and that this value matches that of the specified container
@@ -140,61 +142,61 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// construct the deployment
-	config := r.ConfigProvider.GetConfig()
+	cfg := r.ConfigProvider.GetConfig()
 	mmDeployment := modelmesh.Deployment{
-		ServiceName:                config.InferenceServiceName,
-		ServicePort:                config.InferenceServicePort,
+		ServiceName:                cfg.InferenceServiceName,
+		ServicePort:                cfg.InferenceServicePort,
 		Name:                       req.Name,
 		Namespace:                  req.Namespace,
 		Owner:                      rt,
 		DefaultVModelOwner:         PredictorCRSourceId,
 		Log:                        log,
-		Metrics:                    config.Metrics.Enabled,
-		PrometheusPort:             config.Metrics.Port,
-		PrometheusScheme:           config.Metrics.Scheme,
-		ModelMeshImage:             config.ModelMeshImage.TaggedImage(),
-		ModelMeshResources:         config.ModelMeshResources.ToKubernetesType(),
-		ModelMeshAdditionalEnvVars: config.InternalModelMeshEnvVars.ToKubernetesType(),
-		RESTProxyEnabled:           config.RESTProxy.Enabled,
-		RESTProxyImage:             config.RESTProxy.Image.TaggedImage(),
-		RESTProxyPort:              config.RESTProxy.Port,
-		RESTProxyResources:         config.RESTProxy.Resources.ToKubernetesType(),
-		PullerImage:                config.StorageHelperImage.TaggedImage(),
-		PullerImageCommand:         config.StorageHelperImage.Command,
-		PullerResources:            config.StorageHelperResources.ToKubernetesType(),
-		Port:                       config.InferenceServicePort,
-		GrpcMaxMessageSize:         config.GrpcMaxMessageSizeBytes,
+		Metrics:                    cfg.Metrics.Enabled,
+		PrometheusPort:             cfg.Metrics.Port,
+		PrometheusScheme:           cfg.Metrics.Scheme,
+		ModelMeshImage:             cfg.ModelMeshImage.TaggedImage(),
+		ModelMeshResources:         cfg.ModelMeshResources.ToKubernetesType(),
+		ModelMeshAdditionalEnvVars: cfg.InternalModelMeshEnvVars.ToKubernetesType(),
+		RESTProxyEnabled:           cfg.RESTProxy.Enabled,
+		RESTProxyImage:             cfg.RESTProxy.Image.TaggedImage(),
+		RESTProxyPort:              cfg.RESTProxy.Port,
+		RESTProxyResources:         cfg.RESTProxy.Resources.ToKubernetesType(),
+		PullerImage:                cfg.StorageHelperImage.TaggedImage(),
+		PullerImageCommand:         cfg.StorageHelperImage.Command,
+		PullerResources:            cfg.StorageHelperResources.ToKubernetesType(),
+		Port:                       cfg.InferenceServicePort,
+		GrpcMaxMessageSize:         cfg.GrpcMaxMessageSizeBytes,
 		// Replicas is set below
-		TLSSecretName:       config.TLS.SecretName,
-		TLSClientAuth:       config.TLS.ClientAuth,
-		EtcdSecretName:      config.GetEtcdSecretName(),
-		ServiceAccountName:  config.ServiceAccountName,
-		EnableAccessLogging: config.EnableAccessLogging,
+		TLSSecretName:       cfg.TLS.SecretName,
+		TLSClientAuth:       cfg.TLS.ClientAuth,
+		EtcdSecretName:      cfg.GetEtcdSecretName(),
+		ServiceAccountName:  cfg.ServiceAccountName,
+		EnableAccessLogging: cfg.EnableAccessLogging,
 		Client:              r.Client,
 	}
 
 	// if the runtime is disabled, delete the deployment
-	if rt.Disabled() {
-		log.Info("Deployment is disabled for this runtime")
+	if rt.Disabled() || !mmEnabled {
+		log.Info("Runtime is disabled or namespace is not modelmesh-enabled")
 		if err = mmDeployment.Delete(ctx, r.Client); err != nil {
-			return ctrl.Result{}, fmt.Errorf("Could not delete the model mesh deployment: %w", err)
+			return ctrl.Result{}, fmt.Errorf("could not delete the model mesh deployment: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	replicas, requeueDuration, err := r.determineReplicasAndRequeueDuration(ctx, log, config, rt)
+	replicas, requeueDuration, err := r.determineReplicasAndRequeueDuration(ctx, log, cfg, rt)
 	if err != nil {
-		return RequeueResult, fmt.Errorf("Could not determine replicas: %w", err)
+		return RequeueResult, fmt.Errorf("could not determine replicas: %w", err)
 	}
 	mmDeployment.Replicas = replicas
 	if err = mmDeployment.Apply(ctx); err != nil {
 		if errors.IsConflict(err) {
 			// this can occur during normal operations if the deployment was updated
 			// during this reconcile loop
-			log.Info("Could not apply model mesh deployment due to resource conflict")
+			log.Info("could not apply model mesh deployment due to resource conflict")
 			return RequeueResult, nil
 		}
-		return ctrl.Result{}, fmt.Errorf("Could not apply the model mesh deployment: %w", err)
+		return ctrl.Result{}, fmt.Errorf("could not apply the model mesh deployment: %w", err)
 	}
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
@@ -205,17 +207,19 @@ func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
 	}
 	st := rt.Spec.BuiltInAdapter.ServerType
 	if _, ok := builtInServerTypes[st]; !ok {
-		return fmt.Errorf("Unrecognized built-in runtime server type %s", st)
+		return fmt.Errorf("unrecognized built-in runtime server type %s", st)
 	}
 	for _, c := range rt.Spec.Containers {
 		if c.Name == string(st) {
 			return nil // found, all good
 		}
 	}
-	return fmt.Errorf("Must include runtime Container with name %s", st)
+	return fmt.Errorf("must include runtime Container with name %s", st)
 }
 
-func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger, config *config.Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
+func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger,
+	config *config.Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
+
 	var err error
 	const scaledToZero = uint16(0)
 	scaledUp := r.determineReplicas(rt)
@@ -302,7 +306,7 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 	}
 
 	for _, pr := range r.RegistryMap {
-		if found, err := pr.Find(ctx, r.DeploymentNamespace, f); found || err != nil {
+		if found, err := pr.Find(ctx, rt.GetNamespace(), f); found || err != nil {
 			return found, err
 		}
 	}
@@ -324,7 +328,7 @@ func runtimeSupportsPredictor(rt *api.ServingRuntime, p *api.Predictor) bool {
 func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Context, p *api.Predictor) ([]types.NamespacedName, error) {
 	// list all runtimes
 	runtimes := &api.ServingRuntimeList{}
-	if err := r.Client.List(ctx, runtimes, client.InNamespace(r.DeploymentNamespace)); err != nil {
+	if err := r.Client.List(ctx, runtimes, client.InNamespace(p.Namespace)); err != nil {
 		return nil, err
 	}
 
@@ -334,7 +338,7 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 		if runtimeSupportsPredictor(rt, p) {
 			srnns = append(srnns, types.NamespacedName{
 				Name:      rt.GetName(),
-				Namespace: r.DeploymentNamespace,
+				Namespace: p.Namespace,
 			})
 		}
 	}
@@ -351,25 +355,25 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		// watch the user configmap and reconcile all runtimes when it changes
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				list := &api.ServingRuntimeList{}
-				if err := r.Client.List(context.TODO(), list); err != nil {
-					r.Log.Error(err, "Error listing ServingRuntimes to reconcile")
-					return []reconcile.Request{}
-				}
-				requests := make([]reconcile.Request, len(list.Items))
-				for i := range list.Items {
-					rt := &list.Items[i]
-					requests[i] = reconcile.Request{
-						NamespacedName: types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace},
-					}
-				}
-				return requests
+				return r.requestsForRuntimes("", func(rt *api.ServingRuntime) bool {
+					mme, err := modelMeshEnabled(context.TODO(), rt.GetNamespace(),
+						r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+					return err != nil || mme // in case of error just reconcile anyhow
+				})
 			}, r.ConfigProvider, &r.Client)).
 		// watch predictors and reconcile the corresponding runtime(s) it could be assigned to
 		Watches(&source.Kind{Type: &api.Predictor{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
+
+	if r.HasNamespaceAccess {
+		// watch namespaces to check the modelmesh-enabled flag
+		builder = builder.Watches(&source.Kind{Type: &corev1.Namespace{}}, handler.EnqueueRequestsFromMapFunc(
+			func(o client.Object) []reconcile.Request {
+				return r.requestsForRuntimes(o.GetName(), nil)
+			}))
+	}
 
 	if watchInferenceServices {
 		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}},
@@ -384,9 +388,9 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	if sourcePluginEvents != nil {
 		builder.Watches(&source.Channel{Source: sourcePluginEvents},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				nn, source := predictor_source.ResolveSource(types.NamespacedName{
+				nn, src := predictor_source.ResolveSource(types.NamespacedName{
 					Name: o.GetName(), Namespace: o.GetNamespace()}, PredictorCRSourceId)
-				if registry, ok := r.RegistryMap[source]; ok {
+				if registry, ok := r.RegistryMap[src]; ok {
 					if p, _ := registry.Get(context.TODO(), nn); p != nil {
 						return r.runtimeRequestsForPredictor(p, registry.GetSourceName())
 					}
@@ -396,6 +400,29 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	}
 
 	return builder.Complete(r)
+}
+
+func (r *ServingRuntimeReconciler) requestsForRuntimes(namespace string,
+	filter func(*api.ServingRuntime) bool) []reconcile.Request {
+	var opts []client.ListOption
+	if namespace != "" {
+		opts = []client.ListOption{client.InNamespace(namespace)}
+	}
+	list := &api.ServingRuntimeList{}
+	if err := r.Client.List(context.TODO(), list, opts...); err != nil {
+		r.Log.Error(err, "Error listing ServingRuntimes to reconcile", "namespace", namespace)
+		return []reconcile.Request{}
+	}
+	requests := make([]reconcile.Request, 0, len(list.Items))
+	for i := range list.Items {
+		rt := &list.Items[i]
+		if filter == nil || filter(rt) {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace},
+			})
+		}
+	}
+	return requests
 }
 
 func (r *ServingRuntimeReconciler) runtimeRequestsForPredictor(p *api.Predictor, source string) []reconcile.Request {
