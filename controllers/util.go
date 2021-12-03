@@ -21,18 +21,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func modelMeshEnabled(ctx context.Context, namespace, controllerNamespace string,
+func modelMeshEnabled(n *corev1.Namespace, controllerNamespace string) bool {
+	if v, ok := n.Labels["modelmesh-enabled"]; ok {
+		return v == "true"
+	}
+	return n.Name == controllerNamespace
+}
+
+func modelMeshEnabled2(ctx context.Context, namespace, controllerNamespace string,
 	client client.Client, clusterScope bool) (bool, error) {
 
 	// don't attempt to access namespace resource if not cluster scope
-	if clusterScope {
-		n := &corev1.Namespace{}
-		if err := client.Get(ctx, types.NamespacedName{Name: namespace}, n); err != nil {
-			return false, err
-		}
-		if v, ok := n.Labels["modelmesh-enabled"]; ok {
-			return v == "true", nil
-		}
+	if !clusterScope {
+		return namespace == controllerNamespace, nil
 	}
-	return namespace == controllerNamespace, nil
+	n := &corev1.Namespace{}
+	if err := client.Get(ctx, types.NamespacedName{Name: namespace}, n); err != nil {
+		return false, err
+	}
+	return modelMeshEnabled(n, controllerNamespace), nil
 }

@@ -253,11 +253,20 @@ func main() {
 		setupLog.Error(err, "Unable to access Service Monitor CRD", "CRDName", serviceMonitorCRDName)
 	}
 
+	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
+	clusterScopeEnabled := err == nil || errors.IsNotFound(err)
+	if clusterScopeEnabled {
+		setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
+	} else {
+		setupLog.Info("Unable to access Namespace resources, controller operating in own-namespace only mode")
+	}
+
 	if err = (&controllers.ServiceReconciler{
 		Client:                  mgr.GetClient(),
 		Log:                     ctrl.Log.WithName("controllers").WithName("Service"),
 		Scheme:                  mgr.GetScheme(),
 		ControllerDeployment:    types.NamespacedName{Namespace: ControllerNamespace, Name: controllerDeploymentName},
+		NamespaceOwned:          clusterScopeEnabled,
 		MMServices:              mmServiceMap,
 		ModelEventStream:        modelEventStream,
 		ConfigProvider:          cp,
@@ -302,14 +311,6 @@ func main() {
 
 	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &servingv1beta1.InferenceService{},
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
-
-	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
-	clusterScopeEnabled := err == nil || errors.IsNotFound(err)
-	if clusterScopeEnabled {
-		setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
-	} else {
-		setupLog.Info("Unable to access Namespace resources, controller operating in own-namespace only mode")
-	}
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {

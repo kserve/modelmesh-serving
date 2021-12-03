@@ -96,7 +96,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.V(1).Info("ServingRuntime reconciler called")
 
 	// Make sure the namespace has serving enabled
-	mmEnabled, err := modelMeshEnabled(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+	mmEnabled, err := modelMeshEnabled2(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
 	if err != nil {
 		return RequeueResult, err
 	}
@@ -356,7 +356,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				return r.requestsForRuntimes("", func(rt *api.ServingRuntime) bool {
-					mme, err := modelMeshEnabled(context.TODO(), rt.GetNamespace(),
+					mme, err := modelMeshEnabled2(context.TODO(), rt.GetNamespace(),
 						r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
 					return err != nil || mme // in case of error just reconcile anyhow
 				})
