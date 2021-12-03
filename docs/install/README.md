@@ -12,9 +12,11 @@
 
 We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
-## Namespace Scope
+## Cluster Scope
 
-ModelMesh Serving is namespace scoped, meaning all of its components must exist within a single namespace and only one instance of ModelMesh Serving can be installed per namespace. Multiple ModelMesh Serving instances can be installed in separate namespaces within the cluster.
+ModelMesh Serving is cluster scoped, meaning its components can exist in multiple user namespaces which are controlled by one instance of ModelMesh Serving Controller in the control plane namespace. Only one ModelMesh Serving Controller instance can be installed within a Kubernetes cluster.
+
+A namespace label `modelmesh-enabled` needs to be "true" to enable a user namespace for ModelMesh Serving.
 
 ## Deployed Components
 
@@ -55,11 +57,14 @@ Please be aware that:
 
 For more details see the [built-in runtime configuration](../configuration/built-in-runtimes.md)
 
-In addition, the following resources will be created in the same namespace:
+In addition, the following resources will be created in the control plane namespace:
 
 - `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration)
 - `tc-config` - ConfigMap used for some internal coordination
 - `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [the example](../predictors/)
+- `model-serving-etcd` - Secret providing access to the Etcd cluster - see [instructions](../install/install-script.md#setup-the-etcd-connection-information)
+
+And the following resources will be created in a user namespace, `tc-config`, `storage-config`, and `model-serving-etcd`.
 
 ## Next Steps
 
