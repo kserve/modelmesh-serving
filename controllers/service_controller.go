@@ -85,6 +85,10 @@ func (m *MMServiceMap) GetOrCreate(namespace string, tlsConfig mmesh.TLSConfigLo
 	return v.(*mmesh.MMService), !loaded
 }
 
+func (m *MMServiceMap) Delete(namespace string) {
+	(*sync.Map)(m).Delete(namespace)
+}
+
 // ServiceReconciler reconciles a ServingRuntime object
 type ServiceReconciler struct {
 	client.Client
@@ -93,6 +97,7 @@ type ServiceReconciler struct {
 	ConfigProvider       *config.ConfigProvider
 	ConfigMapName        types.NamespacedName
 	ControllerDeployment types.NamespacedName
+	NamespaceOwned       bool
 
 	MMServices       *MMServiceMap
 	ModelEventStream *mmesh.ModelMeshEventStream
@@ -100,11 +105,12 @@ type ServiceReconciler struct {
 	ServiceMonitorCRDExists bool
 }
 
-func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bool) (*mmesh.MMService, *config.Config, bool) {
-	mms, newSvc := r.MMServices.GetOrCreate(r.ControllerDeployment.Namespace, r.tlsConfigFromSecret)
+func (r *ServiceReconciler) getMMService(namespace string,
+	cp *config.ConfigProvider, newConfig bool) (*mmesh.MMService, *config.Config, bool) {
+	mms, newSvc := r.MMServices.GetOrCreate(namespace, r.tlsConfigFromSecret)
 	if newSvc || newConfig {
 		if newSvc {
-			r.Log.Info("MMService created for namespace", "namespace", r.ControllerDeployment.Namespace)
+			r.Log.Info("MMService created for namespace", "namespace", namespace)
 		}
 		cfg, changed := mms.UpdateConfig(cp)
 		return mms, cfg, changed
@@ -118,29 +124,60 @@ func (r *ServiceReconciler) getMMService(cp *config.ConfigProvider, newConfig bo
 func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.V(1).Info("Service reconciler called", "name", req.NamespacedName)
 
-	d := &appsv1.Deployment{}
-	if err := r.Client.Get(ctx, r.ControllerDeployment, d); err != nil {
-		if k8serr.IsNotFound(err) {
-			// No need to delete because the Deployment is the owner
-			if mms := r.MMServices.Get(req.Namespace); mms != nil {
-				mms.Disconnect()
-			}
-			return ctrl.Result{}, nil
+	var namespace string
+	var owner metav1.Object
+	if r.NamespaceOwned {
+		// Per-namespace Services owned by the Namespace resource itself
+		namespace = req.Name
+		n := &corev1.Namespace{}
+		if err := r.Client.Get(ctx, req.NamespacedName, n); err != nil {
+			return ctrl.Result{}, err
 		}
-		return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
+		if !modelMeshEnabled(n, r.ControllerDeployment.Namespace) {
+			sl := &corev1.ServiceList{}
+			err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace))
+			if err == nil {
+				for i := range sl.Items {
+					s := &sl.Items[i]
+					if err2 := r.Delete(ctx, s); err2 != nil && err == nil {
+						err = err2
+					}
+				}
+			}
+			if mms := r.MMServices.Get(namespace); mms != nil {
+				mms.Disconnect()
+				r.MMServices.Delete(namespace)
+			}
+			return ctrl.Result{}, err
+		}
+		owner = n
+	} else {
+		// Service in same namespace as controller, owned by controller Deployment
+		namespace = req.Namespace
+		d := &appsv1.Deployment{}
+		if err := r.Client.Get(ctx, r.ControllerDeployment, d); err != nil {
+			if k8serr.IsNotFound(err) {
+				// No need to delete the Service because the Deployment is the owner
+				if mms := r.MMServices.Get(namespace); mms != nil {
+					mms.Disconnect()
+				}
+				return ctrl.Result{}, nil
+			}
+			return RequeueResult, fmt.Errorf("could not get the controller deployment: %w", err)
+		}
+		owner = d
 	}
-
-	mms, cfg, _ := r.getMMService(r.ConfigProvider, false)
+	mms, cfg, _ := r.getMMService(namespace, r.ConfigProvider, false)
 
 	var s *corev1.Service
-	svc, err2, requeue := r.reconcileService(ctx, mms, d)
+	svc, err2, requeue := r.reconcileService(ctx, mms, namespace, owner)
 	if err2 != nil || requeue {
 		//TODO probably shorter requeue time (immediate?) for service recreate case
 		return RequeueResult, err2
 	}
 	s = svc
 
-	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, req.Namespace); err != nil {
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, namespace); err != nil {
 		return RequeueResult, err
 	}
 
@@ -190,13 +227,13 @@ func (r *ServiceReconciler) tlsConfigFromSecret(ctx context.Context, secretName 
 	return &tls.Config{Certificates: []tls.Certificate{certificate}, RootCAs: certPool}, nil
 }
 
-func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMService, d *appsv1.Deployment) (*corev1.Service, error, bool) {
+func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMService,
+	namespace string, owner metav1.Object) (*corev1.Service, error, bool) {
 	serviceName, target := mms.GetNameAndSpec()
 	if serviceName == "" || target == nil {
 		return nil, errors.New("unexpected state - MMService uninitialized"), false
 	}
 
-	namespace := r.ControllerDeployment.Namespace
 	sl := &corev1.ServiceList{}
 	if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
 		return nil, err, false
@@ -231,7 +268,7 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 			},
 			Spec: *target,
 		}
-		if err := controllerutil.SetControllerReference(d, s, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(owner, s, r.Scheme); err != nil {
 			return nil, fmt.Errorf("could not set Service owner reference: %w", err), false
 		}
 		if err := r.Create(ctx, s); err != nil {
@@ -369,21 +406,30 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 }
 
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	builder := ctrl.NewControllerManagedBy(mgr).Named("ServiceReconciler").Owns(&corev1.Service{})
+	if r.NamespaceOwned {
+		// Services are owned by Namespace resources
+		r.setupForClusterScope(builder)
+	} else {
+		// Service is owned by controller Deployment (same namespace only)
+		r.setupForNamespaceScope(builder)
+	}
+	return builder.Complete(r)
+}
+
+func (r *ServiceReconciler) setupForNamespaceScope(builder *bld.Builder) {
 	filter := func(meta metav1.Object) bool {
 		return meta.GetName() == r.ControllerDeployment.Name &&
 			meta.GetNamespace() == r.ControllerDeployment.Namespace
 	}
-	builder := ctrl.NewControllerManagedBy(mgr).
-		Named("ServiceReconciler").
-		For(&appsv1.Deployment{}, bld.WithPredicates(predicate.Funcs{
-			CreateFunc: func(event event.CreateEvent) bool { return filter(event.Object) },
-			UpdateFunc: func(event event.UpdateEvent) bool { return filter(event.ObjectNew) },
-			DeleteFunc: func(event event.DeleteEvent) bool { return false },
-		})).
-		Owns(&corev1.Service{}).
+	builder.For(&appsv1.Deployment{}, bld.WithPredicates(predicate.Funcs{
+		CreateFunc: func(event event.CreateEvent) bool { return filter(event.Object) },
+		UpdateFunc: func(event event.UpdateEvent) bool { return filter(event.ObjectNew) },
+		DeleteFunc: func(event event.DeleteEvent) bool { return false },
+	})).
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				if _, _, changed := r.getMMService(r.ConfigProvider, true); changed {
+				if _, _, changed := r.getMMService(r.ControllerDeployment.Namespace, r.ConfigProvider, true); changed {
 					r.Log.Info("Triggering service reconciliation after config change")
 					return []reconcile.Request{{NamespacedName: r.ControllerDeployment}}
 				}
@@ -400,5 +446,40 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return []reconcile.Request{}
 			}))
 	}
-	return builder.Complete(r)
+}
+
+func (r *ServiceReconciler) setupForClusterScope(builder *bld.Builder) {
+	builder.For(&corev1.Namespace{}).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
+				list := &corev1.NamespaceList{}
+				if err := r.Client.List(context.TODO(), list); err != nil {
+					r.Log.Error(err, "Error listing Namespaces to reconcile after config change")
+					return []reconcile.Request{}
+				}
+				requests := make([]reconcile.Request, 0, len(list.Items))
+				for i := range list.Items {
+					if n := &list.Items[i]; modelMeshEnabled(n, r.ControllerDeployment.Namespace) {
+						if _, _, changed := r.getMMService(n.Name, r.ConfigProvider, true); changed {
+							requests = append(requests, reconcile.Request{
+								NamespacedName: types.NamespacedName{Name: n.Name, Namespace: n.Namespace},
+							})
+						}
+					}
+				}
+				return requests
+			}, r.ConfigProvider, &r.Client))
+
+	// Enable ServiceMonitor watch if ServiceMonitorCRDExists
+	if r.ServiceMonitorCRDExists {
+		builder.Watches(&source.Kind{Type: &monitoringv1.ServiceMonitor{}},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				if o.GetName() == serviceMonitorName {
+					return []reconcile.Request{{
+						NamespacedName: types.NamespacedName{Name: o.GetNamespace()},
+					}}
+				}
+				return []reconcile.Request{}
+			}))
+	}
 }
