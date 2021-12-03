@@ -224,13 +224,12 @@ func validatePredictor(predictor *api.Predictor) string {
 	if predictor.Spec.Storage == nil {
 		return ""
 	}
-
 	storage := predictor.Spec.Storage
-	// check the path configuration
+
 	if storage.Path != nil && predictor.Spec.Path != "" {
 		return "Only one of spec.path and spec.storage.path can be specified"
 	}
-	// check the schemaPath configuration
+
 	if storage.SchemaPath != nil && predictor.Spec.SchemaPath != nil {
 		return "Only one of spec.schemaPath and spec.storage.schemaPath can be specified"
 	}
@@ -342,28 +341,29 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 // Extracts fields from the Predictor related to the Model to be loaded
 // Handles backwards compability of fields that have been changed/deprecated.
 func extractModelFields(predictor *api.Predictor) (path string, schemaPath, storageKey *string, storageParams map[string]interface{}) {
-	// path
+	// Storage itself is optional
+	if predictor.Spec.Storage == nil {
+		return
+	}
+
 	if predictor.Spec.Storage.Path != nil {
 		path = *predictor.Spec.Storage.Path
 	} else {
 		path = predictor.Spec.Path
 	}
 
-	// schemaPath
 	if predictor.Spec.Storage.SchemaPath != nil {
 		schemaPath = predictor.Spec.Storage.SchemaPath
 	} else {
 		schemaPath = predictor.Spec.SchemaPath
 	}
 
-	// storageKey
 	if predictor.Spec.Storage.StorageKey != nil {
 		storageKey = predictor.Spec.Storage.StorageKey
 	} else if predictor.Spec.Storage.S3 != nil {
 		storageKey = &predictor.Spec.Storage.S3.SecretKey
 	}
 
-	// storageParams
 	storageParams = make(map[string]interface{})
 	if predictor.Spec.Storage.Parameters != nil {
 		storageParams = tranformParameters(*predictor.Spec.Storage.Parameters)
