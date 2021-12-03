@@ -176,7 +176,7 @@ func (mes *ModelMeshEventStream) refreshWatches(nw *namespaceWatch, namespace, s
 			}
 			if owner, err := ownerIDFromVModelRecord(value); err == nil {
 				encodedNamespace := namespace
-				if owner != "" {
+				if owner != "" && (len(namespace) <= len(owner) || owner+"_" != namespace[:len(owner)+1]) {
 					encodedNamespace = fmt.Sprintf("%s_%s", owner, namespace)
 				}
 				logger.V(1).Info("ModelMesh VModel Event",
@@ -202,6 +202,10 @@ func (mes *ModelMeshEventStream) refreshWatches(nw *namespaceWatch, namespace, s
 					if hashIdx > ownerIdx && key[hashIdx] == '-' {
 						// Infer predictor/vmodel and source ids from concrete model id by removing hash suffix
 						sourceId, predictorName := key[ownerIdx:hashIdx], key[:ownerIdx-2]
+						i := strings.LastIndex(namespace, "_")
+						if i > 0 {
+							namespace = namespace[i+1:]
+						}
 						mes.MMEvents <- event.GenericEvent{Object: &v1.PartialObjectMetadata{ObjectMeta: v1.ObjectMeta{
 							Name:      predictorName,
 							Namespace: fmt.Sprintf("%s_%s", sourceId, namespace),
@@ -228,9 +232,9 @@ func ownerIDFromVModelRecord(data []byte) (string, error) {
 }
 
 func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName string) error {
+	var err error
 	etcdSecret := v12.Secret{}
-	err := mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.controllerNamespace}, &etcdSecret)
-	if err != nil {
+	if err = mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.controllerNamespace}, &etcdSecret); err != nil {
 		return fmt.Errorf("Unable to access etcd secret with name '%s': %w", secretName, err)
 	}
 	etcdSecretJsonData, ok := etcdSecret.Data[modelmesh.EtcdSecretKey]

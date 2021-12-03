@@ -190,7 +190,6 @@ func main() {
 	mgrOpts := ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
-		Namespace:              ControllerNamespace,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 	}

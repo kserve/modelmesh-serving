@@ -24,6 +24,7 @@ delete=false
 dev_mode_logging=false
 quickstart=false
 fvt=false
+user_ns_array=
 
 function showHelp() {
   echo "usage: $0 [flags]"
@@ -32,6 +33,7 @@ function showHelp() {
   echo "  -n, --namespace                (required) Kubernetes namespace to deploy ModelMesh Serving to."
   echo "  -p, --install-config-path      Path to local model serve installation configs. Can be ModelMesh Serving tarfile or directory."
   echo "  -d, --delete                   Delete any existing instances of ModelMesh Serving in Kube namespace before running install, including CRDs, RBACs, controller, older CRD with serving.kserve.io api group name, etc."
+  echo "  -u, --user-namespaces          Kubernetes namespaces to enable for ModelMesh Serving"
   echo "  --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development"
   echo "  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for development with fvt enabled"
   echo "  -dev, --dev-mode-logging       Enable dev mode logging (stacktraces on warning and no sampling)"
@@ -142,6 +144,10 @@ while (($# > 0)); do
   -n | --n | -namespace | --namespace)
     shift
     namespace="$1"
+    ;;
+  -u | --u | -user-namespaces | --user-namespaces)
+    shift
+    user_ns_array=($1)
     ;;
   -p | --p | -install-path | --install-path | -install-config-path | --install-config-path)
     shift
@@ -257,5 +263,23 @@ wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
 info "Installing ModelMesh Serving built-in runtimes"
 kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl apply -f -
+
+if ([ $quickstart == "true" ] || [ $fvt == "true" ]) && [ ! -z $user_ns_array ]; then
+  kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
+  cp dependencies/minio-storage-secret.yaml .
+  sed -i "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
+
+  for user_ns in "${user_ns_array[@]}"; do
+    if ! kubectl get namespaces $user_ns >/dev/null; then
+      echo "Kube namespace does not exist: $user_ns. Will skip."
+    else 
+      kubectl label namespace ${user_ns} modelmesh-enabled="true"
+      kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
+      kubectl apply -f runtimes.yaml -n ${user_ns}
+    fi
+  done
+  rm minio-storage-secret.yaml
+  rm runtimes.yaml
+fi
 
 success "Successfully installed ModelMesh Serving!"

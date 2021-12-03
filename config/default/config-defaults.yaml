@@ -50,6 +50,6 @@ storageHelperResources:
   limits:
     cpu: "2"
     memory: "512Mi"
-serviceAccountName: modelmesh
+serviceAccountName: ""
 metrics:
   enabled: true
