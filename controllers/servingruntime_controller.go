@@ -439,6 +439,17 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	return srnns, nil
 }
 
+func (r *ServingRuntimeReconciler) modelMeshEnabled(n *corev1.Namespace) bool {
+	if n == nil {
+		return false
+	}
+	if v, ok := n.Labels["modelmesh-enabled"]; ok {
+		return v == "true"
+	} else {
+		return n.Name == r.ControllerNamespace
+	}
+}
+
 func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
