@@ -237,7 +237,7 @@ func validatePredictor(predictor *api.Predictor) string {
 
 	// PersistentVolumeClaim is deprecated and was never supported
 	if storage.PersistentVolumeClaim != nil {
-		return "spec.storage.PersistentVolumeClaim is not currently supported"
+		return "spec.storage.PersistentVolumeClaim is not supported"
 	}
 
 	// S3 is deprecated and can not be specified alongside the new storage fields
