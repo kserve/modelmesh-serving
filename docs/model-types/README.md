@@ -11,6 +11,7 @@ By leveraging existing third-party model servers, we support a number of standar
 
 | Model Type | Framework    | Supported via ServingRuntime |
 | ---------- | ------------ | ---------------------------- |
+| keras      | TensorFlow   | Triton (C++)                 |
 | lightgbm   | LightGBM     | MLServer (python)            |
 | onnx       | ONNX         | Triton (C++)                 |
 | pytorch    | PyTorch      | Triton (C++)                 |

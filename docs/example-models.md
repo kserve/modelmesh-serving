@@ -24,6 +24,8 @@ s3://modelmesh-example-models/
 
 ```
 s3://modelmesh-example-models/
+├── keras
+│   └── mnist.h5
 ├── lightgbm
 │   └── mushroom.bst
 ├── onnx
