@@ -25,6 +25,7 @@ dev_mode_logging=false
 quickstart=false
 fvt=false
 user_ns_array=
+namespace_scope_mode=true # default will be changed to true when rbac is changed to cluster scope
 
 function showHelp() {
   echo "usage: $0 [flags]"
@@ -37,6 +38,7 @@ function showHelp() {
   echo "  --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development"
   echo "  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for development with fvt enabled"
   echo "  -dev, --dev-mode-logging       Enable dev mode logging (stacktraces on warning and no sampling)"
+  echo "  --namespace-scope-mode         Run ModelMesh Serving in namespace scope mode"
   echo
   echo "Installs ModelMesh Serving CRDs, controller, and built-in runtimes into specified"
   echo "Kubernetes namespaces."
@@ -165,6 +167,9 @@ while (($# > 0)); do
   --fvt)
     fvt=true
     ;;
+  --namespace-scope-mode)
+    namespace_scope_mode=true
+    ;;
   -*)
     die "Unknown option: '${1}'"
     ;;
@@ -256,6 +261,11 @@ kustomize build default | kubectl apply -f -
 if [[ $dev_mode_logging == "true" ]]; then
   info "Enabling development mode logging"
   kubectl set env deploy/modelmesh-controller DEV_MODE_LOGGING=true
+fi
+
+if [[ $namespace_scope_mode == "true" ]]; then
+  info "Enabling namespace scope mode"
+  kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=true
 fi
 
 info "Waiting for ModelMesh Serving controller pod to be up..."

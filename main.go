@@ -78,6 +78,7 @@ const (
 	LeaderLockName                 = "modelmesh-controller-leader-lock"
 	LeaderForLifeLockName          = "modelmesh-controller-leader-for-life-lock"
 	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
+	NamespaceScopeEnvVar           = "NAMESPACE_SCOPE"
 )
 
 func init() {
@@ -172,6 +173,7 @@ func main() {
 	var leaseDuration time.Duration
 	var leaseRenewDeadline time.Duration
 	var leaseRetryPeriod time.Duration
+	var clusterScopeEnabled bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -187,9 +189,40 @@ func main() {
 		"Duration the Leader elector clients should wait between tries of actions.")
 	flag.Parse()
 
+	mgrNamespace := ""
+	trueString := "true"
+
+	// Controller can be in namespace scope mode depending on an env variable
+	namespaceScope := os.Getenv(NamespaceScopeEnvVar)
+	setupLog.Info("==============", "namespaceScope", namespaceScope)
+
+	// Here we check whether RBAC is set for cluster scope
+	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
+	clusterScopeEnabled = err == nil || errors.IsNotFound(err)
+
+	if clusterScopeEnabled {
+		if namespaceScope != trueString {
+			setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
+		} else {
+			// Config mismatch, namespace mode with cluster permissions, exit
+			setupLog.Info("In namespace scope mode but controller has cluster scope permissions, exit")
+			os.Exit(1)
+		}
+	} else {
+		if namespaceScope != trueString {
+			// Config mismatch, cluster mode without cluster permissions, exit
+			setupLog.Info("In cluster scope mode but controller has namespace scope permissions, exit")
+			os.Exit(1)
+		} else {
+			mgrNamespace = ControllerNamespace
+			setupLog.Info("Controller operating in own-namespace only mode")
+		}
+	}
+
 	mgrOpts := ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
+		Namespace:              mgrNamespace,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 	}
@@ -252,14 +285,6 @@ func main() {
 		setupLog.Error(err, "Unable to access Service Monitor CRD", "CRDName", serviceMonitorCRDName)
 	}
 
-	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
-	clusterScopeEnabled := err == nil || errors.IsNotFound(err)
-	if clusterScopeEnabled {
-		setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
-	} else {
-		setupLog.Info("Unable to access Namespace resources, controller operating in own-namespace only mode")
-	}
-
 	if err = (&controllers.ServiceReconciler{
 		Client:                  mgr.GetClient(),
 		Log:                     ctrl.Log.WithName("controllers").WithName("Service"),
@@ -295,7 +320,7 @@ func main() {
 				registryMap[registryKey] = registryValue
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
 				return true
-			} else if envVarVal == "true" {
+			} else if envVarVal == trueString {
 				// If env var is explicitly true, require that specified CRD is present
 				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
 				os.Exit(1)

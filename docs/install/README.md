@@ -14,7 +14,8 @@ We provide an install script to quickly run ModelMesh Serving with a provisioned
 
 ## Cluster Scope or Namespace Scope
 
-ModelMesh Serving can be used in either cluster scope or namespace mode. 
+ModelMesh Serving can be used in either cluster scope or namespace mode.
+
 - **Cluster scope mode** - Its components can exist in multiple user namespaces which are controlled by one instance of ModelMesh Serving Controller in the control plane namespace. Only one ModelMesh Serving instance can be installed within a Kubernetes cluster. A namespace label `modelmesh-enabled` needs to be "true" to enable a user namespace for ModelMesh Serving.
 - **Namespace scope mode** - All of its components must exist within a single namespace and only one instance of ModelMesh Serving can be installed per namespace. Multiple ModelMesh Serving instances can be installed in separate namespaces within the cluster.
 
@@ -59,14 +60,12 @@ Please be aware that:
 
 For more details see the [built-in runtime configuration](../configuration/built-in-runtimes.md)
 
-The following resources will be created in the control plane namespace:
+The following resources will be created in the namespaces:
 
 - `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration)
 - `tc-config` - ConfigMap used for some internal coordination
 - `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [the example](../predictors/)
-- `model-serving-etcd` - Secret providing access to the Etcd cluster - see [instructions](../install/install-script.md#setup-the-etcd-connection-information)
-
-Additionally in the cluster scope mode the following resources will be created in a user namespace, `tc-config`, `storage-config`, and `model-serving-etcd`.
+- `model-serving-etcd` - Secret providing access to the Etcd cluster. It is created by user in the controller namespace - see [instructions](../install/install-script.md#setup-the-etcd-connection-information), and will be automatically created in user namespaces in the cluster scope mode.
 
 ## Next Steps
 

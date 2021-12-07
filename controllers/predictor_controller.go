@@ -63,14 +63,14 @@ type PredictorReconciler struct {
 	RegistryLookup map[string]predictor_source.PredictorRegistry
 }
 
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=predictors,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=predictors/finalizers,verbs=get;update;patch
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=predictors/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=inferenceservices,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=inferenceservices/finalizers,verbs=get;update;patch
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=inferenceservices/status,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=predictors/status,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/finalizers,verbs=get;update;patch
+// +kubebuilder:rbac:namespace=model-serving,groups=serving.kserve.io,resources=inferenceservices/status,verbs=get;update;patch
 // This one is used by the kube-based grpc resolver but need to set it here so that kubebuilder picks it up
-// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get;list;watch
+// +kubebuilder:rbac:namespace=model-serving,groups="",resources=endpoints,verbs=get;list;watch
 
 func (pr *PredictorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// if no explict source prefix we default to "ksp" (for Predictor CR)

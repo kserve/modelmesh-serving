@@ -87,11 +87,11 @@ var builtInServerTypes = map[api.ServerType]interface{}{
 	api.MLServer: nil, api.Triton: nil,
 }
 
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace="model-serving",groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
+// +kubebuilder:rbac:namespace="model-serving",groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace="model-serving",groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:namespace="model-serving",groups="",resources=secrets,verbs=get;list;watch
 
 func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("servingruntime", req.NamespacedName)
@@ -105,8 +105,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var runtimes *api.ServingRuntimeList
 	if mmEnabled {
 		runtimes = &api.ServingRuntimeList{}
-		opts := []client.ListOption{client.InNamespace(req.Namespace)}
-		if err = r.Client.List(ctx, runtimes, opts...); err != nil {
+		if err = r.Client.List(ctx, runtimes, client.InNamespace(req.Namespace)); err != nil {
 			return RequeueResult, err
 		}
 	}
@@ -117,12 +116,13 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Delete etcd secret when there is no ServingRuntimes in a namespace
+	etcdSecretName := r.ConfigProvider.GetConfig().GetEtcdSecretName()
 	if len(runtimes.Items) == 0 {
 		// We don't delete the etcd secret in the controller namespace
 		if req.Namespace != r.ControllerNamespace {
 			s := &corev1.Secret{}
 			err = r.Client.Get(ctx, types.NamespacedName{
-				Name:      r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+				Name:      etcdSecretName,
 				Namespace: req.Namespace,
 			}, s)
 
@@ -135,18 +135,13 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return RequeueResult, err
 			}
 		}
-
-		return RequeueResult, err
-	}
-
-	// If not controller namespace then read etcd secret from controller namespace,
-	// replace rootprefix with ns-specific one, and then create/update etcd secret (with same name)
-	// in _this_ namespace and include labels similar to the tc-config configmap
-	if req.Namespace != r.ControllerNamespace {
-		// get the controller secret
+	} else if req.Namespace != r.ControllerNamespace {
+		// If not controller namespace then read etcd secret from controller namespace,
+		// replace rootprefix with ns-specific one, and then create/update etcd secret (with same name)
+		// in _this_ namespace and include labels similar to the tc-config configmap
 		s := &corev1.Secret{}
 		err = r.Client.Get(ctx, types.NamespacedName{
-			Name:      r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+			Name:      etcdSecretName,
 			Namespace: r.ControllerNamespace,
 		}, s)
 		if err != nil {

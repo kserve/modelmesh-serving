@@ -202,10 +202,6 @@ func (mes *ModelMeshEventStream) refreshWatches(nw *namespaceWatch, namespace, s
 					if hashIdx > ownerIdx && key[hashIdx] == '-' {
 						// Infer predictor/vmodel and source ids from concrete model id by removing hash suffix
 						sourceId, predictorName := key[ownerIdx:hashIdx], key[:ownerIdx-2]
-						i := strings.LastIndex(namespace, "_")
-						if i > 0 {
-							namespace = namespace[i+1:]
-						}
 						mes.MMEvents <- event.GenericEvent{Object: &v1.PartialObjectMetadata{ObjectMeta: v1.ObjectMeta{
 							Name:      predictorName,
 							Namespace: fmt.Sprintf("%s_%s", sourceId, namespace),
