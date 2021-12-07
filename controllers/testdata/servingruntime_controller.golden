@@ -156,6 +156,8 @@ spec:
           value: dummy-model-fixme
         - name: MLSERVER_HOST
           value: 127.0.0.1
+        - name: MLSERVER_GRPC_MAX_MESSAGE_LENGTH
+          value: "16777216"
         image: mlserver-0:replace
         imagePullPolicy: IfNotPresent
         lifecycle:
@@ -401,6 +403,8 @@ spec:
           value: dummy-model-fixme
         - name: MLSERVER_HOST
           value: 127.0.0.1
+        - name: MLSERVER_GRPC_MAX_MESSAGE_LENGTH
+          value: "16777216"
         image: mlserver-0:replace
         imagePullPolicy: IfNotPresent
         lifecycle:
@@ -669,6 +673,8 @@ spec:
           value: dummy-model-fixme
         - name: MLSERVER_HOST
           value: 127.0.0.1
+        - name: MLSERVER_GRPC_MAX_MESSAGE_LENGTH
+          value: "16777216"
         image: mlserver-0:replace
         imagePullPolicy: IfNotPresent
         lifecycle:
