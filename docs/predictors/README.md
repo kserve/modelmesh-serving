@@ -58,7 +58,7 @@ predictor.serving.kserve.io/example-mnist-predictor created
 
 Note that `localMinIO` is the name of the secret key verified in the previous step.
 
-For more details go to the [Predictor Spec page](predictor-spec.md).
+For more details go to the [Predictor Spec page](predictor-cr.md).
 
 Once the `Predictor` is created, mlserver runtime pods are automatically started to load and serve it.
 
@@ -194,6 +194,6 @@ example-mnist-predictor   tensorflow   true        Loaded        Failed        B
 
 ## For More Details
 
-- [Setup Storage](storage.md)
-- [Inferencing](inferencing.md)
-- [Predictor Spec](predictor-spec.md)
+- [Setup Storage](setup-storage.md)
+- [Inferencing](run-inference.md)
+- [Predictor Spec](predictor-cr.md)
