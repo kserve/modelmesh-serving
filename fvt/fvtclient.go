@@ -51,8 +51,6 @@ import (
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
 )
 
-var defaultTimeout = int64(180)
-
 const predictorTimeout = time.Second * 120
 const timeForStatusToStabilize = time.Second * 5
 
@@ -98,8 +96,7 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	Expect(err).ToNot(HaveOccurred())
 
 	// set port based on worker index to support parallel port-forwards
-	suitConfig, _ := ginkgo.GinkgoConfiguration()
-	localPort := 8032 + suitConfig.ParallelProcess
+	localPort := 8032 + ginkgo.GinkgoParallelProcess()
 
 	return &FVTClient{client, namespace, serviceName, controllerNamespace, nil, nil, nil, localPort, log}, nil
 }
@@ -193,7 +190,7 @@ func (fvt *FVTClient) ListPredictors(options metav1.ListOptions) *unstructured.U
 		options.Limit = 100
 	}
 	if options.TimeoutSeconds != nil && *options.TimeoutSeconds == int64(0) {
-		options.TimeoutSeconds = &defaultTimeout
+		options.TimeoutSeconds = &DefaultTimeout
 	}
 	list, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).List(context.TODO(), options)
 	Expect(err).ToNot(HaveOccurred())
@@ -381,7 +378,7 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		}
 
 		if connectionType == MutualTLS {
-			tlsCert, err := tls.LoadX509KeyPair("testdata/san-cert.pem", "testdata/san-key.pem")
+			tlsCert, err := tls.LoadX509KeyPair(TestDataPath("san-cert.pem"), TestDataPath("san-key.pem"))
 			if err != nil {
 				return fmt.Errorf("failed to load tls client key pair")
 			}
@@ -449,29 +446,12 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 }
 
 func (fvt *FVTClient) CreateTLSSecrets() {
-	secretExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "basic-tls-secret", metav1.GetOptions{})
-	if secretExists == nil {
-		secretObj := DecodeResourceFromFile("testdata/basic-tls-secret.yaml")
-		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(obj).ToNot(BeNil())
-		Expect(obj.GetKind()).To(Equal(SecretKind))
-		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
-	}
-
-	secretExists, _ = fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "mutual-tls-secret", metav1.GetOptions{})
-	if secretExists == nil {
-		secretObj := DecodeResourceFromFile("testdata/mutual-tls-secret.yaml")
-		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(obj).ToNot(BeNil())
-		Expect(obj.GetKind()).To(Equal(SecretKind))
-		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
-	}
+	CreateSecret("basic-tls-secret", "basic-tls-secret.yaml", fvt)
+	CreateSecret("mutual-tls-secret", "mutual-tls-secret.yaml", fvt)
 }
 
 func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
-	configMapObj := DecodeResourceFromFile("testdata/user-configmap.yaml")
+	configMapObj := DecodeResourceFromFile(TestDataPath("user-configmap.yaml"))
 	configMapContents := GetString(configMapObj, "data", "config.yaml")
 	replacer := strings.NewReplacer("REPLACE_TLS_SECRET", tlsSecretName, "REPLACE_TLS_CLIENT_AUTH", tlsClientAuth)
 	newConfigMapContents := replacer.Replace(configMapContents)
@@ -487,14 +467,14 @@ func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth str
 }
 
 func (fvt *FVTClient) UpdateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
-	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Get(context.TODO(), userConfigMapName, metav1.GetOptions{})
+	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Get(context.TODO(), UserConfigMapName, metav1.GetOptions{})
 
 	if configMapExists == nil {
-		fvt.log.Info(fmt.Sprintf("Could not find configmap '%s', creating", userConfigMapName))
+		fvt.log.Info(fmt.Sprintf("Could not find configmap '%s', creating", UserConfigMapName))
 		return fvt.CreateConfigMapTLS(tlsSecretName, tlsClientAuth)
 	}
 
-	configMapObj := DecodeResourceFromFile("testdata/user-configmap.yaml")
+	configMapObj := DecodeResourceFromFile(TestDataPath("user-configmap.yaml"))
 	configMapContents := GetString(configMapObj, "data", "config.yaml")
 	replacer := strings.NewReplacer("REPLACE_TLS_SECRET", tlsSecretName, "REPLACE_TLS_CLIENT_AUTH", tlsClientAuth)
 	newConfigMapContents := replacer.Replace(configMapContents)
@@ -512,7 +492,7 @@ func (fvt *FVTClient) UpdateConfigMapTLS(tlsSecretName string, tlsClientAuth str
 func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
 	listOptions := metav1.ListOptions{
 		LabelSelector:  "modelmesh-service",
-		TimeoutSeconds: &defaultTimeout,
+		TimeoutSeconds: &DefaultTimeout,
 	}
 	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
@@ -523,7 +503,7 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	var err error
 
 	// query for UnstructuredList using the dynamic client
-	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &defaultTimeout}
+	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &DefaultTimeout}
 	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
 

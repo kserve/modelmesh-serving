@@ -40,9 +40,9 @@ all: manager
 test:
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
 
-# Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation
+# Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 fvt:
-	go test -v ./fvt -ginkgo.v -ginkgo.progress -ginkgo.fail-fast -test.timeout 40m
+	ginkgo --junit-report=junit_fvt.xml -output-dir=target/test-reports/ -keep-separate-reports -v -p -progress --fail-fast -procs=10 fvt/predictor fvt/scaleToZero --timeout=40m
 
 # Command to regenerate the grpc go files from the proto files
 fvt-protoc:

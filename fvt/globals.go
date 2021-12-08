@@ -15,8 +15,10 @@ package fvt
 
 import "github.com/go-logr/logr"
 
-var log logr.Logger
-var fvtClient *FVTClient
+var Log logr.Logger
+var FVTClientInstance *FVTClient
+
+var DefaultTimeout = int64(120)
 
 const (
 	ServingRuntimeKind         = "ServingRuntime"
@@ -27,8 +29,8 @@ const (
 	DefaultTestNamespace       = "modelmesh-serving"
 	DefaultTestServiceName     = "modelmesh-serving"
 	DefaultControllerNamespace = "modelmesh-serving"
-	userConfigMapName          = "model-serving-config"
-	samplesPath                = "testdata/predictors/"
-	isvcSamplesPath            = "testdata/isvcs/"
-	runtimeSamplesPath         = "testdata/runtimes/"
+	UserConfigMapName          = "model-serving-config"
+	samplesPath                = "predictors/"
+	isvcSamplesPath            = "isvcs/"
+	RuntimeSamplesPath         = "runtimes/"
 )

@@ -1,4 +1,4 @@
-// Copyright 2021 IBM Corporation
+// Copyright 2022 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,18 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package fvt
+package scaleToZero
 
 import (
 	"strings"
 	"time"
 
+	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Scaling of runtime deployments to zero", func() {
+var _ = Describe("Scaling of runtime deployments to zero", Ordered, func() {
 
 	// constants
 	testPredictorObject := NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
@@ -35,10 +37,10 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 	// checkDeploymentState returns the replicas value for the expected runtime
 	// and expects others to be scaled to zero
 	checkDeploymentState := func() int32 {
-		deployments := fvtClient.ListDeploys()
+		deployments := FVTClientInstance.ListDeploys()
 		var replicas int32
 		for _, d := range deployments.Items {
-			log.Info("Checking deployment scale", "name", d.ObjectMeta.Name)
+			Log.Info("Checking deployment scale", "name", d.ObjectMeta.Name)
 			// the service prefix may change
 			if strings.HasSuffix(d.ObjectMeta.Name, expectedRuntimeName) {
 				// since we list existing deploys Replicas should never be nil
@@ -58,20 +60,9 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 		Expect(replicas).ToNot(BeEquivalentTo(int32(0)))
 	}
 
-	BeforeEach(func() {
-		// ensure configuration has scale-to-zero and grace period of 5s
-		config := map[string]interface{}{
-			"scaleToZero": map[string]interface{}{
-				"enabled":            true,
-				"gracePeriodSeconds": 5,
-			},
-		}
-		fvtClient.ApplyUserConfigMap(config)
-	})
-
 	Context("when there are no predictors", func() {
 		BeforeEach(func() {
-			fvtClient.DeleteAllPredictors()
+			FVTClientInstance.DeleteAllPredictors()
 		})
 
 		It("should scale all runtimes down", func() {
@@ -84,11 +75,11 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 		It("creating a predictor should scale up the runtime and the predictor should eventually load", func() {
 			By("Waiting for the predictor to be 'Loading'")
-			watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + testPredictorObject.GetName()}, defaultTimeout)
+			watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + testPredictorObject.GetName()}, DefaultTimeout)
 			defer watcher.Stop()
 
 			By("Creating a test predictor for one Runtime")
-			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
+			FVTClientInstance.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Waiting for the deployments to stabilize")
 			WaitForStableActiveDeployState()
@@ -107,7 +98,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 		BeforeEach(func() {
 			By("Creating a test predictor for one Runtime")
 			// ensure single predictor exists
-			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
+			FVTClientInstance.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Waiting for the deployments to stabilize")
 			WaitForStableActiveDeployState()
@@ -126,7 +117,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 		It("should scale down after deleting the predictor but only after the grace period", func() {
 			By("Deleting the predictor")
-			fvtClient.DeletePredictor(testPredictorObject.GetName())
+			FVTClientInstance.DeletePredictor(testPredictorObject.GetName())
 
 			By("Waiting for less than the grace period")
 			time.Sleep(1 * time.Second)
@@ -144,7 +135,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 
 		It("should not scale down if predictor is deleted and recreated within the grace period", func() {
 			By("Deleting the predictor")
-			fvtClient.DeletePredictor(testPredictorObject.GetName())
+			FVTClientInstance.DeletePredictor(testPredictorObject.GetName())
 
 			By("Waiting for less than the grace period")
 			time.Sleep(2 * time.Second)
@@ -153,7 +144,7 @@ var _ = Describe("Scaling of runtime deployments to zero", func() {
 			expectScaledUp()
 
 			By("Recreating the predictor")
-			fvtClient.ApplyPredictorExpectSuccess(testPredictorObject)
+			FVTClientInstance.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Check that the deployment stays scaled up consistently")
 			pollTimeoutSeconds := 6

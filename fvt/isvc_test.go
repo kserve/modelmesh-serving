@@ -58,12 +58,12 @@ var _ = Describe("Inference service", func() {
 			},
 			"podsPerRuntime": 1,
 		}
-		fvtClient.ApplyUserConfigMap(config)
+		FVTClientInstance.ApplyUserConfigMap(config)
 
 		// ensure that there are no InferenceServices to start
-		fvtClient.DeleteAllIsvcs()
+		FVTClientInstance.DeleteAllIsvcs()
 		// kill any existing port-forward to ensure that a new connection will be established
-		fvtClient.DisconnectFromModelServing()
+		FVTClientInstance.DisconnectFromModelServing()
 		// ensure a stable deploy state
 		WaitForStableActiveDeployState()
 	})
@@ -73,7 +73,7 @@ var _ = Describe("Inference service", func() {
 				isvcObject := NewIsvcForFVT(i.inferenceServiceFileName)
 				CreateIsvcAndWaitAndExpectReady(isvcObject)
 				// clean up
-				fvtClient.DeleteIsvc(isvcObject.GetName())
+				FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 			})
 
 			var _ = Describe("MLServer inference", func() {
@@ -88,12 +88,12 @@ var _ = Describe("Inference service", func() {
 
 					CreateIsvcAndWaitAndExpectReady(mlsIsvcObject)
 
-					err := fvtClient.ConnectToModelServing(Insecure)
+					err := FVTClientInstance.ConnectToModelServing(Insecure)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					fvtClient.DeleteIsvc(mlsISVCName)
+					FVTClientInstance.DeleteIsvc(mlsISVCName)
 				})
 
 				It("should successfully run inference", func() {
