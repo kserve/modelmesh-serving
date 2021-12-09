@@ -176,7 +176,7 @@ func (mes *ModelMeshEventStream) refreshWatches(nw *namespaceWatch, namespace, s
 			}
 			if owner, err := ownerIDFromVModelRecord(value); err == nil {
 				encodedNamespace := namespace
-				if owner != "" && (len(namespace) <= len(owner) || owner+"_" != namespace[:len(owner)+1]) {
+				if owner != "" {
 					encodedNamespace = fmt.Sprintf("%s_%s", owner, namespace)
 				}
 				logger.V(1).Info("ModelMesh VModel Event",

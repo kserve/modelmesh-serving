@@ -31,16 +31,16 @@ import (
 
 type EtcdConfig struct {
 	Endpoints             string `json:"endpoints"`
-	Username              string `json:"userid"`
-	Password              string `json:"password"`
-	RootPrefix            string `json:"root_prefix"`
-	Certificate           string `json:"certificate"`
-	CertificateFile       string `json:"certificate_file"`
-	ClientKey             string `json:"client_key"`
-	ClientKeyFile         string `json:"client_key_file"`
-	ClientCertificate     string `json:"client_certificate"`
-	ClientCertificateFile string `json:"client_certificate_file"`
-	OverrideAuthority     string `json:"override_authority"`
+	Username              string `json:"userid,omitempty"`
+	Password              string `json:"password,omitempty"`
+	RootPrefix            string `json:"root_prefix,omitempty"`
+	Certificate           string `json:"certificate,omitempty"`
+	CertificateFile       string `json:"certificate_file,omitempty"`
+	ClientKey             string `json:"client_key,omitempty"`
+	ClientKeyFile         string `json:"client_key_file,omitempty"`
+	ClientCertificate     string `json:"client_certificate,omitempty"`
+	ClientCertificateFile string `json:"client_certificate_file,omitempty"`
+	OverrideAuthority     string `json:"override_authority,omitempty"`
 }
 
 // EtcdRangeWatcher A wrapper for Etcd Watch with common refresh Watch Channel logic

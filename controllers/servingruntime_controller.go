@@ -140,11 +140,10 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// replace rootprefix with ns-specific one, and then create/update etcd secret (with same name)
 		// in _this_ namespace and include labels similar to the tc-config configmap
 		s := &corev1.Secret{}
-		err = r.Client.Get(ctx, types.NamespacedName{
+		if err = r.Client.Get(ctx, types.NamespacedName{
 			Name:      etcdSecretName,
 			Namespace: r.ControllerNamespace,
-		}, s)
-		if err != nil {
+		}, s); err != nil {
 			return RequeueResult, fmt.Errorf("Could not get the controller etcd secret: %w", err)
 		}
 
@@ -156,7 +155,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		es := mmesh.EtcdSecret{
 			Log:                 ctrl.Log.WithName("etcdSecret"),
-			Name:                r.ConfigProvider.GetConfig().GetEtcdSecretName(),
+			Name:                etcdSecretName,
 			Namespace:           req.Namespace,
 			ControllerNamespace: r.ControllerNamespace,
 			EtcdConfig:          &etcdConfig,

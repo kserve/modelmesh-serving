@@ -25,7 +25,7 @@ dev_mode_logging=false
 quickstart=false
 fvt=false
 user_ns_array=
-namespace_scope_mode=true # default will be changed to true when rbac is changed to cluster scope
+namespace_scope_mode=true # default will be changed to false when rbac is changed to cluster scope
 
 function showHelp() {
   echo "usage: $0 [flags]"
@@ -274,7 +274,7 @@ wait_for_pods_ready "-l control-plane=modelmesh-controller"
 info "Installing ModelMesh Serving built-in runtimes"
 kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl apply -f -
 
-if ([ $quickstart == "true" ] || [ $fvt == "true" ]) && [ ! -z $user_ns_array ]; then
+if [[ ! -z $user_ns_array ]]; then
   kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
   sed -i "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
@@ -284,8 +284,10 @@ if ([ $quickstart == "true" ] || [ $fvt == "true" ]) && [ ! -z $user_ns_array ];
       echo "Kube namespace does not exist: $user_ns. Will skip."
     else 
       kubectl label namespace ${user_ns} modelmesh-enabled="true"
-      kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
       kubectl apply -f runtimes.yaml -n ${user_ns}
+      if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
+        kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
+      fi
     fi
   done
   rm minio-storage-secret.yaml

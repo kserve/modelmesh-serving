@@ -173,7 +173,7 @@ func main() {
 	var leaseDuration time.Duration
 	var leaseRenewDeadline time.Duration
 	var leaseRetryPeriod time.Duration
-	var clusterScopeEnabled bool
+	var clusterScopeMode bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -192,26 +192,25 @@ func main() {
 	mgrNamespace := ""
 	trueString := "true"
 
-	// Controller can be in namespace scope mode depending on an env variable
-	namespaceScope := os.Getenv(NamespaceScopeEnvVar)
-	setupLog.Info("==============", "namespaceScope", namespaceScope)
+	// Controller can be in namespace or cluster scope mode depending on an env variable
+	clusterScopeMode = os.Getenv(NamespaceScopeEnvVar) != trueString
 
 	// Here we check whether RBAC is set for cluster scope
 	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
-	clusterScopeEnabled = err == nil || errors.IsNotFound(err)
 
-	if clusterScopeEnabled {
-		if namespaceScope != trueString {
+	if err == nil || errors.IsNotFound(err) {
+		// Controller has cluster permissions
+		if clusterScopeMode {
 			setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
 		} else {
-			// Config mismatch, namespace mode with cluster permissions, exit
-			setupLog.Info("In namespace scope mode but controller has cluster scope permissions, exit")
-			os.Exit(1)
+			// Config mismatch, namespace mode with cluster permissions, will continue with a log
+			setupLog.Info("In namespace scope mode but controller has cluster scope permissions, continue")
 		}
 	} else {
-		if namespaceScope != trueString {
+		// Controller has namespace permissions
+		if clusterScopeMode {
 			// Config mismatch, cluster mode without cluster permissions, exit
-			setupLog.Info("In cluster scope mode but controller has namespace scope permissions, exit")
+			setupLog.Error(fmt.Errorf("Insufficient permission for controller"), "In cluster scope mode but controller has namespace scope permissions, exit")
 			os.Exit(1)
 		} else {
 			mgrNamespace = ControllerNamespace
@@ -290,7 +289,7 @@ func main() {
 		Log:                     ctrl.Log.WithName("controllers").WithName("Service"),
 		Scheme:                  mgr.GetScheme(),
 		ControllerDeployment:    types.NamespacedName{Namespace: ControllerNamespace, Name: controllerDeploymentName},
-		NamespaceOwned:          clusterScopeEnabled,
+		NamespaceOwned:          clusterScopeMode,
 		MMServices:              mmServiceMap,
 		ModelEventStream:        modelEventStream,
 		ConfigProvider:          cp,
@@ -397,7 +396,7 @@ func main() {
 		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
 		ControllerNamespace: ControllerNamespace,
 		ControllerName:      controllerDeploymentName,
-		HasNamespaceAccess:  clusterScopeEnabled,
+		HasNamespaceAccess:  clusterScopeMode,
 		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")

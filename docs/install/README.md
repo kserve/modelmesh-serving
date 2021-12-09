@@ -65,7 +65,7 @@ The following resources will be created in the namespaces:
 - `model-serving-defaults` - ConfigMap holding default values tied to a release, should not be modified. Configuration can be overriden by creating a user ConfigMap, see [configuration](../configuration)
 - `tc-config` - ConfigMap used for some internal coordination
 - `storage-config` - Secret holding config for each of the storage backends from which models can be loaded - see [the example](../predictors/)
-- `model-serving-etcd` - Secret providing access to the Etcd cluster. It is created by user in the controller namespace - see [instructions](../install/install-script.md#setup-the-etcd-connection-information), and will be automatically created in user namespaces in the cluster scope mode.
+- `model-serving-etcd` - Secret providing access to the Etcd cluster. It is created by user in the controller namespace - see [instructions](../install/install-script.md#setup-the-etcd-connection-information), and will be automatically created in user namespaces when in the cluster scope mode.
 
 ## Next Steps
 

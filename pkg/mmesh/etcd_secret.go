@@ -17,9 +17,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/go-logr/logr"
+	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,23 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	EtcdConnectionKey        = "etcd_connection"
-	EndpointsKey             = "endpoints"
-	UsernameKey              = "userid"
-	PasswordKey              = "password"
-	RootPrefixKey            = "root_prefix"
-	CertificateKey           = "certificate"
-	CertificateFileKey       = "certificate_file"
-	ClientKeyKey             = "client_key"
-	ClientKeyFileKey         = "client_key_file"
-	ClientCertificateKey     = "client_certificate"
-	ClientCertificateFileKey = "client_certificate_file"
-	OverrideAuthorityKey     = "override_authority"
-)
-
-// An EtcdSecret represents the etcd configuation for a
-// user namespace
+// An EtcdSecret represents the etcd configuation for a user namespace
 type EtcdSecret struct {
 	Log                 logr.Logger
 	Name                string
@@ -54,82 +42,60 @@ type EtcdSecret struct {
 }
 
 func (es EtcdSecret) Apply(ctx context.Context, cl client.Client) error {
+	s := &corev1.Secret{}
+	err := cl.Get(ctx, types.NamespacedName{Name: es.Name, Namespace: es.Namespace}, s)
+	notfound := errors.IsNotFound(err)
+	if err != nil && !notfound {
+		return err
+	}
 	commonLabelValue := "modelmesh-controller"
 
-	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      es.Name,
-			Namespace: es.Namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": commonLabelValue,
-			},
+	s.ObjectMeta = metav1.ObjectMeta{
+		Name:      es.Name,
+		Namespace: es.Namespace,
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": commonLabelValue,
 		},
 	}
-	es.addStringData(s)
-	err := cl.Create(ctx, s)
-	if err != nil && errors.IsAlreadyExists(err) {
-		err = cl.Update(ctx, s)
+	if err = es.addData(s); err != nil {
+		return err
 	}
 
-	return err
+	if notfound {
+		return cl.Create(ctx, s)
+	} else {
+		return cl.Update(ctx, s)
+	}
 }
 
-// Add string data to the provided secret
-func (es EtcdSecret) addStringData(s *corev1.Secret) {
-	m := make(map[string]interface{})
-	// debugging, remove later
-	es.Log.Info("============in EtcdSecret=========", "es.EtcdConfig", es.EtcdConfig)
-
+// Add data to the provided secret
+func (es EtcdSecret) addData(s *corev1.Secret) error {
 	etcdEndpoints := strings.Split(es.EtcdConfig.Endpoints, ",")
-
 	newEtcdEndpoints := ""
+
 	// For each endpoint, insert controller namespace if not there
-	// TODO: revisit and come up with ideal solution
 	for i := range etcdEndpoints {
-		if !strings.Contains(etcdEndpoints[i], ".") {
-			// This looks like http://etcd:2379, so insert controller namespace before :port
-			parts := strings.Split(etcdEndpoints[i], ":")
-			etcdEndpoints[i] = parts[0] + ":" + parts[1] + "." + es.ControllerNamespace + ":" + parts[2]
+		re := regexp.MustCompile(`(?:https?://)?([^\\s.:]+)(:\\d+)?`)
+		if se := re.FindStringSubmatchIndex(etcdEndpoints[i]); se != nil {
+			etcdEndpoints[i] = fmt.Sprintf("%s.%s%s", etcdEndpoints[i][:se[3]], es.ControllerNamespace, etcdEndpoints[i][se[3]:])
 		}
 		if i != 0 {
-			newEtcdEndpoints = newEtcdEndpoints + ","
+			newEtcdEndpoints += ","
 		}
-		newEtcdEndpoints = newEtcdEndpoints + etcdEndpoints[i]
+		newEtcdEndpoints += etcdEndpoints[i]
 	}
 
-	m[EndpointsKey] = newEtcdEndpoints
-	m[RootPrefixKey] = fmt.Sprintf("%s/mm_ns/%s", es.EtcdConfig.RootPrefix, es.Namespace)
-	if es.EtcdConfig.Username != "" {
-		m[UsernameKey] = es.EtcdConfig.Username
-	}
-	if es.EtcdConfig.Password != "" {
-		m[PasswordKey] = es.EtcdConfig.Password
-	}
-	if es.EtcdConfig.Certificate != "" {
-		m[CertificateKey] = es.EtcdConfig.Certificate
-	}
-	if es.EtcdConfig.CertificateFile != "" {
-		m[CertificateFileKey] = es.EtcdConfig.CertificateFile
-	}
-	if es.EtcdConfig.ClientKey != "" {
-		m[ClientKeyKey] = es.EtcdConfig.ClientKey
-	}
-	if es.EtcdConfig.ClientKeyFile != "" {
-		m[ClientKeyFileKey] = es.EtcdConfig.ClientKeyFile
-	}
-	if es.EtcdConfig.ClientCertificate != "" {
-		m[ClientCertificateKey] = es.EtcdConfig.ClientCertificate
-	}
-	if es.EtcdConfig.ClientCertificateFile != "" {
-		m[ClientCertificateFileKey] = es.EtcdConfig.ClientCertificateFile
-	}
-	if es.EtcdConfig.OverrideAuthority != "" {
-		m[OverrideAuthorityKey] = es.EtcdConfig.OverrideAuthority
+	es.EtcdConfig.Endpoints = newEtcdEndpoints
+	es.EtcdConfig.RootPrefix = fmt.Sprintf("%s/mm_ns/%s", es.EtcdConfig.RootPrefix, es.Namespace)
+
+	b, err := json.Marshal(es.EtcdConfig)
+	if err != nil {
+		return fmt.Errorf("error json-marshalling etcd config: %w", err)
 	}
 
-	t, _ := json.Marshal(m)
-	if s.StringData == nil {
-		s.StringData = make(map[string]string)
+	if s.Data == nil {
+		s.Data = make(map[string][]byte)
 	}
-	s.StringData[EtcdConnectionKey] = string(t)
+	s.Data[modelmesh.EtcdSecretKey] = b
+	return nil
 }
