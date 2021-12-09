@@ -72,7 +72,7 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 
 // Return secretKey, bucket, modelPath, schemaPath, and error
 func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (
-	secretKey string, parameters map[string]string, modelPath string, schemaPath *string, err error) {
+	secretKey *string, parameters map[string]string, modelPath string, schemaPath *string, err error) {
 	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
@@ -100,7 +100,7 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 	var storageSpecParameters map[string]string
 	if storageSpec != nil {
 		if storageSpec.StorageKey != nil {
-			secretKey = *storageSpec.StorageKey
+			secretKey = storageSpec.StorageKey
 		}
 		if storageSpec.Parameters != nil {
 			storageSpecParameters = *storageSpec.Parameters
@@ -120,15 +120,9 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		parameters = uriParameters
 	}
 
-	if secretKey == "" {
-		secretKey = inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
-	}
-	if secretKey == "" {
-		if t, ok := parameters["type"]; ok {
-			// default key name for the storage type, used for backwards
-			// compatibility with the changes to the storage spec
-			secretKey = fmt.Sprintf("_%s_default", t)
-		}
+	if secretKey == nil {
+		sk := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
+		secretKey = &sk
 	}
 	if schemaPath == nil {
 		SchemaPathAnnotation := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
@@ -167,15 +161,12 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	if err != nil {
 		return nil, err
 	}
-	// If secretKey is empty, it means the storageSpec or the storageUri is not supported.
-	if secretKey == "" {
-		return p, nil
-	}
+
 	p.Spec.Storage = &v1alpha1.Storage{}
 	p.Spec.Storage.Path = &modelPath
 	p.Spec.Storage.SchemaPath = schemaPath
 	p.Spec.Storage.Parameters = &parameters
-	p.Spec.Storage.StorageKey = &secretKey
+	p.Spec.Storage.StorageKey = secretKey
 
 	return p, nil
 

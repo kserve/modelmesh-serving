@@ -49,7 +49,7 @@ func TestProcessInferenceServiceStorage_Simple(t *testing.T) {
 	secretKey, parameters, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
 	assert.NoError(t, err)
 
-	expected := [4]string{secretKey, parameters["bucket"], modelPath, *schemaPath}
+	expected := [4]string{*secretKey, parameters["bucket"], modelPath, *schemaPath}
 	result := [4]string{storageKey, storageBucket, storagePath, storageSchemaPath}
 	assert.Equal(t, result, expected)
 }
