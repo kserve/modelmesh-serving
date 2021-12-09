@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -200,8 +201,8 @@ func makePredictor(id int) *api.Predictor {
 				Path: fmt.Sprintf("testModel%d", id),
 			},
 		},
-		Status: api.PredictorStatus{
-			ActiveModelState: api.Pending,
+		Status: common.PredictorStatus{
+			ActiveModelState: common.Pending,
 		},
 	}
 }
@@ -278,7 +279,7 @@ var _ = Describe("WatchRefresh-based PredictorSource", func() {
 
 		p1 := makePredictor(1)
 		p1.ResourceVersion = strconv.Itoa(latestRv)
-		p1.Status.ActiveModelState = api.Loaded
+		p1.Status.ActiveModelState = common.Loaded
 		p1.Status.Available = true
 
 		ok, err := pr.UpdateStatus(context.TODO(), p1)
@@ -296,7 +297,7 @@ var _ = Describe("WatchRefresh-based PredictorSource", func() {
 		}
 		p, err := pr.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "testPredictor1"})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(p.Status.ActiveModelState).To(Equal(api.Loaded))
+		Expect(p.Status.ActiveModelState).To(Equal(common.Loaded))
 		Expect(p.ResourceVersion).To(Equal(strconv.Itoa(latestRv + 1)))
 		latestRv += 1
 	}

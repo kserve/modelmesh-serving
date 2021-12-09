@@ -854,7 +854,7 @@ var _ = Describe("Invalid Predictors", func() {
 
 				By("Asserting on the predictor state")
 				ExpectPredictorFailureInfo(obj, "InvalidPredictorSpec", false, false,
-					"Only S3 Storage is currently supported")
+					"spec.storage.PersistentVolumeClaim is not supported")
 			})
 
 			It("predictor should fail to load with unrecognized model type", func() {
