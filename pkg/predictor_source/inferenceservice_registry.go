@@ -77,24 +77,36 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 	storageUri := frameworkSpec.StorageURI
 	storageSpec := frameworkSpec.Storage
 	uriParameters := make(map[string]string)
+
 	if storageUri == nil {
 		if storageSpec == nil || storageSpec.Path == nil {
-			return "", nil, "", nil, fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
+			err = fmt.Errorf("the InferenceService %v must have either the storageUri or the storage.path", nname)
+			return
 		}
 		modelPath = *storageSpec.Path
 	} else {
 		if storageSpec != nil && storageSpec.Path != nil {
-			return "", nil, "", nil, fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
+			err = fmt.Errorf("the InferenceService %v cannot have both the storageUri and the storage.path", nname)
+			return
 		}
 
-		u, err := url.Parse(*storageUri)
-		if err != nil || u.Scheme != "s3" {
-			return "", nil, "", nil, err
+		u, urlErr := url.Parse(*storageUri)
+		if urlErr != nil {
+			err = fmt.Errorf("could not parse storageUri in InferenceService %v: %w", nname, urlErr)
+			return
 		}
+
+		switch u.Scheme {
+		case "s3":
+			modelPath = u.Path
+			uriParameters["type"] = "s3"
+			uriParameters["bucket"] = u.Host
 		// TODO: Support StorageURI for other types of storage too
-		modelPath = u.Path
-		uriParameters["type"] = "s3"
-		uriParameters["bucket"] = u.Host
+		default:
+			err = fmt.Errorf("the InferenceService %v has an unsupported storageUri scheme %v", nname, u.Scheme)
+			return
+		}
+
 	}
 
 	var storageSpecParameters map[string]string
@@ -120,14 +132,20 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		parameters = uriParameters
 	}
 
+	// alternative source for SecretKey for backwards compatibility
 	if secretKey == nil {
-		sk := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]
-		secretKey = &sk
+		if sk, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SecretKeyAnnotation]; ok {
+			secretKey = &sk
+		}
 	}
+
+	// alternative source for SchemaPath for backwards compatibility
 	if schemaPath == nil {
-		SchemaPathAnnotation := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]
-		schemaPath = &SchemaPathAnnotation
+		if sp, ok := inferenceService.ObjectMeta.Annotations[v1beta1.SchemaPathAnnotation]; ok {
+			schemaPath = &sp
+		}
 	}
+
 	return
 }
 
