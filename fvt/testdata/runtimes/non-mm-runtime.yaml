@@ -14,29 +14,20 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
-  name: custom-runtime-1.x
+  name: non-mm-runtime
 spec:
-  containers:
-    - env:
-        - name: MODEL_DIRECTORY_PATH
-          value: /models
-        - name: MODEL_SERVER_MEM_REQ_BYTES
-          valueFrom:
-            resourceFieldRef:
-              containerName: modelserver
-              resource: requests.memory
-      image: tnarayan74/custom-runtime:6.0
-      name: modelserver
-      resources:
-        limits:
-          cpu: "2"
-          memory: 1Gi
-        requests:
-          cpu: 500m
-          memory: 1Gi
-  multiModel: true
-  grpcDataEndpoint: port:8001
-  grpcEndpoint: port:8001
   supportedModelTypes:
-    - name: ml-type1
+    - name: foo
       version: "1"
+  containers:
+    - name: kserve-container
+      image: fo
+      args:
+        - --model_name=foo
+      resources:
+        requests:
+          cpu: "1"
+          memory: 2Gi
+        limits:
+          cpu: "1"
+          memory: 2Gi

@@ -194,6 +194,7 @@ spec:
   containers:
     - name: model-server
       image: samplemodelserver:latest
+  multiModel: true
   grpcEndpoint: "port:8085"
   grpcDataEndpoint: "port:8090"
 ```
@@ -220,6 +221,7 @@ Available attributes in the `ServingRuntime` spec:
 
 | Attribute                        | Description                                                                                                                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multiModel`                     | Whether this ServingRuntime is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                       |
 | `disable`                        | Disables this runtime                                                                                                                                                     |
 | `containers`                     | List of containers associated with the runtime                                                                                                                            |
 | `containers[ ].image`            | The container image for the current container                                                                                                                             |
@@ -285,6 +287,7 @@ spec:
           memory: 200Mi
       imagePullPolicy: IfNotPresent
       workingDir: "/container/working/dir"
+  multiModel: true
   disabled: false
   storageHelper:
     disabled: true

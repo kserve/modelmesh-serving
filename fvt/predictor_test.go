@@ -885,3 +885,54 @@ var _ = Describe("Invalid Predictors", func() {
 		fvtClient.RestartDeploys()
 	})
 })
+
+var _ = Describe("Non-ModelMesh ServingRuntime", func() {
+
+	runtimeFile := "non-mm-runtime.yaml"
+	runtimeName := "non-mm-runtime"
+
+	BeforeEach(func() {
+		var err error
+
+		// Get a list of ServingRuntime deployments.
+		deploys := fvtClient.ListDeploys()
+		numDeploys := len(deploys.Items)
+
+		// Create a non-modelmesh ServingRuntime.
+		err = fvtClient.RunKubectl("create", "-f", runtimeSamplesPath+runtimeFile)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Waiting for the deployments replicas to be ready")
+		WaitForStableActiveDeployState()
+
+		By("Checking that new ServingRuntime resource exists")
+		fvtClient.GetServingRuntime(runtimeName)
+
+		By("Checking that no new deployments were created")
+		deploys = fvtClient.ListDeploys()
+		Expect(deploys.Items).To(HaveLen(numDeploys))
+	})
+
+	AfterEach(func() {
+		err := fvtClient.RunKubectl("delete", "-f", runtimeSamplesPath+runtimeFile)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("predictor should remain pending with RuntimeUnhealthy", func() {
+		pred := NewPredictorForFVT("foo-predictor.yaml")
+
+		obj := fvtClient.CreatePredictorExpectSuccess(pred)
+		ExpectPredictorState(obj, false, "Pending", "", "UpToDate")
+
+		// Give time to process
+		time.Sleep(time.Second * 5)
+
+		obj = fvtClient.GetPredictor(obj.GetName())
+
+		By("Verifying the predictor has failure message")
+		ExpectPredictorFailureInfo(obj, "RuntimeUnhealthy", false, false,
+			"Waiting for runtime Pod to become available")
+
+		fvtClient.DeletePredictor(obj.GetName())
+	})
+})
