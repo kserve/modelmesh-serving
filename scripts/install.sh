@@ -25,7 +25,7 @@ dev_mode_logging=false
 quickstart=false
 fvt=false
 user_ns_array=
-namespace_scope_mode=true # default will be changed to false when rbac is changed to cluster scope
+namespace_scope_mode=false # change to true to run in namespace scope
 
 function showHelp() {
   echo "usage: $0 [flags]"
