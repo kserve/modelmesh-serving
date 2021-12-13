@@ -29,12 +29,14 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/kserve/modelmesh-serving/pkg/config"
 
+	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -103,7 +105,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var runtimes *api.ServingRuntimeList
 	if mmEnabled {
 		runtimes = &api.ServingRuntimeList{}
-		if err = r.Client.List(ctx, runtimes); err != nil {
+		if err = r.Client.List(ctx, runtimes, client.InNamespace(req.Namespace)); err != nil {
 			return RequeueResult, err
 		}
 	}
@@ -113,12 +115,59 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return RequeueResult, fmt.Errorf("could not reconcile the modelmesh type-constraints configmap: %w", err)
 	}
 
-	//TODO(probably) here ... if not controller namespace then
-	//  read etcd secret from controller namespace, replace rootprefix with ns-specific one
-	//  and the create/update etcd secret (with same name) in _this_ namespace
-	//  and include an "ownership" label similar to the tc-config configmap
+	// Delete etcd secret when there is no ServingRuntimes in a namespace
+	etcdSecretName := r.ConfigProvider.GetConfig().GetEtcdSecretName()
+	if len(runtimes.Items) == 0 {
+		// We don't delete the etcd secret in the controller namespace
+		if req.Namespace != r.ControllerNamespace {
+			s := &corev1.Secret{}
+			err = r.Client.Get(ctx, types.NamespacedName{
+				Name:      etcdSecretName,
+				Namespace: req.Namespace,
+			}, s)
 
-	//reconcile this serving runtime
+			if err == nil {
+				err = r.Delete(ctx, s)
+			} else if errors.IsNotFound(err) {
+				err = nil
+			}
+			if err != nil {
+				return RequeueResult, err
+			}
+		}
+	} else if req.Namespace != r.ControllerNamespace {
+		// If not controller namespace then read etcd secret from controller namespace,
+		// replace rootprefix with ns-specific one, and then create/update etcd secret (with same name)
+		// in _this_ namespace and include labels similar to the tc-config configmap
+		s := &corev1.Secret{}
+		if err = r.Client.Get(ctx, types.NamespacedName{
+			Name:      etcdSecretName,
+			Namespace: r.ControllerNamespace,
+		}, s); err != nil {
+			return RequeueResult, fmt.Errorf("Could not get the controller etcd secret: %w", err)
+		}
+
+		data := s.Data[modelmesh.EtcdSecretKey]
+		etcdConfig := mmesh.EtcdConfig{}
+		if err = json.Unmarshal(data, &etcdConfig); err != nil {
+			return RequeueResult, fmt.Errorf("failed to parse etcd config json: %w", err)
+		}
+
+		es := mmesh.EtcdSecret{
+			Log:                 ctrl.Log.WithName("etcdSecret"),
+			Name:                etcdSecretName,
+			Namespace:           req.Namespace,
+			ControllerNamespace: r.ControllerNamespace,
+			EtcdConfig:          &etcdConfig,
+			Scheme:              r.Scheme,
+		}
+
+		if err = es.Apply(ctx, r.Client); err != nil {
+			return RequeueResult, fmt.Errorf("Could not apply the modelmesh etcd secret: %w", err)
+		}
+	}
+
+	// Reconcile this serving runtime
 	rt := &api.ServingRuntime{}
 	if err = r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
 		log.Info("Runtime is not found")

@@ -228,9 +228,9 @@ func ownerIDFromVModelRecord(data []byte) (string, error) {
 }
 
 func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName string) error {
+	var err error
 	etcdSecret := v12.Secret{}
-	err := mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.controllerNamespace}, &etcdSecret)
-	if err != nil {
+	if err = mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.controllerNamespace}, &etcdSecret); err != nil {
 		return fmt.Errorf("Unable to access etcd secret with name '%s': %w", secretName, err)
 	}
 	etcdSecretJsonData, ok := etcdSecret.Data[modelmesh.EtcdSecretKey]

@@ -19,6 +19,7 @@ set -Eeuo pipefail
 
 path_to_configs=config
 namespace=
+user_ns_array=
 
 function showHelp() {
   echo "usage: $0 [flags]"
@@ -26,6 +27,7 @@ function showHelp() {
   echo "Flags:"
   echo "  -p, --local-config-path      Path to local model serve installation configs. Can be ModelMesh Serving tarfile or directory."
   echo "  -n, --namespace              Kubernetes namespace where ModelMesh Serving is deployed."
+  echo "  -u, --user-namespaces        Kubernetes namespaces where ModelMesh Serving is enabled"
   echo
   echo "Deletes ModelMesh Serving CRDs, controller, and built-in runtimes into specified"
   echo "Kubernetes namespaces. Will use current Kube namespace and path if"
@@ -50,6 +52,10 @@ while (($# > 0)); do
   -n | --n | -namespace | --namespace)
     shift
     namespace="$1"
+    ;;
+  -u | --u | -user-namespaces | --user-namespaces)
+    shift
+    user_ns_array=($1)
     ;;
   -p | --p | -local-path | --local-path | -local-config-path | --local-config-path)
     shift
@@ -79,6 +85,24 @@ fi
 cd default
 kustomize edit set namespace "$namespace"
 cd ..
+
+if [[ ! -z $user_ns_array ]]; then
+  kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
+  cp dependencies/minio-storage-secret.yaml .
+  sed -i "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
+
+  for user_ns in "${user_ns_array[@]}"; do
+    if ! kubectl get namespaces $user_ns >/dev/null; then
+      echo "Kube namespace does not exist: $user_ns. Will skip."
+    else 
+      kubectl label namespace ${user_ns} modelmesh-enabled-
+      kubectl delete -f minio-storage-secret.yaml -n ${user_ns}
+      kubectl delete -f runtimes.yaml -n ${user_ns}
+    fi
+  done
+  rm minio-storage-secret.yaml
+  rm runtimes.yaml
+fi
 
 kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl delete -f - --ignore-not-found=true

@@ -84,6 +84,14 @@ func (pr *PredictorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return pr.ReconcilePredictor(ctx, nname, source, registry)
 }
 
+// Returns MMClient for a namespace
+func (pr *PredictorReconciler) getMMClient(namespace string) mmeshapi.ModelMeshClient {
+	if mms := pr.MMServices.Get(namespace); mms != nil {
+		return mms.MMClient()
+	}
+	return nil
+}
+
 func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname types.NamespacedName,
 	sourceId string, registry predictor_source.PredictorRegistry) (ctrl.Result, error) {
 	resourceType := registry.GetSourceName()
@@ -94,6 +102,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	if (predictor == nil && err == nil) || errors.IsNotFound(err) {
 		return pr.handlePredictorNotFound(ctx, nname, sourceId)
 	}
+
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to fetch CR from kubebuilder cache for predictor %s: %w",
 			nname.Name, err)
@@ -102,10 +111,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	status := &predictor.Status
 	waitingBefore := status.WaitingForRuntime()
 	updateStatus := false
-	var mmc mmeshapi.ModelMeshClient
-	if mms := pr.MMServices.Get(nname.Namespace); mms != nil {
-		mmc = mms.MMClient()
-	}
+	mmc := pr.getMMClient(nname.Namespace)
 	var finalErr error
 
 	invalidPredictorMessage := validatePredictor(predictor)
@@ -277,10 +283,7 @@ var transitionStatusMap = map[mmeshapi.VModelStatusInfo_VModelStatus]common.Tran
 
 func (pr *PredictorReconciler) handlePredictorNotFound(ctx context.Context,
 	name types.NamespacedName, sourceId string) (ctrl.Result, error) {
-	var mmc mmeshapi.ModelMeshClient
-	if mms := pr.MMServices.Get(name.Namespace); mms != nil {
-		mmc = mms.MMClient()
-	}
+	mmc := pr.getMMClient(name.Namespace)
 	if mmc == nil {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}

@@ -324,7 +324,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("InferenceServicePort", 8033)
 	v.SetDefault("PodsPerRuntime", 2)
 	v.SetDefault("StorageSecretName", "storage-config")
-	v.SetDefault("ServiceAccountName", "modelmesh")
+	v.SetDefault("ServiceAccountName", "")
 	v.SetDefault("Metrics.Port", 2112)
 	v.SetDefault("Metrics.Scheme", "https")
 	v.SetDefault("ScaleToZero.Enabled", true)

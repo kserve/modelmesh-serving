@@ -324,7 +324,6 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 			Namespace: owner.GetNamespace(),
 		},
 	}
-	serviceName := owner.GetName()
 
 	err := r.Client.Get(ctx, client.ObjectKey{Name: serviceMonitorName, Namespace: owner.GetNamespace()}, sm)
 	exists := true
@@ -360,7 +359,7 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 	}
 
 	targetSpec := monitoringv1.ServiceMonitorSpec{
-		Selector:          metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": serviceName}},
+		Selector:          metav1.LabelSelector{MatchLabels: map[string]string{"modelmesh-service": owner.GetName()}},
 		NamespaceSelector: monitoringv1.NamespaceSelector{MatchNames: []string{sm.Namespace}},
 		Endpoints: []monitoringv1.Endpoint{{
 			Interval: "30s",
