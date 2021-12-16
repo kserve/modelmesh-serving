@@ -930,8 +930,12 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		obj = fvtClient.GetPredictor(obj.GetName())
 
 		By("Verifying the predictor has failure message")
-		ExpectPredictorFailureInfo(obj, "RuntimeUnhealthy", false, false,
-			"Waiting for runtime Pod to become available")
+		failureInfo := GetMap(obj, "status", "lastFailureInfo")
+		Expect(failureInfo).ToNot(BeNil())
+
+		// Failure reason depends on if a ModelMesh container is up (i.e. a SR pod is running).
+		// Here, just check for one of the expected failure reasons.
+		Expect(failureInfo["reason"]).To(Or(Equal("RuntimeUnhealthy"), Equal("NoSupportingRuntime")))
 
 		fvtClient.DeletePredictor(obj.GetName())
 	})
