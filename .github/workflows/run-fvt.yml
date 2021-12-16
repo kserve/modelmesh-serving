@@ -51,7 +51,8 @@ jobs:
       - name: Install ModelMesh Serving
         run: |
           kubectl create ns modelmesh-serving
-          ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
+          kubectl create ns modelmesh-user
+          ./scripts/install.sh --namespace modelmesh-serving -u modelmesh-user --fvt --dev-mode-logging
       - name: Pre-pull runtime images
         run: |
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
@@ -63,4 +64,7 @@ jobs:
           kubectl get servingruntimes
       - name: Run FVTs
         run: |
+          export NAMESPACE=modelmesh-serving
+          make fvt
+          export NAMESPACE=modelmesh-user
           make fvt

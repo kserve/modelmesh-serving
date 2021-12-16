@@ -119,6 +119,7 @@ var _ = Describe("Predictor", func() {
 					"value": "0",
 				},
 			},
+			"podsPerRuntime": 1,
 		}
 		fvtClient.ApplyUserConfigMap(config)
 
@@ -788,6 +789,7 @@ var _ = Describe("Invalid Predictors", func() {
 					"value": "0",
 				},
 			},
+			"podsPerRuntime": 1,
 		}
 		fvtClient.ApplyUserConfigMap(config)
 
@@ -842,10 +844,7 @@ var _ = Describe("Invalid Predictors", func() {
 
 			It("predictor should fail to load with unsupported storage type", func() {
 				// modify the object with a PVC storage type, which isn't yet supported
-				err := unstructured.SetNestedField(predictorObject.Object, nil, "spec", "storage", "s3")
-				Expect(err).ToNot(HaveOccurred())
-
-				err = unstructured.SetNestedField(predictorObject.Object, map[string]interface{}{
+				err := unstructured.SetNestedField(predictorObject.Object, map[string]interface{}{
 					"claimName": "not-yet-supported",
 				}, "spec", "storage", "persistentVolumeClaim")
 				Expect(err).ToNot(HaveOccurred())

@@ -40,13 +40,24 @@ run_fvt() {
   echo " =====   run standard fvt   ====="
   kubectl get all -n "$SERVING_NS"
   export KUBECONFIG=~/.kube/config
-    
+
+  rm -rf /usr/local/go
+  wget https://go.dev/dl/go1.17.3.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.17.3.linux-amd64.tar.gz
+
+  export NAMESPACE=${SERVING_NS}
   go test -v ./fvt -ginkgo.v -ginkgo.progress -test.timeout 40m > fvt.out
   cat fvt.out
   RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
 
   if [[ "$RUN_STATUS" == "PASS" ]]; then
-    REV=0
+    export NAMESPACE="modelmesh-user"
+    go test -v ./fvt -ginkgo.v -ginkgo.progress -test.timeout 40m > fvt.out
+    cat fvt.out
+    RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
+    if [[ "$RUN_STATUS" == "PASS" ]]; then
+      REV=0
+    fi
   fi
 
   return "$REV"
