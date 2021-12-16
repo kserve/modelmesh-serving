@@ -19,13 +19,14 @@ var log logr.Logger
 var fvtClient *FVTClient
 
 const (
-	ServingRuntimeKind     = "ServingRuntime"
-	PredictorKind          = "Predictor"
-	ConfigMapKind          = "ConfigMap"
-	SecretKind             = "Secret"
-	DefaultTestNamespace   = "modelmesh-serving"
-	DefaultTestServiceName = "modelmesh-serving"
-	userConfigMapName      = "model-serving-config"
-	samplesPath            = "testdata/predictors/"
-	runtimeSamplesPath     = "testdata/runtimes/"
+	ServingRuntimeKind         = "ServingRuntime"
+	PredictorKind              = "Predictor"
+	ConfigMapKind              = "ConfigMap"
+	SecretKind                 = "Secret"
+	DefaultTestNamespace       = "modelmesh-serving"
+	DefaultTestServiceName     = "modelmesh-serving"
+	DefaultControllerNamespace = "modelmesh-serving"
+	userConfigMapName          = "model-serving-config"
+	samplesPath                = "testdata/predictors/"
+	runtimeSamplesPath         = "testdata/runtimes/"
 )

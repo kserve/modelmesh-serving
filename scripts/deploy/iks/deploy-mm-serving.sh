@@ -59,6 +59,18 @@ then
   exit $EXIT_CODE
 fi
 
+export USER_NS="modelmesh-user"
+kubectl delete ns "$USER_NS" || true
+kubectl create ns "$USER_NS"
+
+wait_for_namespace "$USER_NS" "$MAX_RETRIES" "$SLEEP_TIME" || EXIT_CODE=$?
+
+if [[ $EXIT_CODE -ne 0 ]]
+then
+  echo "Deploy unsuccessful. \"${USER_NS}\" not found."
+  exit $EXIT_CODE
+fi
+
 # Update kustomize
 curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
 mv kustomize /usr/local/bin/kustomize
@@ -68,7 +80,7 @@ sed -i 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomizatio
 sed -i 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-controller"'/' config/manager/kustomization.yaml
 
 # Install and check if all pods are running - allow 60 retries (10 minutes)
-./scripts/install.sh --namespace "$SERVING_NS" --fvt
+./scripts/install.sh --namespace "$SERVING_NS" -u modelmesh-user --fvt
 wait_for_pods "$SERVING_NS" 60 "$SLEEP_TIME" || EXIT_CODE=$?
 
 if [[ $EXIT_CODE -ne 0 ]]

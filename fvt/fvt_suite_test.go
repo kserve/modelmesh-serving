@@ -52,10 +52,14 @@ var _ = BeforeSuite(func() {
 	if serviceName == "" {
 		serviceName = DefaultTestServiceName
 	}
-	log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName)
+	controllerNamespace := os.Getenv("CONTROLLERNAMESPACE")
+	if controllerNamespace == "" {
+		controllerNamespace = DefaultControllerNamespace
+	}
+	log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName, "CONTROLLERNAMESPACE", controllerNamespace)
 
 	var err error
-	fvtClient, err = GetFVTClient(log, namespace, serviceName)
+	fvtClient, err = GetFVTClient(log, namespace, serviceName, controllerNamespace)
 	Expect(err).ToNot(HaveOccurred())
 	log.Info("FVTClient created", "client", fvtClient)
 

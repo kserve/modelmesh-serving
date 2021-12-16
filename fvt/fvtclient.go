@@ -69,16 +69,17 @@ var applyPatchOptions = metav1.PatchOptions{
 
 type FVTClient struct {
 	dynamic.Interface
-	namespace          string
-	serviceName        string
-	grpcConn           *grpc.ClientConn
-	portForwardCommand *exec.Cmd
-	portForwardDoneCh  chan struct{}
-	localPort          int
-	log                logr.Logger
+	namespace           string
+	serviceName         string
+	controllerNamespace string
+	grpcConn            *grpc.ClientConn
+	portForwardCommand  *exec.Cmd
+	portForwardDoneCh   chan struct{}
+	localPort           int
+	log                 logr.Logger
 }
 
-func GetFVTClient(log logr.Logger, namespace, serviceName string) (*FVTClient, error) {
+func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace string) (*FVTClient, error) {
 	var err error
 	config, err := ctrl.GetConfig()
 	if err != nil {
@@ -95,7 +96,7 @@ func GetFVTClient(log logr.Logger, namespace, serviceName string) (*FVTClient, e
 	// set port based on worker index to support parallel port-forwards
 	localPort := 8032 + ginkgoConfig.GinkgoConfig.ParallelNode
 
-	return &FVTClient{client, namespace, serviceName, nil, nil, nil, localPort, log}, nil
+	return &FVTClient{client, namespace, serviceName, controllerNamespace, nil, nil, nil, localPort, log}, nil
 }
 
 var (
@@ -370,7 +371,7 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 	Expect(err).ToNot(HaveOccurred())
 
 	// use server-side-apply with Patch to create/update the configmap
-	_, err = fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Patch(context.TODO(), cmu.GetName(), types.ApplyPatchType, p, applyPatchOptions)
+	_, err = fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Patch(context.TODO(), cmu.GetName(), types.ApplyPatchType, p, applyPatchOptions)
 	Expect(err).ToNot(HaveOccurred())
 }
 
@@ -403,7 +404,7 @@ func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth str
 	newConfigMapContents := replacer.Replace(configMapContents)
 	SetString(configMapObj, newConfigMapContents, "data", "config.yaml")
 
-	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Create(context.TODO(), configMapObj, metav1.CreateOptions{})
+	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Create(context.TODO(), configMapObj, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(obj).ToNot(BeNil())
 	Expect(obj.GetKind()).To(Equal(ConfigMapKind))
@@ -413,7 +414,7 @@ func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth str
 }
 
 func (fvt *FVTClient) UpdateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
-	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), userConfigMapName, metav1.GetOptions{})
+	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Get(context.TODO(), userConfigMapName, metav1.GetOptions{})
 
 	if configMapExists == nil {
 		fvt.log.Info(fmt.Sprintf("Could not find configmap '%s', creating", userConfigMapName))
@@ -426,7 +427,7 @@ func (fvt *FVTClient) UpdateConfigMapTLS(tlsSecretName string, tlsClientAuth str
 	newConfigMapContents := replacer.Replace(configMapContents)
 	SetString(configMapObj, newConfigMapContents, "data", "config.yaml")
 
-	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Update(context.TODO(), configMapObj, metav1.UpdateOptions{})
+	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Update(context.TODO(), configMapObj, metav1.UpdateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(obj).ToNot(BeNil())
 	Expect(obj.GetKind()).To(Equal(ConfigMapKind))
@@ -498,12 +499,12 @@ func (fvt *FVTClient) RestartDeploys() {
 }
 
 func (fvt *FVTClient) DeleteConfigMap(resourceName string) error {
-	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
+	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
 
 	if configMapExists != nil {
 		fvt.log.Info(fmt.Sprintf("Found configmap '%s'", resourceName))
 		fvt.log.Info(fmt.Sprintf("Deleting config map '%s' ...", resourceName))
-		return fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
+		return fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
 	}
 	return nil
 }
