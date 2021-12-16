@@ -118,8 +118,9 @@ func (r *ServiceReconciler) getMMService(namespace string,
 	return mms, cp.GetConfig(), false
 }
 
-// +kubebuilder:rbac:namespace="model-serving",groups="",resources=services;services/finalizers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:namespace="model-serving",groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services;services/finalizers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.V(1).Info("Service reconciler called", "name", req.NamespacedName)

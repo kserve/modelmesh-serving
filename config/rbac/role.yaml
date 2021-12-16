@@ -13,7 +13,7 @@
 # limitations under the License.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: controller-role
 rules:
@@ -40,10 +40,24 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - secrets
+      - namespaces
     verbs:
       - get
       - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
       - watch
   - apiGroups:
       - ""
