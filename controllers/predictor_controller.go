@@ -255,10 +255,10 @@ func validatePredictor(predictor *api.Predictor) string {
 
 // passed in ModelInfo.Key field of registration requests
 type ModelKeyInfo struct {
-	StorageKey    *string                `json:"storage_key,omitempty"`
-	StorageParams map[string]interface{} `json:"storage_params,omitempty"`
-	ModelType     *api.ModelType         `json:"model_type,omitempty"`
-	SchemaPath    *string                `json:"schema_path,omitempty"`
+	StorageKey    *string           `json:"storage_key,omitempty"`
+	StorageParams map[string]string `json:"storage_params,omitempty"`
+	ModelType     *api.ModelType    `json:"model_type,omitempty"`
+	SchemaPath    *string           `json:"schema_path,omitempty"`
 }
 
 const (
@@ -343,7 +343,7 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 
 // Extracts fields from the Predictor related to the Model to be loaded
 // Handles backwards compability of fields that have been changed/deprecated.
-func extractModelFields(predictor *api.Predictor) (path string, schemaPath, storageKey *string, storageParams map[string]interface{}) {
+func extractModelFields(predictor *api.Predictor) (path string, schemaPath, storageKey *string, storageParams map[string]string) {
 	// Storage itself is optional
 	if predictor.Spec.Storage == nil {
 		return
@@ -367,23 +367,15 @@ func extractModelFields(predictor *api.Predictor) (path string, schemaPath, stor
 		storageKey = &predictor.Spec.Storage.S3.SecretKey
 	}
 
-	storageParams = make(map[string]interface{})
 	if predictor.Spec.Storage.Parameters != nil {
-		storageParams = tranformParameters(*predictor.Spec.Storage.Parameters)
+		storageParams = *predictor.Spec.Storage.Parameters
 	} else if predictor.Spec.Storage.S3 != nil && predictor.Spec.Storage.S3.Bucket != nil {
-		storageParams["bucket"] = predictor.Spec.Storage.S3.Bucket
+		storageParams = map[string]string{
+			"bucket": *predictor.Spec.Storage.S3.Bucket,
+		}
 	}
 
 	return
-}
-
-func tranformParameters(input map[string]string) map[string]interface{} {
-	output := map[string]interface{}{}
-	for key, value := range input {
-		output[key] = value
-	}
-
-	return output
 }
 
 // Returns the model-mesh model name corresponding to a particular Predictor and sourceId
