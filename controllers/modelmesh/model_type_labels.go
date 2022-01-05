@@ -43,10 +43,10 @@ func (ss StringSet) ToSlice() []string {
 }
 
 func GetServingRuntimeSupportedModelTypeLabelSet(rt *api.ServingRuntime) StringSet {
-	set := make(StringSet, 2*len(rt.Spec.SupportedModelTypes)+1)
+	set := make(StringSet, 2*len(rt.Spec.SupportedModelFormats)+1)
 
 	// model type labels
-	for _, t := range rt.Spec.SupportedModelTypes {
+	for _, t := range rt.Spec.SupportedModelFormats {
 		set.Add("mt:" + t.Name)
 		if t.Version != nil {
 			set.Add("mt:" + t.Name + ":" + *t.Version)

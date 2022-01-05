@@ -29,7 +29,7 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 			Name: "runtimename",
 		},
 		Spec: api.ServingRuntimeSpec{
-			SupportedModelTypes: []api.ModelType{
+			SupportedModelFormats: []api.SupportedModelFormat{
 				{
 					Name: "type1",
 				},

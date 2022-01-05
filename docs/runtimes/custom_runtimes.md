@@ -188,7 +188,7 @@ kind: ServingRuntime
 metadata:
   name: example-runtime
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: new-modeltype
       version: "1"
   containers:
@@ -219,27 +219,27 @@ The [built-in runtimes](https://github.com/kserve/modelmesh-serving/tree/main/co
 
 Available attributes in the `ServingRuntime` spec:
 
-| Attribute                        | Description                                                                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `multiModel`                     | Whether this ServingRuntime is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                       |
-| `disable`                        | Disables this runtime                                                                                                                                                     |
-| `containers`                     | List of containers associated with the runtime                                                                                                                            |
-| `containers[ ].image`            | The container image for the current container                                                                                                                             |
-| `containers[ ].command`          | Executable command found in the provided image                                                                                                                            |
-| `containers[ ].args`             | List of command line arguments as strings                                                                                                                                 |
-| `containers[ ].resources`        | Kubernetes [limits or requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits)                                       |
-| `containers[ ].imagePullPolicy`  | The container image pull policy                                                                                                                                           |
-| `containers[ ].workingDir`       | The working directory for current container                                                                                                                               |
-| `grpcEndpoint`                   | The [port](#endpoint-formats) for model management requests                                                                                                               |
-| `grpcDataEndpoint`               | The [port or unix socket](#endpoint-formats) for inferencing requests arriving to the model server over the gRPC protocol. May be set to the same value as `grpcEndpoint` |
-| `supportedModelTypes`            | List of model types supported by the current runtime                                                                                                                      |
-| `supportedModelTypes[ ].name`    | Name of the model type                                                                                                                                                    |
-| `supportedModelTypes[ ].version` | Version of the model type. It is recommended to include only the major version here, for example "1" rather than "1.15.4"                                                 |
-| `storageHelper.disabled`         | Disables the storage helper                                                                                                                                               |
-| `nodeSelector`                   | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)                                       |
-| `affinity`                       | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)            |
-| `tolerations`                    | Allow pods to be scheduled onto nodes [with matching taints](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                |
-| `replicas`                       | The number of replicas of the runtime to create. This overrides the `podsPerRuntime` [configuration](configuration)                                                       |
+| Attribute                          | Description                                                                                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multiModel`                       | Whether this ServingRuntime is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                       |
+| `disable`                          | Disables this runtime                                                                                                                                                     |
+| `containers`                       | List of containers associated with the runtime                                                                                                                            |
+| `containers[ ].image`              | The container image for the current container                                                                                                                             |
+| `containers[ ].command`            | Executable command found in the provided image                                                                                                                            |
+| `containers[ ].args`               | List of command line arguments as strings                                                                                                                                 |
+| `containers[ ].resources`          | Kubernetes [limits or requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits)                                       |
+| `containers[ ].imagePullPolicy`    | The container image pull policy                                                                                                                                           |
+| `containers[ ].workingDir`         | The working directory for current container                                                                                                                               |
+| `grpcEndpoint`                     | The [port](#endpoint-formats) for model management requests                                                                                                               |
+| `grpcDataEndpoint`                 | The [port or unix socket](#endpoint-formats) for inferencing requests arriving to the model server over the gRPC protocol. May be set to the same value as `grpcEndpoint` |
+| `supportedModelFormats`            | List of model types supported by the current runtime                                                                                                                      |
+| `supportedModelFormats[ ].name`    | Name of the model type                                                                                                                                                    |
+| `supportedModelFormats[ ].version` | Version of the model type. It is recommended to include only the major version here, for example "1" rather than "1.15.4"                                                 |
+| `storageHelper.disabled`           | Disables the storage helper                                                                                                                                               |
+| `nodeSelector`                     | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)                                       |
+| `affinity`                         | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)            |
+| `tolerations`                      | Allow pods to be scheduled onto nodes [with matching taints](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                |
+| `replicas`                         | The number of replicas of the runtime to create. This overrides the `podsPerRuntime` [configuration](configuration)                                                       |
 
 ### Endpoint formats
 
@@ -263,7 +263,7 @@ kind: ServingRuntime
 metadata:
   name: example-runtime
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: my_model_type # name of the model
       version: "1"
   containers:

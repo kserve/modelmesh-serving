@@ -20,7 +20,7 @@ metadata:
   annotations:
     maxLoadingConcurrency: "2"
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: tensorflow
       version: "1" # 1.15.4
     - name: tensorflow

@@ -37,6 +37,6 @@ spec:
   multiModel: true
   grpcDataEndpoint: port:8001
   grpcEndpoint: port:8001
-  supportedModelTypes:
+  supportedModelFormats:
     - name: ml-type1
       version: "1"

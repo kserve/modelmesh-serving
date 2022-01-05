@@ -57,7 +57,7 @@ func TestOverlayMockRuntime(t *testing.T) {
 					},
 				},
 			},
-			SupportedModelTypes: []api.ModelType{
+			SupportedModelFormats: []api.SupportedModelFormat{
 				{
 					Name:    "name",
 					Version: &version,

@@ -54,7 +54,7 @@ func TestMarshalServingRuntime(t *testing.T) {
 					},
 				},
 			},
-			SupportedModelTypes: []ModelType{
+			SupportedModelFormats: []SupportedModelFormat{
 				{
 					Name:    "name",
 					Version: &version,

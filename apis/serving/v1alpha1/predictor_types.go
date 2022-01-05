@@ -56,6 +56,13 @@ type S3StorageSource struct {
 	Bucket *string `json:"bucket,omitempty" validation:"required"`
 }
 
+type ModelType struct {
+	// +required
+	Name string `json:"name"`
+	// +optional
+	Version *string `json:"version,omitempty"`
+}
+
 type Model struct {
 	// +required
 	Type ModelType `json:"modelType"`
