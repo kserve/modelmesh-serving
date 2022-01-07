@@ -81,7 +81,32 @@ type InferenceServiceList struct {
 	Items           []InferenceService `json:"items"`
 }
 
+type ModelFormat struct {
+	// Name of the model format.
+	// +required
+	Name string `json:"name"`
+	// Version of the model format.
+	// +optional
+	Version *string `json:"version,omitempty"`
+}
+
+type ModelSpec struct {
+	// ModelFormat being served.
+	// +required
+	ModelFormat ModelFormat `json:"modelFormat"`
+
+	// Specific ClusterServingRuntime/ServingRuntime name to use for deployment.
+	// +optional
+	Runtime *string `json:"runtime,omitempty"`
+
+	PredictorExtensionSpec `json:",inline"`
+}
+
 type InferenceServicePredictorSpec struct {
+	Model *ModelSpec `json:"model,omitempty"`
+
+	// Note: the below fields are still supported, but deprecated.
+
 	SKLearn    *PredictorExtensionSpec `json:"sklearn,omitempty"`
 	XGBoost    *PredictorExtensionSpec `json:"xgboost,omitempty"`
 	Tensorflow *PredictorExtensionSpec `json:"tensorflow,omitempty"`

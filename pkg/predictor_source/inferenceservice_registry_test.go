@@ -20,8 +20,126 @@ import (
 	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
+
+func TestBuildBasePredictorFromInferenceService_ModelSpecSimple(t *testing.T) {
+	formatName := "tensorflow"
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				Model: &v1beta1.ModelSpec{
+					ModelFormat: v1beta1.ModelFormat{
+						Name: formatName,
+					},
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.NoError(t, err)
+	assert.Equal(t, predictor.Spec.Model.Type.Name, formatName)
+	assert.Nil(t, predictor.Spec.Model.Type.Version)
+	assert.Nil(t, predictor.Spec.Runtime)
+}
+
+func TestBuildBasePredictorFromInferenceService_ModelSpecRuntime(t *testing.T) {
+	formatName := "tensorflow"
+	formatVersion := "1"
+	runtimeName := "triton-x"
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				Model: &v1beta1.ModelSpec{
+					ModelFormat: v1beta1.ModelFormat{
+						Name:    formatName,
+						Version: &formatVersion,
+					},
+					Runtime: &runtimeName,
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.NoError(t, err)
+	assert.Equal(t, predictor.Spec.Model.Type.Name, formatName)
+	if assert.NotNil(t, predictor.Spec.Model.Type.Version) {
+		assert.Equal(t, formatVersion, *predictor.Spec.Model.Type.Version)
+	}
+	if assert.NotNil(t, predictor.Spec.Runtime) {
+		assert.Equal(t, runtimeName, predictor.Spec.Runtime.Name)
+	}
+}
+
+func TestBuildBasePredictorFromInferenceService_FrameworkSpec(t *testing.T) {
+	uri := "s3://foo/bar"
+	runtimeName := "triton-x"
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+				v1beta1.RuntimeAnnotation:        runtimeName,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				SKLearn: &v1beta1.PredictorExtensionSpec{
+					StorageURI: &uri,
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.NoError(t, err)
+	assert.Equal(t, predictor.Spec.Model.Type.Name, "sklearn")
+	assert.Nil(t, predictor.Spec.Model.Type.Version)
+	if assert.NotNil(t, predictor.Spec.Runtime) {
+		assert.Equal(t, runtimeName, predictor.Spec.Runtime.Name)
+	}
+}
+
+func TestBuildBasePredictorFromInferenceService_InvalidSpec(t *testing.T) {
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.Error(t, err)
+	assert.Nil(t, predictor)
+}
+
+func TestBuildBasePredictorFromInferenceService_NonMM(t *testing.T) {
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				Model: &v1beta1.ModelSpec{
+					ModelFormat: v1beta1.ModelFormat{
+						Name: "foo",
+					},
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.NoError(t, err)
+	assert.Nil(t, predictor)
+}
 
 func TestProcessInferenceServiceStorage_Simple(t *testing.T) {
 	storageKey := "localMinIO"
@@ -56,8 +174,8 @@ func TestProcessInferenceServiceStorage_Simple(t *testing.T) {
 
 func TestProcessInferenceServiceStorage_S3UriProcessing(t *testing.T) {
 	uriBucket := "uri-bucket"
-	uriPath := "/some/path/in/the/uri"
-	uri := "s3://" + uriBucket + uriPath
+	uriPath := "some/path/in/the/uri"
+	uri := "s3://" + uriBucket + "/" + uriPath
 
 	nname := types.NamespacedName{Name: "tm-test-model", Namespace: "modelmesh-serving"}
 	inferenceService := &v1beta1.InferenceService{

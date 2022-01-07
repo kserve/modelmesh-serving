@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -46,25 +47,47 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 		return nil, nil
 	}
 
-	framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
-	if frameworkSpec == nil {
-		return nil, errors.New("No valid InferenceService predictor framework found")
-	}
+	p.ObjectMeta = isvc.ObjectMeta
 
-	p.Spec = v1alpha1.PredictorSpec{
-		Model: v1alpha1.Model{
-			Type: v1alpha1.ModelType{
-				Name: framework,
+	if isvc.Spec.Predictor.Model != nil {
+		p.Spec = v1alpha1.PredictorSpec{
+			Model: v1alpha1.Model{
+				Type: v1alpha1.ModelType{
+					Name:    isvc.Spec.Predictor.Model.ModelFormat.Name,
+					Version: isvc.Spec.Predictor.Model.ModelFormat.Version,
+				},
 			},
-		},
-	}
+		}
+		if isvc.Spec.Predictor.Model.Runtime != nil {
+			p.Spec.Runtime = &v1alpha1.PredictorRuntime{
+				RuntimeRef: &v1alpha1.RuntimeRef{
+					Name: *isvc.Spec.Predictor.Model.Runtime,
+				},
+			}
+		}
+	} else {
+		// Note: This block of logic is here to maintain backwards compatibility and
+		// will be removed in the future.
+		framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
+		if frameworkSpec == nil {
+			return nil, errors.New("no valid InferenceService predictor framework found")
+		}
 
-	// If explicit ServingRuntime was passed in through an annotation
-	if runtime, ok := isvc.ObjectMeta.Annotations[v1beta1.RuntimeAnnotation]; ok {
-		p.Spec.Runtime = &v1alpha1.PredictorRuntime{
-			RuntimeRef: &v1alpha1.RuntimeRef{
-				Name: runtime,
+		p.Spec = v1alpha1.PredictorSpec{
+			Model: v1alpha1.Model{
+				Type: v1alpha1.ModelType{
+					Name: framework,
+				},
 			},
+		}
+
+		// If explicit ServingRuntime was passed in through an annotation
+		if runtime, ok := isvc.ObjectMeta.Annotations[v1beta1.RuntimeAnnotation]; ok {
+			p.Spec.Runtime = &v1alpha1.PredictorRuntime{
+				RuntimeRef: &v1alpha1.RuntimeRef{
+					Name: runtime,
+				},
+			}
 		}
 	}
 	return p, nil
@@ -73,9 +96,17 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 // Return secretKey, bucket, modelPath, schemaPath, and error
 func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, nname types.NamespacedName) (
 	secretKey *string, parameters map[string]string, modelPath string, schemaPath *string, err error) {
-	_, frameworkSpec := inferenceService.Spec.Predictor.GetPredictorFramework()
-	storageUri := frameworkSpec.StorageURI
-	storageSpec := frameworkSpec.Storage
+
+	var pSpec *v1beta1.PredictorExtensionSpec
+	if inferenceService.Spec.Predictor.Model != nil {
+		pSpec = &inferenceService.Spec.Predictor.Model.PredictorExtensionSpec
+
+	} else {
+		_, pSpec = inferenceService.Spec.Predictor.GetPredictorFramework()
+	}
+
+	storageUri := pSpec.StorageURI
+	storageSpec := pSpec.Storage
 	uriParameters := make(map[string]string)
 
 	if storageUri == nil {
@@ -98,7 +129,7 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 
 		switch u.Scheme {
 		case "s3":
-			modelPath = u.Path
+			modelPath = strings.TrimPrefix(u.Path, "/")
 			uriParameters["type"] = "s3"
 			uriParameters["bucket"] = u.Host
 		// TODO: Support StorageURI for other types of storage too
@@ -168,7 +199,6 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 		return nil, nil
 	}
 
-	p.ObjectMeta = inferenceService.ObjectMeta
 	p.Status = inferenceService.Status.PredictorStatus
 
 	if p.Status.ActiveModelState == "" {
