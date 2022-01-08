@@ -44,7 +44,7 @@ func TestBuildBasePredictorFromInferenceService_ModelSpecSimple(t *testing.T) {
 	}
 	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
 	assert.NoError(t, err)
-	assert.Equal(t, predictor.Spec.Model.Type.Name, formatName)
+	assert.Equal(t, formatName, predictor.Spec.Model.Type.Name)
 	assert.Nil(t, predictor.Spec.Model.Type.Version)
 	assert.Nil(t, predictor.Spec.Runtime)
 }
@@ -73,7 +73,7 @@ func TestBuildBasePredictorFromInferenceService_ModelSpecRuntime(t *testing.T) {
 	}
 	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
 	assert.NoError(t, err)
-	assert.Equal(t, predictor.Spec.Model.Type.Name, formatName)
+	assert.Equal(t, formatName, predictor.Spec.Model.Type.Name)
 	if assert.NotNil(t, predictor.Spec.Model.Type.Version) {
 		assert.Equal(t, formatVersion, *predictor.Spec.Model.Type.Version)
 	}
@@ -102,7 +102,7 @@ func TestBuildBasePredictorFromInferenceService_FrameworkSpec(t *testing.T) {
 	}
 	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
 	assert.NoError(t, err)
-	assert.Equal(t, predictor.Spec.Model.Type.Name, "sklearn")
+	assert.Equal(t, "sklearn", predictor.Spec.Model.Type.Name)
 	assert.Nil(t, predictor.Spec.Model.Type.Version)
 	if assert.NotNil(t, predictor.Spec.Runtime) {
 		assert.Equal(t, runtimeName, predictor.Spec.Runtime.Name)
@@ -138,6 +138,58 @@ func TestBuildBasePredictorFromInferenceService_NonMM(t *testing.T) {
 	}
 	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
 	assert.NoError(t, err)
+	assert.Nil(t, predictor)
+}
+
+func TestBuildBasePredictorFromInferenceService_BothSpecs(t *testing.T) {
+	uri := "s3://foo/bar"
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				Model: &v1beta1.ModelSpec{
+					ModelFormat: v1beta1.ModelFormat{
+						Name: "foo",
+					},
+				},
+				SKLearn: &v1beta1.PredictorExtensionSpec{
+					StorageURI: &uri,
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot have both the model spec and a framework")
+	assert.Nil(t, predictor)
+}
+
+func TestBuildBasePredictorFromInferenceService_AnnotationWithModelSpec(t *testing.T) {
+	runtimeName := "mlserver-x"
+	inferenceService := &v1beta1.InferenceService{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				v1beta1.DeploymentModeAnnotation: v1beta1.MMDeploymentModeVal,
+				v1beta1.RuntimeAnnotation:        runtimeName,
+			},
+		},
+		Spec: v1beta1.InferenceServiceSpec{
+			Predictor: v1beta1.InferenceServicePredictorSpec{
+				Model: &v1beta1.ModelSpec{
+					ModelFormat: v1beta1.ModelFormat{
+						Name: "foo",
+					},
+				},
+			},
+		},
+	}
+	predictor, err := BuildBasePredictorFromInferenceService(inferenceService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot have both the model spec and the runtime annotation")
 	assert.Nil(t, predictor)
 }
 

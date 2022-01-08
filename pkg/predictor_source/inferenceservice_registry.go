@@ -49,7 +49,19 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 
 	p.ObjectMeta = isvc.ObjectMeta
 
+	framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
+	runtimeFromAnnotation, runtimeAnnotationExists := isvc.ObjectMeta.Annotations[v1beta1.RuntimeAnnotation]
+
 	if isvc.Spec.Predictor.Model != nil {
+
+		if frameworkSpec != nil {
+			return nil, fmt.Errorf("the InferenceService %v cannot have both the model spec and a framework spec (%v)", isvc.Name, framework)
+		}
+		if runtimeAnnotationExists {
+			return nil, fmt.Errorf("the InferenceService %v cannot have both the model spec and the "+
+				"runtime annotation %v", isvc.Name, v1beta1.RuntimeAnnotation)
+		}
+
 		p.Spec = v1alpha1.PredictorSpec{
 			Model: v1alpha1.Model{
 				Type: v1alpha1.ModelType{
@@ -68,7 +80,6 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 	} else {
 		// Note: This block of logic is here to maintain backwards compatibility and
 		// will be removed in the future.
-		framework, frameworkSpec := isvc.Spec.Predictor.GetPredictorFramework()
 		if frameworkSpec == nil {
 			return nil, errors.New("no valid InferenceService predictor framework found")
 		}
@@ -82,10 +93,10 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 		}
 
 		// If explicit ServingRuntime was passed in through an annotation
-		if runtime, ok := isvc.ObjectMeta.Annotations[v1beta1.RuntimeAnnotation]; ok {
+		if runtimeAnnotationExists {
 			p.Spec.Runtime = &v1alpha1.PredictorRuntime{
 				RuntimeRef: &v1alpha1.RuntimeRef{
-					Name: runtime,
+					Name: runtimeFromAnnotation,
 				},
 			}
 		}
