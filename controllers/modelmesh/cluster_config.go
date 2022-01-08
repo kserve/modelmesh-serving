@@ -109,7 +109,7 @@ func calculateConstraintData(rts []api.ServingRuntime) []byte {
 
 	m := make(map[string]interface{})
 	for _, rt := range rts {
-		if !rt.Disabled() && rt.IsModelMeshCompatible() {
+		if !rt.Disabled() && rt.IsMultiModelRuntime() {
 			labels := GetServingRuntimeSupportedModelTypeLabelSet(&rt)
 			// treat each label as a separate model type
 			for l := range labels {

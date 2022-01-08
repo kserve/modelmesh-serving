@@ -189,6 +189,6 @@ func (sr ServingRuntime) Disabled() bool {
 	return sr.Spec.Disabled != nil && *sr.Spec.Disabled
 }
 
-func (sr ServingRuntime) IsModelMeshCompatible() bool {
+func (sr ServingRuntime) IsMultiModelRuntime() bool {
 	return sr.Spec.MultiModel != nil && *sr.Spec.MultiModel
 }

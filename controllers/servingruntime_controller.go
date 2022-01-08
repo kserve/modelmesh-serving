@@ -225,7 +225,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// if the runtime is disabled, delete the deployment
-	if rt.Disabled() || !rt.IsModelMeshCompatible() || !mmEnabled {
+	if rt.Disabled() || !rt.IsMultiModelRuntime() || !mmEnabled {
 		log.Info("Runtime is disabled, incompatible with modelmesh, or namespace is not modelmesh-enabled")
 		if err = mmDeployment.Delete(ctx, r.Client); err != nil {
 			return ctrl.Result{}, fmt.Errorf("could not delete the model mesh deployment: %w", err)
@@ -384,7 +384,7 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	srnns := make([]types.NamespacedName, 0, len(runtimes.Items))
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.IsModelMeshCompatible() && runtimeSupportsPredictor(rt, p) {
+		if rt.IsMultiModelRuntime() && runtimeSupportsPredictor(rt, p) {
 			srnns = append(srnns, types.NamespacedName{
 				Name:      rt.GetName(),
 				Namespace: p.Namespace,
