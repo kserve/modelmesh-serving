@@ -16,7 +16,7 @@ kind: ServingRuntime
 metadata:
   name: non-mm-runtime
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: foo
       version: "1"
   containers:
