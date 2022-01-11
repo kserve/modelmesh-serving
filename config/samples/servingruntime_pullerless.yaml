@@ -21,6 +21,7 @@ spec:
         limits:
           cpu: "5"
           memory: 1Gi
+  multiModel: true
   grpcDataEndpoint: port:8001
   grpcEndpoint: port:8001
 

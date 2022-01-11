@@ -24,6 +24,7 @@ func TestCalculateConstraintData(t *testing.T) {
 	expected := `{"_default":{"required":["_no_runtime"]},` +
 		`"mt:tensorflow":{"required":["mt:tensorflow"]},"mt:tensorflow:1.10":{"required":["mt:tensorflow:1.10"]},"rt:tf-serving-runtime":{"required":["rt:tf-serving-runtime"]}}`
 	v := "1.10"
+	mm := true
 	l := api.ServingRuntimeList{
 		Items: []api.ServingRuntime{
 			{
@@ -37,6 +38,7 @@ func TestCalculateConstraintData(t *testing.T) {
 							Version: &v,
 						},
 					},
+					MultiModel: &mm,
 				},
 			},
 		},

@@ -79,6 +79,11 @@ type ServingRuntimePodSpec struct {
 type ServingRuntimeSpec struct {
 	// Model formats and version supported by this runtime
 	SupportedModelTypes []ModelType `json:"supportedModelTypes,omitempty"`
+
+	// Whether this ServingRuntime is intended for multi-model usage or not.
+	// +optional
+	MultiModel *bool `json:"multiModel,omitempty"`
+
 	// Set to true to disable use of this runtime
 	// +optional
 	Disabled *bool `json:"disabled,omitempty"`
@@ -182,4 +187,8 @@ func init() {
 
 func (sr ServingRuntime) Disabled() bool {
 	return sr.Spec.Disabled != nil && *sr.Spec.Disabled
+}
+
+func (sr ServingRuntime) IsMultiModelRuntime() bool {
+	return sr.Spec.MultiModel != nil && *sr.Spec.MultiModel
 }

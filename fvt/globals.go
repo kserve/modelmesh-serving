@@ -27,4 +27,5 @@ const (
 	DefaultTestServiceName = "modelmesh-serving"
 	userConfigMapName      = "model-serving-config"
 	samplesPath            = "testdata/predictors/"
+	runtimeSamplesPath     = "testdata/runtimes/"
 )

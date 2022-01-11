@@ -138,6 +138,7 @@ spec:
     modelLoadingTimeoutMillis: 90000
     runtimeManagementPort: 8001
     serverType: mlserver
+  multiModel: true
   grpcDataEndpoint: port:8001
   grpcEndpoint: port:8085
   containers:

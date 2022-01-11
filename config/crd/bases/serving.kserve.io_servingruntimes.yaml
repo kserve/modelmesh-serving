@@ -998,8 +998,9 @@ spec:
                         requests
                       type: integer
                     serverType:
-                      description: ServerType can be one of triton/mlserver and
-                        the runtime's container must have the same name
+                      description:
+                        ServerType can be one of triton/mlserver and the
+                        runtime's container must have the same name
                       enum:
                         - triton
                         - mlserver
@@ -1355,6 +1356,11 @@ spec:
                     mmesh.ModelRuntime gRPC service) Assumed to be single-model runtime
                     if omitted
                   type: string
+                multiModel:
+                  description:
+                    Whether this ServingRuntime is intended for multi-model
+                    usage or not.
+                  type: boolean
                 nodeSelector:
                   additionalProperties:
                     type: string

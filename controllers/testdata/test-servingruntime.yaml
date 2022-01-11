@@ -6,6 +6,7 @@ spec:
   supportedModelTypes:
     - name: test
 
+  multiModel: true
   grpcEndpoint: "port:8000"
   grpcDataEndpoint: "port:8001"
 

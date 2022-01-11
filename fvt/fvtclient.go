@@ -153,6 +153,12 @@ func (fvt *FVTClient) ApplyPredictorExpectSuccess(predictor *unstructured.Unstru
 	return obj
 }
 
+func (fvt *FVTClient) GetServingRuntime(name string) *unstructured.Unstructured {
+	obj, err := fvt.Resource(gvrRuntime).Namespace(fvt.namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	return obj
+}
+
 func (fvt *FVTClient) ListServingRuntimes(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return fvt.Resource(gvrRuntime).Namespace(fvt.namespace).List(context.TODO(), options)
 }
