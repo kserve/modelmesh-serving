@@ -761,15 +761,6 @@ var _ = Describe("Predictor", func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
 
-		AfterEach(func() {
-			FVTClientInstance.DeleteConfigMap(UserConfigMapName)
-			time.Sleep(time.Second * 10)
-		})
-
-		BeforeEach(func() {
-			FVTClientInstance.SetDefaultUserConfigMap()
-		})
-
 		BeforeAll(func() {
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
