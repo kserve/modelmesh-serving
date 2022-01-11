@@ -65,20 +65,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(list.Items).To(HaveLen(3))
 
-	config := map[string]interface{}{
-		"scaleToZero": map[string]interface{}{
-			"enabled": false,
-		},
-		"internalModelMeshEnvVars": []map[string]interface{}{
-			{
-				"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
-				"value": "0",
-			},
-		},
-		"podsPerRuntime": 1,
-	}
-	FVTClientInstance.ApplyUserConfigMap(config)
-	// ensure that there are no predictors or inference services to start
+	FVTClientInstance.SetDefaultUserConfigMap()
+	// ensure that there are no predictors to start
 	FVTClientInstance.DeleteAllPredictors()
 	FVTClientInstance.DeleteAllIsvcs()
 	// ensure a stable deploy state

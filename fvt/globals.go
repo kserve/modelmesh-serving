@@ -20,6 +20,40 @@ var FVTClientInstance *FVTClient
 
 var DefaultTimeout = int64(120)
 
+var DefaultConfig = map[string]interface{}{
+	"podsPerRuntime": 1,
+	"restProxy": map[string]interface{}{
+		"enabled": true,
+	},
+	"scaleToZero": map[string]interface{}{
+		"enabled": false,
+	},
+	"internalModelMeshEnvVars": []map[string]interface{}{
+		{
+			"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
+			"value": "0",
+		},
+	},
+}
+
+var BasicTLSConfig = map[string]interface{}{
+	"tls": map[string]interface{}{
+		"secretName": "basic-tls-secret",
+		"clientAuth": "optional",
+		// Avoid port-forwarding DNS complications
+		"headlessService": false,
+	},
+}
+
+var MutualTLSConfig = map[string]interface{}{
+	"tls": map[string]interface{}{
+		"secretName": "mutual-tls-secret",
+		"clientAuth": "require",
+		// Avoid port-forwarding DNS complications
+		"headlessService": false,
+	},
+}
+
 const (
 	ServingRuntimeKind         = "ServingRuntime"
 	PredictorKind              = "Predictor"

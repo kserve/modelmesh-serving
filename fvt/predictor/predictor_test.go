@@ -542,8 +542,12 @@ var _ = Describe("Predictor", func() {
 			FVTClientInstance.DeletePredictor(mlsPredictorName)
 		})
 
-		It("should successfully run inference", func() {
+		It("should successfully run inference using GRPC", func() {
 			ExpectSuccessfulInference_sklearnMnistSvm(mlsPredictorName)
+		})
+
+		It("should successfully run inference using REST proxy", func() {
+			ExpectSuccessfulRESTInference_sklearnMnistSvm(mlsPredictorName)
 		})
 
 		It("should fail with an invalid input", func() {
@@ -762,6 +766,10 @@ var _ = Describe("Predictor", func() {
 			time.Sleep(time.Second * 10)
 		})
 
+		BeforeEach(func() {
+			FVTClientInstance.SetDefaultUserConfigMap()
+		})
+
 		BeforeAll(func() {
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
@@ -771,17 +779,12 @@ var _ = Describe("Predictor", func() {
 		})
 
 		AfterAll(func() {
-			config := map[string]interface{}{
-				"scaleToZero": map[string]interface{}{
-					"enabled": false,
-				},
-			}
-			FVTClientInstance.ApplyUserConfigMap(config)
+			FVTClientInstance.SetDefaultUserConfigMap()
 			FVTClientInstance.DeletePredictor(xgboostPredictorName)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
-			FVTClientInstance.UpdateConfigMapTLS("basic-tls-secret", "optional")
+			FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
@@ -811,12 +814,15 @@ var _ = Describe("Predictor", func() {
 			By("Expect inference to succeed")
 			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
 
+			By("Expect inference to succeed via REST proxy")
+			ExpectSuccessfulRESTInference_xgboostMushroom(xgboostPredictorName, true)
+
 			// disconnect because TLS config will change
 			FVTClientInstance.DisconnectFromModelServing()
 		})
 
 		It("should successfully run an inference with mutual TLS", func() {
-			FVTClientInstance.UpdateConfigMapTLS("mutual-tls-secret", "require")
+			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
@@ -850,7 +856,7 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should fail to run inference when the server has mutual TLS but the client does not present a certificate", func() {
-			FVTClientInstance.UpdateConfigMapTLS("mutual-tls-secret", "require")
+			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
