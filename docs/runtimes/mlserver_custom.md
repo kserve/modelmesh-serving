@@ -131,7 +131,7 @@ kind: ServingRuntime
 metadata:
   name: {{MODEL_TYPE}}
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: {{MODEL_TYPE}}
   builtInAdapter:
     memBufferBytes: 134217728

@@ -14,7 +14,7 @@ kind: ServingRuntime
 metadata:
   name: sklearn-0.x
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: sklearn
       version: "0"
 ```

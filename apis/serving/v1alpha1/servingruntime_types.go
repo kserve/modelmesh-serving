@@ -20,11 +20,19 @@ import (
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type ModelType struct {
+type SupportedModelFormat struct {
+	// Name of the model format.
 	// +required
 	Name string `json:"name"`
+	// Version of the model format.
+	// Used in validating that a predictor is supported by a runtime.
+	// Can be "major", "major.minor" or "major.minor.patch".
 	// +optional
 	Version *string `json:"version,omitempty"`
+	// Set to true to allow the ServingRuntime to be used for automatic model placement if
+	// this model format is specified with no explicit runtime.
+	// +optional
+	AutoSelect *bool `json:"autoSelect,omitempty"`
 }
 
 type Container struct {
@@ -41,7 +49,8 @@ type Container struct {
 	// Container will be restarted if the probe fails.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	// +optional
-	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty"`
+	LivenessProbe  *corev1.Probe `json:"livenessProbe,omitempty"`
+	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
 }
 
 type StorageHelper struct {
@@ -78,7 +87,7 @@ type ServingRuntimePodSpec struct {
 // ServingRuntimeSpec defines the desired state of ServingRuntime
 type ServingRuntimeSpec struct {
 	// Model formats and version supported by this runtime
-	SupportedModelTypes []ModelType `json:"supportedModelTypes,omitempty"`
+	SupportedModelFormats []SupportedModelFormat `json:"supportedModelFormats,omitempty"`
 
 	// Whether this ServingRuntime is intended for multi-model usage or not.
 	// +optional
@@ -162,7 +171,7 @@ type BuiltInAdapter struct {
 // ServingRuntime is the Schema for the servingruntimes API
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Disabled",type="boolean",JSONPath=".spec.disabled"
-// +kubebuilder:printcolumn:name="ModelType",type="string",JSONPath=".spec.supportedModelTypes[*].name"
+// +kubebuilder:printcolumn:name="ModelFormat",type="string",JSONPath=".spec.SupportedModelFormats[*].name"
 // +kubebuilder:printcolumn:name="Containers",type="string",JSONPath=".spec.containers[*].name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ServingRuntime struct {

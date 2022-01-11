@@ -29,6 +29,6 @@ spec:
   storageHelper:
     disabled: true
 
-  supportedModelTypes:
+  supportedModelFormats:
     - name: ml-type1
       version: "1"

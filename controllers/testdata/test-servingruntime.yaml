@@ -3,7 +3,7 @@ kind: ServingRuntime
 metadata:
   name: test
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: test
 
   multiModel: true

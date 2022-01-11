@@ -18,7 +18,7 @@ metadata:
   labels:
     name: modelmesh-serving-mlserver-0.x-SR
 spec:
-  supportedModelTypes:
+  supportedModelFormats:
     - name: sklearn
       version: "0" # v0.23.1
     - name: xgboost

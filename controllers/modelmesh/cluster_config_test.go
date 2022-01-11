@@ -32,7 +32,7 @@ func TestCalculateConstraintData(t *testing.T) {
 					Name: "tf-serving-runtime",
 				},
 				Spec: api.ServingRuntimeSpec{
-					SupportedModelTypes: []api.ModelType{
+					SupportedModelFormats: []api.SupportedModelFormat{
 						{
 							Name:    "tensorflow",
 							Version: &v,
