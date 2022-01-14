@@ -133,6 +133,7 @@ metadata:
 spec:
   supportedModelFormats:
     - name: {{MODEL_TYPE}}
+      autoSelect: true
   builtInAdapter:
     memBufferBytes: 134217728
     modelLoadingTimeoutMillis: 90000

@@ -24,6 +24,7 @@ import (
 func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 	version_semver := "12345.312.2"
 	version_someString := "someString"
+	autoSelectVal := true
 	rt := api.ServingRuntime{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "runtimename",
@@ -31,15 +32,18 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 		Spec: api.ServingRuntimeSpec{
 			SupportedModelFormats: []api.SupportedModelFormat{
 				{
-					Name: "type1",
+					Name:       "type1",
+					AutoSelect: &autoSelectVal,
 				},
 				{
-					Name:    "type2",
-					Version: &version_semver,
+					Name:       "type2",
+					Version:    &version_semver,
+					AutoSelect: &autoSelectVal,
 				},
 				{
-					Name:    "type2",
-					Version: &version_someString,
+					Name:       "type2",
+					Version:    &version_someString,
+					AutoSelect: &autoSelectVal,
 				},
 				{
 					Name: "type1",
@@ -53,7 +57,7 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 
 	expectedLabels := []string{
 		"mt:type1",
-		"mt:type3",
+		"mt:type2",
 		"mt:type2:" + version_semver,
 		"mt:type2:" + version_someString,
 		//runtime
@@ -61,6 +65,9 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 	}
 
 	labelSet := GetServingRuntimeSupportedModelTypeLabelSet(&rt)
+	if len(labelSet) != len(expectedLabels) {
+		t.Errorf("Length of set %v should be %d, but got %d", labelSet, len(expectedLabels), len(labelSet))
+	}
 	for _, e := range expectedLabels {
 		if !labelSet.Contains(e) {
 			t.Errorf("Missing expected entry [%s] in set: %v", e, labelSet)

@@ -32,3 +32,4 @@ spec:
   supportedModelFormats:
     - name: ml-type1
       version: "1"
+      autoSelect: true

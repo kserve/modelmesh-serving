@@ -21,10 +21,13 @@ spec:
   supportedModelFormats:
     - name: sklearn
       version: "0" # v0.23.1
+      autoSelect: true
     - name: xgboost
       version: "1" # v1.1.1
+      autoSelect: true
     - name: lightgbm
       version: "3" # v3.2.1
+      autoSelect: true
 
   multiModel: true
 
