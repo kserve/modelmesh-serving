@@ -47,9 +47,12 @@ func GetServingRuntimeSupportedModelTypeLabelSet(rt *api.ServingRuntime) StringS
 
 	// model type labels
 	for _, t := range rt.Spec.SupportedModelFormats {
-		set.Add("mt:" + t.Name)
-		if t.Version != nil {
-			set.Add("mt:" + t.Name + ":" + *t.Version)
+		// only include model type labels when autoSelect is true
+		if t.AutoSelect != nil && *t.AutoSelect {
+			set.Add("mt:" + t.Name)
+			if t.Version != nil {
+				set.Add("mt:" + t.Name + ":" + *t.Version)
+			}
 		}
 	}
 	// runtime label

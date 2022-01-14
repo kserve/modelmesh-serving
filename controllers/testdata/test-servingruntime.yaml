@@ -5,6 +5,7 @@ metadata:
 spec:
   supportedModelFormats:
     - name: test
+      autoSelect: true
 
   multiModel: true
   grpcEndpoint: "port:8000"

@@ -34,6 +34,7 @@ func TestCalculateLabel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := "1"
+			a := true
 			rt := &api.ServingRuntime{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "tf-serving-runtime",
@@ -41,8 +42,9 @@ func TestCalculateLabel(t *testing.T) {
 				Spec: api.ServingRuntimeSpec{
 					SupportedModelFormats: []api.SupportedModelFormat{
 						{
-							Name:    "tensorflow",
-							Version: &v,
+							Name:       "tensorflow",
+							Version:    &v,
+							AutoSelect: &a,
 						},
 					},
 				},

@@ -191,6 +191,7 @@ spec:
   supportedModelFormats:
     - name: new-modeltype
       version: "1"
+      autoSelect: true
   containers:
     - name: model-server
       image: samplemodelserver:latest
@@ -198,6 +199,9 @@ spec:
   grpcEndpoint: "port:8085"
   grpcDataEndpoint: "port:8090"
 ```
+
+In each entry of the `supportedModelFormats` list, `autoSelect: true` can optionally be specified to indicate that that the given `ServingRuntime` can be considered for automatic placement of `Predictors` or `InferenceServices` with the corresponding model type/format if no runtime is explicitly specified.
+For example, if a user applies a `Predictor` with `modelType.name: new-modeltype` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modeltype`. If `autoSelect` were `false` or unspecified, the `Predictor` would fail to load with the message "No ServingRuntime supports specified model type" unless the runtime `example-runtime` was specified directly in the YAML.
 
 ### Runtime container resource allocations
 
@@ -266,6 +270,7 @@ spec:
   supportedModelFormats:
     - name: my_model_type # name of the model
       version: "1"
+      autoSelect: true
   containers:
     - args:
         - arg1
