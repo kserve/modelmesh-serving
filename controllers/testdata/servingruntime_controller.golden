@@ -850,7 +850,7 @@ spec:
         - name: MM_DEFAULT_VMODEL_OWNER
           value: ksp
         - name: MM_LABELS
-          value: mt:onnx,mt:onnx:1,mt:pytorch,mt:pytorch:1,mt:tensorflow,mt:tensorflow:1,mt:tensorflow:2,mt:tensorrt,mt:tensorrt:7,rt:triton-2.x
+          value: mt:keras,mt:keras:2,mt:onnx,mt:onnx:1,mt:pytorch,mt:pytorch:1,mt:tensorflow,mt:tensorflow:1,mt:tensorflow:2,mt:tensorrt,mt:tensorrt:7,rt:triton-2.x
         - name: MM_TYPE_CONSTRAINTS_PATH
           value: /etc/watson/mmesh/config/type_constraints
         - name: MM_DATAPLANE_CONFIG_PATH
