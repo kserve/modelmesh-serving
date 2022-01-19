@@ -21,8 +21,8 @@ The following example is using the HDF5 file format, which typically uses a `.h5
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/tensorflow-model/keras-mnist
-└── mnist.h5
+s3://modelmesh-serving-examples/
+└── keras-models/mnist.h5
 ```
 
 **Predictor**
@@ -35,7 +35,7 @@ metadata:
 spec:
   modelType:
     name: keras
-  path: tensorflow-model/keras-mnist/mnist.h5
+  path: keras-models/mnist.h5
   storage:
     s3:
       secretKey: modelStorage

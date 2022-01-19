@@ -21,6 +21,15 @@ metadata:
     maxLoadingConcurrency: "2"
 spec:
   supportedModelFormats:
+    - name: keras
+      version: "2" # 2.6.0
+      autoSelect: true
+    - name: onnx
+      version: "1" # 1.5.3
+      autoSelect: true
+    - name: pytorch
+      version: "1" # 1.8.0a0+17f8c32
+      autoSelect: true
     - name: tensorflow
       version: "1" # 1.15.4
       autoSelect: true
@@ -29,12 +38,6 @@ spec:
       autoSelect: true
     - name: tensorrt
       version: "7" # 7.2.1
-      autoSelect: true
-    - name: pytorch
-      version: "1" # 1.8.0a0+17f8c32
-      autoSelect: true
-    - name: onnx
-      version: "1" # 1.5.3
       autoSelect: true
 
   multiModel: true
