@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -38,6 +39,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -138,10 +140,10 @@ func (pf *ModelMeshPortForward) EnsureStopped() {
 	<-pf.done
 }
 
-func NewModelMeshPortForward(namespace string, serviceName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
+func NewModelMeshPortForward(namespace string, podName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
 	portMap := fmt.Sprintf("%d:%d", localPort, targetPort)
 	cmdArgs := []string{"port-forward", "--namespace", namespace, "--address", "0.0.0.0",
-		"service/" + serviceName, portMap}
+		"pod/" + podName, portMap}
 
 	return &ModelMeshPortForward{nil, cmdArgs, nil, log}
 }
@@ -162,11 +164,9 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 
 	// set ports based on worker index to support parallel port-forwards
 	grpcPort := 50000 + ginkgo.GinkgoParallelProcess()
-	grpcPortForward := NewModelMeshPortForward(namespace, serviceName, 50000+ginkgo.GinkgoParallelProcess(), 8033, log)
 	restPort := 8000 + ginkgo.GinkgoParallelProcess()
-	restPortForward := NewModelMeshPortForward(namespace, serviceName, 8000+ginkgo.GinkgoParallelProcess(), 8008, log)
 
-	return &FVTClient{client, namespace, serviceName, controllerNamespace, grpcPort, grpcPortForward, nil, restPort, restPortForward, nil, log}, nil
+	return &FVTClient{client, namespace, serviceName, controllerNamespace, grpcPort, nil, nil, restPort, nil, nil, log}, nil
 }
 
 var (
@@ -199,6 +199,11 @@ var (
 		Group:    v1beta1.SchemeGroupVersion.Group,
 		Version:  v1beta1.SchemeGroupVersion.Version,
 		Resource: "inferenceservices", // this must be the plural form
+	}
+	gvrEndpoints = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "endpoints", // this must be the plural form
 	}
 )
 
@@ -311,6 +316,20 @@ func (fvt *FVTClient) StartWatchingIsvcs(options metav1.ListOptions, timeoutSeco
 
 func (fvt *FVTClient) WatchPredictorsAsync(c chan *unstructured.Unstructured, options metav1.ListOptions, timeoutSeconds int64) {
 
+}
+
+func (fvt *FVTClient) GetRandomReadyRuntimePodNameFromEndpoints() string {
+	obj, err := fvt.Resource(gvrEndpoints).Namespace(fvt.namespace).Get(context.TODO(), fvt.serviceName, metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
+	var endpoints corev1.Endpoints
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &endpoints)
+	Expect(err).ToNot(HaveOccurred())
+
+	addresses := endpoints.Subsets[0].Addresses
+	randomAddress := addresses[rand.Intn(len(addresses))]
+
+	return randomAddress.TargetRef.Name
 }
 
 func (fvt *FVTClient) PrintPredictors() {
@@ -426,12 +445,20 @@ func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.Predi
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
+	if fvt.grpcPortForward == nil {
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
+	}
+	if fvt.restPortForward == nil {
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
+	}
 
-	// create the grpc Connection
 	err := fvt.grpcPortForward.EnsureStarted()
 	if err != nil {
 		return fmt.Errorf("Error with grpc port-forward, could not connect to model serving")
 	}
+
 	err = fvt.restPortForward.EnsureStarted()
 	if err != nil {
 		return fmt.Errorf("Error with rest port-forward, could not connect to model serving")
@@ -506,13 +533,19 @@ func (fvt *FVTClient) DisconnectFromModelServing() {
 		fvt.grpcConn.Close()
 		fvt.grpcConn = nil
 	}
-	fvt.grpcPortForward.EnsureStopped()
+	if fvt.grpcPortForward != nil {
+		fvt.grpcPortForward.EnsureStopped()
+		fvt.grpcPortForward = nil
+	}
 
 	if fvt.restConn != nil {
 		fvt.restConn.CloseIdleConnections()
 		fvt.restConn = nil
 	}
-	fvt.restPortForward.EnsureStopped()
+	if fvt.restPortForward != nil {
+		fvt.restPortForward.EnsureStopped()
+		fvt.restPortForward = nil
+	}
 }
 
 func (fvt *FVTClient) SetDefaultUserConfigMap() {

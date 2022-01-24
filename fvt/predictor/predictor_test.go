@@ -761,17 +761,8 @@ var _ = Describe("Predictor", func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
 
-		BeforeAll(func() {
-			// load the test predictor object
-			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
-			xgboostPredictorName = xgboostPredictorObject.GetName()
-
-			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
-		})
-
 		AfterAll(func() {
 			FVTClientInstance.SetDefaultUserConfigMap()
-			FVTClientInstance.DeletePredictor(xgboostPredictorName)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
@@ -779,6 +770,11 @@ var _ = Describe("Predictor", func() {
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
+
+			// load the test predictor object
+			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+			xgboostPredictorName = xgboostPredictorObject.GetName()
+			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
 
 			By("Creating a new connection to ModelServing")
 			// ensure we are establishing a new connection after the TLS change
@@ -808,6 +804,9 @@ var _ = Describe("Predictor", func() {
 			By("Expect inference to succeed via REST proxy")
 			ExpectSuccessfulRESTInference_xgboostMushroom(xgboostPredictorName, true)
 
+			// cleanup the predictor
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
+
 			// disconnect because TLS config will change
 			FVTClientInstance.DisconnectFromModelServing()
 		})
@@ -817,6 +816,11 @@ var _ = Describe("Predictor", func() {
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
+
+			// load the test predictor object
+			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+			xgboostPredictorName = xgboostPredictorObject.GetName()
+			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
 
 			By("Creating a new connection to ModelServing")
 			// ensure we are establishing a new connection after the TLS change
@@ -841,6 +845,9 @@ var _ = Describe("Predictor", func() {
 
 			By("Expect inference to succeed")
 			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
+
+			// cleanup the predictor
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
 
 			// disconnect because TLS config will change
 			FVTClientInstance.DisconnectFromModelServing()
