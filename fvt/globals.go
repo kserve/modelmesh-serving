@@ -13,7 +13,9 @@
 // limitations under the License.
 package fvt
 
-import "github.com/go-logr/logr"
+import (
+	"github.com/go-logr/logr"
+)
 
 var Log logr.Logger
 var FVTClientInstance *FVTClient
@@ -38,7 +40,7 @@ var DefaultConfig = map[string]interface{}{
 
 var BasicTLSConfig = map[string]interface{}{
 	"tls": map[string]interface{}{
-		"secretName": "basic-tls-secret",
+		"secretName": TLSSecretName,
 		"clientAuth": "optional",
 		// Avoid port-forwarding DNS complications
 		"headlessService": false,
@@ -47,7 +49,7 @@ var BasicTLSConfig = map[string]interface{}{
 
 var MutualTLSConfig = map[string]interface{}{
 	"tls": map[string]interface{}{
-		"secretName": "mutual-tls-secret",
+		"secretName": TLSSecretName,
 		"clientAuth": "require",
 		// Avoid port-forwarding DNS complications
 		"headlessService": false,
@@ -67,4 +69,5 @@ const (
 	samplesPath                = "predictors/"
 	isvcSamplesPath            = "isvcs/"
 	RuntimeSamplesPath         = "runtimes/"
+	TLSSecretName          		 = "fvt-tls-secret"
 )

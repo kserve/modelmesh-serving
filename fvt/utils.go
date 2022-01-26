@@ -15,17 +15,18 @@ package fvt
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
+	"k8s.io/apimachinery/pkg/types"
 
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	yamlserializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 //Utility function to return the testdata directory
@@ -52,15 +53,17 @@ func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
 	return obj
 }
 
-func CreateSecret(secretName string, file string, fvt *FVTClient) {
-	secretFile := DecodeResourceFromFile(TestDataPath(file))
-	secretYaml, err := yaml.Marshal(secretFile)
+func CreateSecret(secret *corev1.Secret, fvt *FVTClient) {
+	patchJson, err := json.Marshal(secret)
 	Expect(err).ToNot(HaveOccurred())
-	secretObj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Patch(context.TODO(), secretName, types.ApplyPatchType, secretYaml, applyPatchOptions)
+
+	updatedSecret, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).
+		Patch(context.TODO(), secret.Name, types.ApplyPatchType, patchJson, applyPatchOptions)
+
 	Expect(err).ToNot(HaveOccurred())
-	Expect(secretObj).ToNot(BeNil())
-	Expect(secretObj.GetKind()).To(Equal(SecretKind))
-	fvt.log.Info(fmt.Sprintf("Secret '%s' created", secretObj.GetName()))
+	Expect(updatedSecret).ToNot(BeNil())
+
+	fvt.log.Info(fmt.Sprintf("Secret '%s' created", updatedSecret.GetName()))
 }
 
 // Small functions to work with unstructured objects

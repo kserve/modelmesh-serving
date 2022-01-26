@@ -86,6 +86,7 @@ type FVTClient struct {
 	restPortForward     *ModelMeshPortForward
 	restConn            *http.Client
 	log                 logr.Logger
+	certGenerator   		CertGenerator
 }
 
 type ModelMeshPortForward struct {
@@ -166,7 +167,20 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	grpcPort := 50000 + ginkgo.GinkgoParallelProcess()
 	restPort := 8000 + ginkgo.GinkgoParallelProcess()
 
-	return &FVTClient{client, namespace, serviceName, controllerNamespace, grpcPort, nil, nil, restPort, nil, nil, log}, nil
+	return &FVTClient{
+		Interface:       		 client,
+		namespace:           namespace,
+		serviceName:         serviceName,
+		controllerNamespace: controllerNamespace,
+		grpcPort:            grpcPort,
+		grpcPortForward:     nil,
+		grpcConn:            nil,
+		restPort:            restPort,
+		restPortForward:     nil,
+		restConn:            nil,
+		log:                 log,
+		certGenerator:       CertGenerator{Namespace: namespace},
+	}, nil
 }
 
 var (
@@ -480,7 +494,7 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		conn, connErr = grpc.DialContext(
 			ctx,
 			fmt.Sprintf("localhost:%d", fvt.grpcPort),
-			grpc.WithTransportCredentials(credentials.NewTLS(createTLSConfig(connectionType))),
+			grpc.WithTransportCredentials(credentials.NewTLS(fvt.createTLSConfig(connectionType))),
 			grpc.WithBlock(),
 		)
 	}
@@ -497,7 +511,7 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		MaxIdleConnsPerHost: 100,
 	}
 	if connectionType != Insecure {
-		httpTransport.TLSClientConfig = createTLSConfig(connectionType)
+		httpTransport.TLSClientConfig = fvt.createTLSConfig(connectionType)
 	}
 	fvt.restConn = &http.Client{
 		Transport: &httpTransport,
@@ -507,14 +521,14 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 	return nil
 }
 
-func createTLSConfig(connectionType ModelServingConnectionType) *tls.Config {
+func (fvt *FVTClient) createTLSConfig(connectionType ModelServingConnectionType) *tls.Config {
 	// Create the credentials and return it
 	config := &tls.Config{
 		InsecureSkipVerify: true,
 	}
 
 	if connectionType == MutualTLS {
-		tlsCert, err := tls.LoadX509KeyPair(TestDataPath("san-cert.pem"), TestDataPath("san-key.pem"))
+		tlsCert, err := tls.X509KeyPair(fvt.certGenerator.PublicKeyPEM.Bytes(), fvt.certGenerator.PrivateKeyPEM.Bytes())
 		if err != nil {
 			panic("failed to load tls client key pair")
 		}
@@ -563,7 +577,7 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 			"apiVersion": "v1",
 			"kind":       "ConfigMap",
 			"metadata": map[string]interface{}{
-				"name": "model-serving-config",
+				"name": UserConfigMapName,
 			},
 			"data": map[string]interface{}{
 				"config.yaml": string(configYaml),
@@ -580,8 +594,26 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 }
 
 func (fvt *FVTClient) CreateTLSSecrets() {
-	CreateSecret("basic-tls-secret", "basic-tls-secret.yaml", fvt)
-	CreateSecret("mutual-tls-secret", "mutual-tls-secret.yaml", fvt)
+	err := fvt.certGenerator.generate()
+	Expect(err).ToNot(HaveOccurred())
+
+	var TLSSecret = corev1.Secret{
+		Type: corev1.SecretTypeTLS,
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       SecretKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TLSSecretName,
+		},
+		StringData: map[string]string{
+			"tls.crt": fvt.certGenerator.PublicKeyPEM.String(),
+			"tls.key": fvt.certGenerator.PrivateKeyPEM.String(),
+			"ca.crt":  fvt.certGenerator.PublicKeyPEM.String(),
+		},
+	}
+
+	CreateSecret(&TLSSecret, fvt)
 }
 
 func (fvt *FVTClient) UpdateConfigMapTLS(tlsConfig map[string]interface{}) {
@@ -674,12 +706,7 @@ func (fvt *FVTClient) DeleteConfigMap(resourceName string) error {
 }
 
 func (fvt FVTClient) DeleteTLSSecrets() error {
-	err := fvt.DeleteSecret("basic-tls-secret")
-	if err != nil {
-		return err
-	}
-
-	return fvt.DeleteSecret("mutual-tls-secret")
+	return fvt.DeleteSecret(TLSSecretName)
 }
 
 func (fvt *FVTClient) DeleteSecret(resourceName string) error {
