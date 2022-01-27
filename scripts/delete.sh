@@ -89,7 +89,7 @@ cd ..
 if [[ ! -z $user_ns_array ]]; then
   kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
-  sed -i "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
+  sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
   for user_ns in "${user_ns_array[@]}"; do
     if ! kubectl get namespaces $user_ns >/dev/null; then
@@ -101,6 +101,7 @@ if [[ ! -z $user_ns_array ]]; then
     fi
   done
   rm minio-storage-secret.yaml
+  rm minio-storage-secret.yaml.bak
   rm runtimes.yaml
 fi
 
