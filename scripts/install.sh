@@ -133,7 +133,7 @@ wait_for_pods_ready() {
 
     wait_counter=$((wait_counter + 1))
     echo " Waiting 10 secs..."
-    sleep "10s"
+    sleep 10
   done
 }
 
