@@ -19,7 +19,7 @@
 set -Eeuo pipefail
 
 namespace=
-install_local_path=
+install_config_path=
 delete=false
 dev_mode_logging=false
 quickstart=false
@@ -153,7 +153,7 @@ while (($# > 0)); do
     ;;
   -p | --p | -install-path | --install-path | -install-config-path | --install-config-path)
     shift
-    install_local_path="$1"
+    install_config_path="$1"
     ;;
   -d | --d | -delete | --delete)
     delete=true
@@ -196,14 +196,23 @@ info "Setting kube context to use namespace: $namespace"
 kubectl config set-context --current --namespace="$namespace"
 
 info "Getting ModelMesh Serving configs"
-if [[ -n $install_local_path ]]; then
-  if [[ -f $install_local_path ]] && [[ $install_local_path =~ \.t?gz$ ]]; then
-    tar -xf "$install_local_path"
-    cd "$(basename "$(basename $install_local_path .tgz)" .tar.gz)"
-  elif [[ -d $install_local_path ]]; then
-    cd "$install_local_path"
+if [[ -n $install_config_path ]]; then
+  if [[ -f $install_config_path ]] && [[ $install_config_path =~ \.t?gz$ ]]; then
+    tar -xf "$install_config_path"
+    cd "$(basename "$(basename $install_config_path .tgz)" .tar.gz)"
+  elif [[ $install_config_path =~ ^http.+ ]]; then
+    if [[ $install_config_path =~ \.t?gz$ ]]; then
+      curl -L $install_config_path -O
+      filename=$(basename $install_config_path)
+      tar -xf "$filename"
+      cd "$(basename "$(basename $filename .tgz)" .tar.gz)"
+    else
+      die "Provided URL should be a .tgz or tar.gz archive file"
+    fi
+  elif [[ -d $install_config_path ]]; then
+    cd "$install_config_path"
   else
-    die "Could not find provided path to ModelMesh Serving install configs: $install_local_path"
+    die "Could not find provided path to ModelMesh Serving install configs: $install_config_path"
   fi
 else
   echo "Using config directory at root of project."
@@ -282,7 +291,7 @@ if [[ ! -z $user_ns_array ]]; then
   for user_ns in "${user_ns_array[@]}"; do
     if ! kubectl get namespaces $user_ns >/dev/null; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
-    else 
+    else
       kubectl label namespace ${user_ns} modelmesh-enabled="true"
       kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
