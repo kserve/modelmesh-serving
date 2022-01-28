@@ -25,6 +25,8 @@ import (
 
 	"github.com/go-logr/logr"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
+
 	"github.com/onsi/ginkgo"
 	ginkgoConfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
@@ -125,6 +127,11 @@ var (
 		Version:  "v1",
 		Resource: "deployments", // this must be the plural form
 	}
+	gvrIsvc = schema.GroupVersionResource{
+		Group:    v1beta1.GroupVersion.Group,
+		Version:  v1beta1.GroupVersion.Version,
+		Resource: "inferenceservices", // this must be the plural form
+	}
 )
 
 func (fvt *FVTClient) CreatePredictorExpectSuccess(resource *unstructured.Unstructured) *unstructured.Unstructured {
@@ -132,6 +139,14 @@ func (fvt *FVTClient) CreatePredictorExpectSuccess(resource *unstructured.Unstru
 	Expect(err).ToNot(HaveOccurred())
 	Expect(obj).ToNot(BeNil())
 	Expect(obj.GetKind()).To(Equal(PredictorKind))
+	return obj
+}
+
+func (fvt *FVTClient) CreateIsvcExpectSuccess(resource *unstructured.Unstructured) *unstructured.Unstructured {
+	obj, err := fvt.Resource(gvrIsvc).Namespace(fvt.namespace).Create(context.TODO(), resource, metav1.CreateOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	Expect(obj).ToNot(BeNil())
+	Expect(obj.GetKind()).To(Equal(IsvcKind))
 	return obj
 }
 
@@ -188,6 +203,12 @@ func (fvt *FVTClient) DeletePredictor(resourceName string) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
+func (fvt *FVTClient) DeleteIsvc(resourceName string) {
+	fvt.log.Info("Deleting inference services " + resourceName)
+	err := fvt.Resource(gvrIsvc).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
+	Expect(err).ToNot(HaveOccurred())
+}
+
 func (fvt *FVTClient) DeleteAllPredictors() {
 	fvt.log.Info("Delete all predictors ...")
 	err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{})
@@ -195,9 +216,25 @@ func (fvt *FVTClient) DeleteAllPredictors() {
 	time.Sleep(2 * time.Second)
 }
 
+func (fvt *FVTClient) DeleteAllIsvcs() {
+	fvt.log.Info("Delete all inference services ...")
+	err := fvt.Resource(gvrIsvc).Namespace(fvt.namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	time.Sleep(2 * time.Second)
+}
+
 func (fvt *FVTClient) StartWatchingPredictors(options metav1.ListOptions, timeoutSeconds int64) watch.Interface {
 	options.TimeoutSeconds = &timeoutSeconds
 	watcher, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).Watch(context.TODO(), options)
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+	return watcher
+}
+
+func (fvt *FVTClient) StartWatchingIsvcs(options metav1.ListOptions, timeoutSeconds int64) watch.Interface {
+	options.TimeoutSeconds = &timeoutSeconds
+	watcher, err := fvt.Resource(gvrIsvc).Namespace(fvt.namespace).Watch(context.TODO(), options)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
