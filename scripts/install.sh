@@ -277,13 +277,13 @@ kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl apply 
 if [[ ! -z $user_ns_array ]]; then
   kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
-  sed -i "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
+  sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
   for user_ns in "${user_ns_array[@]}"; do
     if ! kubectl get namespaces $user_ns >/dev/null; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
     else 
-      kubectl label namespace ${user_ns} modelmesh-enabled="true"
+      kubectl label namespace ${user_ns} modelmesh-enabled="true" --overwrite
       kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
         kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
@@ -291,6 +291,7 @@ if [[ ! -z $user_ns_array ]]; then
     fi
   done
   rm minio-storage-secret.yaml
+  rm minio-storage-secret.yaml.bak
   rm runtimes.yaml
 fi
 
