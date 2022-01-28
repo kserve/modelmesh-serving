@@ -43,7 +43,7 @@ Install the latest release of [modelmesh-serving](https://github.com/kserve/mode
 
 ```shell
 RELEASE=release-0.8
-git clone -b $RELEASE --depth 1 --single-branch git@github.com:kserve/modelmesh-serving.git
+git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
 
