@@ -35,6 +35,10 @@ It's generally a good idea to search the repo or control-f for strings of the ol
    - `kustomize build config/default > modelmesh.yaml`
    - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
    - `cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml`
+1. Generate config archive:
+   - Run one of the following depending on what version of `tar` you have. Be sure to replace the `update-me` below with the correct version:
+      - GNU tar: `RELEASE=update-me;tar -zcvf ${RELEASE}.tar.gz config/ --transform s/config/${RELEASE}/`
+      - BSD tar: `RELEASE=update-me;tar -zcvf ${RELEASE}.tar.gz  -s /config/${RELEASE}/ config/`
 1. Once everything has settled, tag and push the release with `git tag $VERSION` and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
    - The `modelmesh-controller` image will be published via GitHub Actions.
 1. Upload generated install manifests to GitHub release assets.

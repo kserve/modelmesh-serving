@@ -32,7 +32,7 @@ function showHelp() {
   echo
   echo "Flags:"
   echo "  -n, --namespace                (required) Kubernetes namespace to deploy ModelMesh Serving to."
-  echo "  -p, --install-config-path      Path to local model serve installation configs. Can be ModelMesh Serving tarfile or directory."
+  echo "  -p, --install-config-path      Path to installation configs. Can be a local ModelMesh Serving config tarfile/directory or a URL to a config tarfile."
   echo "  -d, --delete                   Delete any existing instances of ModelMesh Serving in Kube namespace before running install, including CRDs, RBACs, controller, older CRD with serving.kserve.io api group name, etc."
   echo "  -u, --user-namespaces          Kubernetes namespaces to enable for ModelMesh Serving"
   echo "  --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development"
@@ -291,7 +291,7 @@ if [[ ! -z $user_ns_array ]]; then
   for user_ns in "${user_ns_array[@]}"; do
     if ! kubectl get namespaces $user_ns >/dev/null; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
-    else 
+    else
       kubectl label namespace ${user_ns} modelmesh-enabled="true" --overwrite
       kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
