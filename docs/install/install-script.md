@@ -51,6 +51,8 @@ Run the script to install ModelMesh Serving CRDs, controller, and built-in runti
 
 A Kubernetes `--namespace` is required, which must already exist. You must also have cluster-admin authority and cluster access must be configured prior to running the install script.
 
+A list of Kubernetes namespaces `--user-namespaces` is optional to enable user namespaces for ModelMesh Serving. The script will skip the namespaces which don't already exist.
+
 The `--quickstart` option can be specified to install and configure supporting datastores in the same namespace (etcd and MinIO) for experimental/development use. If this is not chosen, the namespace provided must have an Etcd secret named `model-serving-etcd` created which provides access to the Etcd cluster. See the [instructions above](#setup-the-etcd-connection-information) on this step.
 
 ```shell
@@ -68,7 +70,11 @@ Flags:
   -n, --namespace                (required) Kubernetes namespace to deploy ModelMesh Serving to.
   -p, --install-config-path      Path to local model serve installation configs. Can be ModelMesh Serving tarfile or directory.
   -d, --delete                   Delete any existing instances of ModelMesh Serving in Kube namespace before running install, including CRDs, RBACs, controller, older CRD with serving.kserve.io api group name, etc.
+  -u, --user-namespaces          Kubernetes namespaces to enable for ModelMesh Serving
   --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development
+  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for development with fvt enabled
+  -dev, --dev-mode-logging       Enable dev mode logging (stacktraces on warning and no sampling)
+  --namespace-scope-mode         Run ModelMesh Serving in namespace scope mode
 
 Installs ModelMesh Serving CRDs, controller, and built-in runtimes into specified
 Kubernetes namespaces.
@@ -82,6 +88,39 @@ You can optionally provide a local `--install-config-path` that points to a loca
 You can also optionally use `--delete` to delete any existing instances of ModelMesh Serving in the designated Kube namespace before running the install.
 
 The installation will create a secret named `storage-config` if it does not already exist. If the `--quickstart` option was chosen, this will be populated with the connection details for the example models bucket in IBM Cloud Object Storage and the local MinIO; otherwise, it will be empty and ready for you to add your own entries.
+
+## Setup additional namespaces
+
+To enable additional namespaces for ModelMesh after the initial installation, you need to add a label named `modelmesh-enabled`, and optionally setup the storage secret `storage-config` and built-in runtimes, in the user namespaces.
+
+The following command will add the label to "your_namespace".
+
+```shell
+kubectl label namespace your_namespace modelmesh-enabled="true" --overwrite
+```
+
+You can also run a script to setup multiple user namespaces. See the setup help below for detail:
+
+```shell
+./scripts/setup_user_namespaces.sh --help
+Run this script to enable user namespaces for ModelMesh Serving, and optionally add the storage secret
+for example models and built-in serving runtimes to the target namespaces.
+
+usage: ./scripts/setup_user_namespaces.sh [flags]
+  Flags:
+    -u, --user-namespaces         (required) Kubernetes user namespaces to enable for ModelMesh
+    -c, --controller-namespace    Kubernetes ModelMesh controller namespace, default is modelmesh-serving
+    --create-storage-secret       Create storage secret for example models
+    --deploy-serving-runtimes     Deploy built-in serving runtimes
+    --dev-mode                    Run in development mode meaning the configs are local, not release based
+    -h, --help                    Display this help
+```
+
+The following command will setup two namespaces with the required label, optional storage secret, and built-in runtimes, so you can deploy sample predictors into any of them immediately.
+
+```shell
+./scripts/setup_user_namespaces.sh -u "ns1 ns2" --create-storage-secret --deploy-serving-runtimes
+```
 
 ## Delete the installation
 
