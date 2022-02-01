@@ -40,9 +40,33 @@ spec:
 EOF
 ```
 
-Currently, only S3 based storage is supported. S3 credentials are expected to be stored in a secret called [`storage-config`](https://github.com/kserve/modelmesh-serving/blob/main/config/default/storage-secret.yaml). This means that the `storage-config` secret can contain a map of several keys that correspond to various credentials.
+Currently, the following storage providers are supported: S3, GCS, and HTTP(S). However, with the HTTP storage provider, we don't yet support archive format extractions (e.g. tar.gz, zip), so its use is limited to all-in-one model files such as `.joblib` files for SKLearn.
+
+Storage credentials are expected to be stored in a secret called [`storage-config`](https://github.com/kserve/modelmesh-serving/blob/main/config/default/storage-secret.yaml). This means that the `storage-config` secret can contain a map of several keys that correspond to various credentials.
+
+Example secret keys for S3 and GCS:
+
+```yaml
+s3Key: |
+  {
+    "type": "s3",
+    "access_key_id": "abc983f1182233445566778899d12345",
+    "secret_access_key": "abcdff6a11223344aabbcc66ee231e6dd0c1122ff1234567",
+    "endpoint_url": "https://s3.us-south.cloud-object-storage.appdomain.cloud",
+    "region": "us-south",
+    "bucket": "modelmesh-example-public"
+  }
+gcsKey: |
+  {
+    "type": "gcs",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nAABBCC1122----END PRIVATE KEY-----\n",
+    "client_email": "storage-auth@secret-12345.gserviceaccount.com",
+    "token_uri": "https://oauth2.googleapis.com/token"
+  }
+```
 
 In the InferenceService metadata, the annotation `serving.kserve.io/secretKey` is used as a placeholder for this needed secret key field.
+If the storage endpoint is publicly accessible, then this annotation can be omitted.
 
 Some other optional annotations that can be used are:
 
