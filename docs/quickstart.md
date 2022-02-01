@@ -10,10 +10,11 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 
 ## 1. Install ModelMesh Serving
 
-### Clone the repository
+### Get the latest release
 
 ```shell
-git clone git@github.com:kserve/modelmesh-serving.git
+RELEASE=release-0.8
+git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
 
