@@ -140,10 +140,16 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 
 		switch u.Scheme {
 		case "s3":
-			modelPath = strings.TrimPrefix(u.Path, "/")
 			uriParameters["type"] = "s3"
+			modelPath = strings.TrimPrefix(u.Path, "/")
 			uriParameters["bucket"] = u.Host
-		// TODO: Support StorageURI for other types of storage too
+		case "gs":
+			uriParameters["type"] = "gcs"
+			modelPath = strings.TrimPrefix(u.Path, "/")
+			uriParameters["bucket"] = u.Host
+		case "http", "https":
+			uriParameters["type"] = "http"
+			uriParameters["url"] = *storageUri
 		default:
 			err = fmt.Errorf("the InferenceService %v has an unsupported storageUri scheme %v", nname, u.Scheme)
 			return
