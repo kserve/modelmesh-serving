@@ -140,12 +140,12 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 
 		switch u.Scheme {
 		case "s3":
-			uriParameters["type"] = "s3"
 			modelPath = strings.TrimPrefix(u.Path, "/")
+			uriParameters["type"] = "s3"
 			uriParameters["bucket"] = u.Host
 		case "gs":
-			uriParameters["type"] = "gcs"
 			modelPath = strings.TrimPrefix(u.Path, "/")
+			uriParameters["type"] = "gcs"
 			uriParameters["bucket"] = u.Host
 		case "http", "https":
 			uriParameters["type"] = "http"
