@@ -29,8 +29,9 @@ It's generally a good idea to search the repo or control-f for strings of the ol
    - Edit `newTag` in `config/manager/kustomization.yaml`.
    - Edit the the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags in `config/default/config-defaults.yaml`.
    - Edit the `docs/component-versions.md` file with the version and component versions.
+   - Edit the `scripts/setup_user_namespaces.sh` file, changing the `modelmesh_release` version.
 1. Submit your PR to the release branch and wait for it to merge.
-1. Update `docs/component-versions.md` in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
+1. Update `docs/component-versions.md` and `scripts/setup_user_namespaces.sh` in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
 1. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
    - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
