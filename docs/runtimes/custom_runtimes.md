@@ -226,7 +226,7 @@ Available attributes in the `ServingRuntime` spec:
 | Attribute                          | Description                                                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `multiModel`                       | Whether this ServingRuntime is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                       |
-| `disable`                          | Disables this runtime                                                                                                                                                     |
+| `disabled`                         | Disables this runtime                                                                                                                                                     |
 | `containers`                       | List of containers associated with the runtime                                                                                                                            |
 | `containers[ ].image`              | The container image for the current container                                                                                                                             |
 | `containers[ ].command`            | Executable command found in the provided image                                                                                                                            |
