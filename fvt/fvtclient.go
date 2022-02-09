@@ -609,7 +609,7 @@ func (fvt *FVTClient) CreateTLSSecrets() {
 		StringData: map[string]string{
 			"tls.crt": fvt.certGenerator.PublicKeyPEM.String(),
 			"tls.key": fvt.certGenerator.PrivateKeyPEM.String(),
-			"ca.crt":  fvt.certGenerator.PublicKeyPEM.String(),
+			"ca.crt":  fvt.certGenerator.CAPEM.String(),
 		},
 	}
 

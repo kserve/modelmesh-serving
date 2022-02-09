@@ -28,16 +28,34 @@ import (
 
 type CertGenerator struct {
 	Namespace     string
+	CAPEM         *bytes.Buffer
 	PublicKeyPEM  *bytes.Buffer
 	PrivateKeyPEM *bytes.Buffer
 }
 
 func (g *CertGenerator) generate() error {
-	certTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(1337),
+
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(3008),
 		Subject: pkix.Name{
 			Organization: []string{"KServe"},
 		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	caPrivKey, err := rsa.GenerateKey(cryptorand.Reader, 4096)
+	if err != nil {
+		return err
+	}
+
+	certTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1337),
+		Subject:      ca.Subject,
 		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1), net.IPv4(0, 0, 0, 0), net.IPv6loopback},
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(0, 0, 1),
@@ -52,7 +70,21 @@ func (g *CertGenerator) generate() error {
 		return err
 	}
 
-	certBytes, err := x509.CreateCertificate(cryptorand.Reader, certTemplate, certTemplate, &certPrivKey.PublicKey, certPrivKey)
+	caBytes, err := x509.CreateCertificate(cryptorand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return err
+	}
+
+	certBytes, err := x509.CreateCertificate(cryptorand.Reader, certTemplate, ca, &certPrivKey.PublicKey, certPrivKey)
+	if err != nil {
+		return err
+	}
+
+	g.CAPEM = new(bytes.Buffer)
+	err = pem.Encode(g.CAPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
 	if err != nil {
 		return err
 	}
@@ -67,7 +99,6 @@ func (g *CertGenerator) generate() error {
 	}
 
 	g.PrivateKeyPEM = new(bytes.Buffer)
-
 	privBytes, err := x509.MarshalPKCS8PrivateKey(certPrivKey)
 	if err != nil {
 		return err
