@@ -31,7 +31,7 @@ EOF
 
 ctrl_ns="modelmesh-serving"
 user_ns_array=()
-modelmesh_release="v0.8.0-rc0" # The latest release is the default
+modelmesh_release="v0.8.0" # The latest release is the default
 create_storage_secret=false
 deploy_serving_runtimes=false
 dev_mode=false # When set to true, will use the locally cloned files instead of from a release
@@ -58,7 +58,7 @@ while (($# > 0)); do
     ;;
   --dev-mode)
     dev_mode=true
-    ;;    
+    ;;
   -*)
     die "Unknown option: '${1}'"
     ;;
@@ -69,7 +69,7 @@ done
 if [[ ! -z $user_ns_array ]]; then
   runtime_source="https://github.com/kserve/modelmesh-serving/releases/download/${modelmesh_release}/modelmesh-runtimes.yaml"
   if [[ $dev_mode == "true" ]]; then
-    cp config/dependencies/minio-storage-secret.yaml . 
+    cp config/dependencies/minio-storage-secret.yaml .
     kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
     runtime_source="runtimes.yaml"
   else
