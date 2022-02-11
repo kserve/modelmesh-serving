@@ -486,6 +486,8 @@ spec:
           value: "1234"
         - name: REST_PROXY_USE_TLS
           value: "false"
+        - name: REST_PROXY_GRPC_MAX_MSG_SIZE_BYTES
+          value: "16777216"
         image: kserve/rest-proxy:latest
         imagePullPolicy: Always
         name: rest-proxy

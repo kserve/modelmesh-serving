@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	restProxyPortEnvVar     = "REST_PROXY_LISTEN_PORT"
-	restProxyGrpcPortEnvVar = "REST_PROXY_GRPC_PORT"
-	restProxyTlsEnvVar      = "REST_PROXY_USE_TLS"
+	restProxyPortEnvVar           = "REST_PROXY_LISTEN_PORT"
+	restProxyGrpcMaxMsgSizeEnvVar = "REST_PROXY_GRPC_MAX_MSG_SIZE_BYTES"
+	restProxyGrpcPortEnvVar       = "REST_PROXY_GRPC_PORT"
+	restProxyTlsEnvVar            = "REST_PROXY_USE_TLS"
 )
 
 func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) error {
@@ -42,6 +43,9 @@ func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) err
 				}, {
 					Name:  restProxyTlsEnvVar,
 					Value: strconv.FormatBool(m.TLSSecretName != ""),
+				}, {
+					Name:  restProxyGrpcMaxMsgSizeEnvVar,
+					Value: strconv.Itoa(m.GrpcMaxMessageSize),
 				},
 			},
 			Ports: []corev1.ContainerPort{
