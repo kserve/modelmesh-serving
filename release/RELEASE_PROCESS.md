@@ -27,8 +27,10 @@ It's generally a good idea to search the repo or control-f for strings of the ol
 
 1. Update `modelmesh`, `modelmesh-runtime-adapter`, `modelmesh-controller`, and `rest-proxy` image tags to the corresponding release version numbers.
    - Edit `newTag` in `config/manager/kustomization.yaml`.
-   - Edit the the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags in `config/default/config-defaults.yaml`.
+   - Edit the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags in `config/default/config-defaults.yaml`.
+   - Edit the `config/dependencies/quickstart.yaml` file, changing the `kserve/modelmesh-minio-examples` image tag to use the pinned version.
    - Edit the `docs/component-versions.md` file with the version and component versions.
+   - Edit the `docs/install/install-script.md` file, updating the `RELEASE` variable in the `Installation` section to the new release branch name.
    - Edit the `scripts/setup_user_namespaces.sh` file, changing the `modelmesh_release` version.
 1. Submit your PR to the release branch and wait for it to merge.
 1. Update `docs/component-versions.md` and `scripts/setup_user_namespaces.sh` in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
@@ -43,3 +45,4 @@ It's generally a good idea to search the repo or control-f for strings of the ol
 1. Once everything has settled, tag and push the release with `git tag $VERSION` and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
    - The `modelmesh-controller` image will be published via GitHub Actions.
 1. Upload generated install manifests to GitHub release assets.
+1. Be sure to create and push a new tag for the `kserve/modelmesh-minio-examples` image.
