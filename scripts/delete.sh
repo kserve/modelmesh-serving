@@ -86,15 +86,25 @@ cd default
 kustomize edit set namespace "$namespace"
 cd ..
 
+# Older versions of kustomize have different load restrictor flag formats.
+# Can be removed once Kubeflow installation stops requiring v3.2.
+kustomize_version=$(kustomize version | awk -F'kustomize/' '{print $2}')
+kustomize_load_restrictor_arg="--load-restrictor LoadRestrictionsNone"
+if [[ -n "$kustomize_version" && "$kustomize_version" < "v3.4.0" ]]; then
+    kustomize_load_restrictor_arg="--load_restrictor none"
+elif [[ -n "$kustomize_version" && "$kustomize_version" < "v4.0.1" ]]; then
+    kustomize_load_restrictor_arg="--load_restrictor LoadRestrictionsNone"
+fi
+
 if [[ ! -z $user_ns_array ]]; then
-  kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
+  kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
   for user_ns in "${user_ns_array[@]}"; do
     if ! kubectl get namespaces $user_ns >/dev/null; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
-    else 
+    else
       kubectl label namespace ${user_ns} modelmesh-enabled-
       kubectl delete -f minio-storage-secret.yaml -n ${user_ns}
       kubectl delete -f runtimes.yaml -n ${user_ns}
@@ -106,7 +116,7 @@ if [[ ! -z $user_ns_array ]]; then
 fi
 
 kustomize build default | kubectl delete -f - --ignore-not-found=true
-kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl delete -f - --ignore-not-found=true
+kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 

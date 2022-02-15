@@ -280,11 +280,21 @@ fi
 info "Waiting for ModelMesh Serving controller pod to be up..."
 wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
+# Older versions of kustomize have different load restrictor flag formats.
+# Can be removed once Kubeflow installation stops requiring v3.2.
+kustomize_version=$(kustomize version | awk -F'kustomize/' '{print $2}')
+kustomize_load_restrictor_arg="--load-restrictor LoadRestrictionsNone"
+if [[ -n "$kustomize_version" && "$kustomize_version" < "v3.4.0" ]]; then
+    kustomize_load_restrictor_arg="--load_restrictor none"
+elif [[ -n "$kustomize_version" && "$kustomize_version" < "v4.0.1" ]]; then
+    kustomize_load_restrictor_arg="--load_restrictor LoadRestrictionsNone"
+fi
+
 info "Installing ModelMesh Serving built-in runtimes"
-kustomize build runtimes --load-restrictor LoadRestrictionsNone | kubectl apply -f -
+kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
 
 if [[ ! -z $user_ns_array ]]; then
-  kustomize build runtimes --load-restrictor LoadRestrictionsNone > runtimes.yaml
+  kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
