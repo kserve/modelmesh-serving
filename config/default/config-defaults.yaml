@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # These are the system defaults which users can override with a user config
-# Settings here will be overridden by future product releases and should not
-# be changed unless directed by IBM support
 podsPerRuntime: 2
 headlessService: true
 modelMeshImage:
