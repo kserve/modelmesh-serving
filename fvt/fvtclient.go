@@ -410,6 +410,9 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 }
 
 func (fvt *FVTClient) DisconnectFromModelServing() {
+	if fvt == nil {
+		return
+	}
 	if fvt.grpcConn != nil {
 		fvt.grpcConn.Close()
 		fvt.grpcConn = nil
