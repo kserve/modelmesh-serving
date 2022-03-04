@@ -34,6 +34,14 @@ func NewPredictorForFVT(filename string) *unstructured.Unstructured {
 	return p
 }
 
+func NewIsvcForFVT(filename string) *unstructured.Unstructured {
+	p := DecodeResourceFromFile(isvcSamplesPath + filename)
+	uniqueName := MakeUniquePredictorName(p.GetName())
+	p.SetName(uniqueName)
+
+	return p
+}
+
 // to enable tests to run in parallel even when loading from the same Predictor
 // sample
 func MakeUniquePredictorName(base string) string {
@@ -56,6 +64,18 @@ func CreatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstr
 	resultingPredictor := WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "FailedToLoad", "Loading", "Loaded"}, watcher)
 	ExpectPredictorState(resultingPredictor, true, "Loaded", "", "UpToDate")
 	return resultingPredictor
+}
+
+func CreateIsvcAndWaitAndExpectReady(isvcManifest *unstructured.Unstructured) *unstructured.Unstructured {
+	isvcName := isvcManifest.GetName()
+	By("Creating inference service " + isvcName)
+	watcher := fvtClient.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, defaultTimeout)
+	defer watcher.Stop()
+	fvtClient.CreateIsvcExpectSuccess(isvcManifest)
+	By("Waiting for inference service" + isvcName + " to be 'Ready'")
+	// ISVC does not have the status field set initially.
+	resultingIsvc := WaitForIsvcReady(watcher)
+	return resultingIsvc
 }
 
 func CreatePredictorAndWaitAndExpectFailed(predictorManifest *unstructured.Unstructured) *unstructured.Unstructured {
@@ -166,6 +186,50 @@ func ExpectPredictorFailureInfo(obj *unstructured.Unstructured, reason string, h
 		Expect(err).To(BeNil())
 		Expect(time.Since(actualTime) < time.Minute).To(BeTrue())
 	}
+}
+
+func WaitForIsvcReady(watcher watch.Interface) *unstructured.Unstructured {
+	ch := watcher.ResultChan()
+	isReady := false
+	var obj *unstructured.Unstructured
+	var isvcName string
+
+	timeout := time.After(predictorTimeout)
+	done := false
+	for !done {
+		select {
+		// Exit the loop if InferenceService is not ready before given timeout.
+		case <-timeout:
+			done = true
+		case event, ok := <-ch:
+			if !ok {
+				// the channel was closed (watcher timeout reached)
+				done = true
+				break
+			}
+			obj, ok = event.Object.(*unstructured.Unstructured)
+			Expect(ok).To(BeTrue())
+			isvcName = GetString(obj, "metadata", "name")
+			conditions, exists := GetSlice(obj, "status", "conditions")
+			if !exists {
+				time.Sleep(time.Second)
+				continue
+			}
+			for _, condition := range conditions {
+				conditionMap := condition.(map[string]interface{})
+				if conditionMap["type"] == "Ready" {
+					if conditionMap["status"] == "True" {
+						isReady = true
+						done = true
+						break
+					}
+				}
+			}
+
+		}
+	}
+	Expect(isReady).To(BeTrue(), "Timeout before InferenceService '%s' ready", isvcName)
+	return obj
 }
 
 // Waiting for predictor state to reach the last one in the expected list

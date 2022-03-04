@@ -21,6 +21,7 @@ var fvtClient *FVTClient
 const (
 	ServingRuntimeKind         = "ServingRuntime"
 	PredictorKind              = "Predictor"
+	IsvcKind                   = "InferenceService"
 	ConfigMapKind              = "ConfigMap"
 	SecretKind                 = "Secret"
 	DefaultTestNamespace       = "modelmesh-serving"
@@ -28,5 +29,6 @@ const (
 	DefaultControllerNamespace = "modelmesh-serving"
 	userConfigMapName          = "model-serving-config"
 	samplesPath                = "testdata/predictors/"
+	isvcSamplesPath            = "testdata/isvcs/"
 	runtimeSamplesPath         = "testdata/runtimes/"
 )

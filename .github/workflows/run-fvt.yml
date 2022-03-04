@@ -52,6 +52,7 @@ jobs:
         run: |
           kubectl create ns modelmesh-serving
           kubectl create ns modelmesh-user
+          kubectl apply -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml
           ./scripts/install.sh --namespace modelmesh-serving -u modelmesh-user --fvt --dev-mode-logging
       - name: Pre-pull runtime images
         run: |
