@@ -47,4 +47,7 @@ mv kustomize /usr/local/bin/kustomize
 # Delete CRDs, controller, and built-in runtimes
 ./scripts/delete.sh --namespace "$SERVING_NS"
 
+# Also delete kserve InferenceService CRD
+kubectl delete -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml || true
+
 echo "Finished modelmesh-serving undeployment." 
