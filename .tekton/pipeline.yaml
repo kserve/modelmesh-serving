@@ -152,7 +152,7 @@ spec:
       - name: task-pvc
         workspace: pipeline-pvc
     - name: run-fvt
-      retries: 1
+      retries: 2
       taskRef:
         name: e2e-test
       runAfter:

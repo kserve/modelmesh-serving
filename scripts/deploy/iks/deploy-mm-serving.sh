@@ -80,6 +80,9 @@ sed -i.bak 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomiz
 sed -i.bak 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-controller"'/' config/manager/kustomization.yaml
 rm config/manager/kustomization.yaml.bak
 
+# Need to install InferenceService from kserve for fvt
+kubectl apply -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml
+
 # Install and check if all pods are running - allow 60 retries (10 minutes)
 ./scripts/install.sh --namespace "$SERVING_NS" -u modelmesh-user --fvt
 wait_for_pods "$SERVING_NS" 60 "$SLEEP_TIME" || EXIT_CODE=$?
