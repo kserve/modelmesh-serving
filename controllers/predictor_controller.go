@@ -526,8 +526,11 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *common.Pr
 	if mms := pr.MMServices.Get(name.Namespace); mms != nil {
 		endpoint, httpEndpoint = mms.InferenceEndpoints()
 	}
-	status.GrpcEndpoint = endpoint
-	status.HTTPEndpoint = httpEndpoint
+	if status.GrpcEndpoint != endpoint || status.HTTPEndpoint != httpEndpoint {
+		status.GrpcEndpoint = endpoint
+		status.HTTPEndpoint = httpEndpoint
+		changed = true
+	}
 
 	// This will be reinstated once the loading/loaded counts are added back to the Predictor CRD Status
 	//if counts != [3]int{status.LoadingCopies, status.LoadedCopies, status.FailedCopies} {

@@ -100,7 +100,6 @@ func (mms *MMService) UpdateConfig(cp *config.ConfigProvider) (*config.Config, b
 	if restPort != mms.restPort {
 		mms.restPort = restPort
 		specChange = true
-		clientChange = true
 	}
 	endpoint := cfg.ModelMeshEndpoint
 	if endpoint == "" {

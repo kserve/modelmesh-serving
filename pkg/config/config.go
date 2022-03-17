@@ -381,14 +381,9 @@ func NewMergedConfigFromString(configYaml string) (*Config, error) {
 	// Even if the default config has an image digest, a user should be able to
 	// override it with a tag (ignoring the default digest)
 	// HACK: There should be a better way to do this...
-	if v.GetString("storageHelperImage.tag") != defaultConfig.GetString("storageHelperImage.tag") &&
-		v.GetString("storageHelperImage.digest") == defaultConfig.GetString("storageHelperImage.digest") {
-		v.Set("storageHelperImage.digest", "")
-	}
-	if v.GetString("modelMeshImage.tag") != defaultConfig.GetString("modelMeshImage.tag") &&
-		v.GetString("modelMeshImage.digest") == defaultConfig.GetString("modelMeshImage.digest") {
-		v.Set("modelMeshImage.digest", "")
-	}
+	clearDigestIfTagsDiffer(v, "modelMeshImage")
+	clearDigestIfTagsDiffer(v, "storageHelperImage")
+	clearDigestIfTagsDiffer(v, "restProxy.image")
 
 	// unmarshal the config into a Config struct
 	var config Config
@@ -410,4 +405,11 @@ func NewMergedConfigFromString(configYaml string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func clearDigestIfTagsDiffer(v *viper.Viper, imageConfigField string) {
+	tag, digest := imageConfigField+".tag", imageConfigField+".digest"
+	if v.GetString(tag) != defaultConfig.GetString(tag) && v.GetString(digest) == defaultConfig.GetString(digest) {
+		v.Set(digest, "")
+	}
 }
