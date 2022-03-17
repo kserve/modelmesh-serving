@@ -57,7 +57,7 @@ spec:
           value: "127.0.0.1"
         # Increase gRPC max message size to 16 MiB to support larger payloads
         - name: MLSERVER_GRPC_MAX_MESSAGE_LENGTH
-          value: "16777216"
+          value: "-1"
       resources:
         requests:
           cpu: 500m
