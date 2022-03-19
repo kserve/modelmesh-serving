@@ -125,7 +125,8 @@ var _ = Describe("Predictor", func() {
 
 		// ensure that there are no predictors to start
 		fvtClient.DeleteAllPredictors()
-
+		// ensure that a new connection is established
+		fvtClient.DisconnectFromModelServing()
 		// ensure a stable deploy state
 		WaitForStableActiveDeployState()
 	})
