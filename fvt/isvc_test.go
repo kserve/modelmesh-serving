@@ -60,9 +60,10 @@ var _ = Describe("Inference service", func() {
 		}
 		fvtClient.ApplyUserConfigMap(config)
 
-		// ensure that there are no predictors to start
+		// ensure that there are no InferenceServices to start
 		fvtClient.DeleteAllIsvcs()
-
+		// kill any existing port-forward to ensure that a new connection will be established
+		fvtClient.DisconnectFromModelServing()
 		// ensure a stable deploy state
 		WaitForStableActiveDeployState()
 	})
@@ -81,7 +82,7 @@ var _ = Describe("Inference service", func() {
 				var mlsISVCName string
 
 				BeforeEach(func() {
-					// load the test predictor object
+					// load the test InferenceService object
 					mlsIsvcObject = NewIsvcForFVT(i.inferenceServiceFileName)
 					mlsISVCName = mlsIsvcObject.GetName()
 
@@ -93,7 +94,6 @@ var _ = Describe("Inference service", func() {
 
 				AfterEach(func() {
 					fvtClient.DeleteIsvc(mlsISVCName)
-					fvtClient.DisconnectFromModelServing()
 				})
 
 				It("should successfully run inference", func() {
