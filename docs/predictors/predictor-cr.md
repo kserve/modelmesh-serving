@@ -36,7 +36,7 @@ The Status section of the `Predictor` custom resource reflects details about its
 
 `grpcEndpoint` - The gRPC target endpoint (host/port) corresponding to this predictor. Note that this will currently be the same for all predictors owned by a given ModelMesh Serving installation.
 
-`httpEndpoint` - The HTTP (REST) endpoint corresponding to this predictor. _Note this is not supported in the current release and so will always be empty._
+`httpEndpoint` - The HTTP (REST) endpoint corresponding to this predictor. This endpoint is provided through a REST proxy sidecar (if enabled), and this will also be the same for all predictors owned by a given ModelMesh Serving installation.
 
 `available` - A boolean value indicating whether the predictor's endpoints are ready to serve inferencing requests. Note that this does not _necessarily_ mean requests will respond immediately, the corresponding model may or may not be loaded in memory. In the case that it isn't there may be some delay before the response comes back.
 
