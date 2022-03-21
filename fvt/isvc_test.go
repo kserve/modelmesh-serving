@@ -62,7 +62,7 @@ var _ = Describe("Inference service", func() {
 
 		// ensure that there are no InferenceServices to start
 		fvtClient.DeleteAllIsvcs()
-		// ensure that a new connection is established
+		// kill any existing port-forward to ensure that a new connection will be established
 		fvtClient.DisconnectFromModelServing()
 		// ensure a stable deploy state
 		WaitForStableActiveDeployState()
