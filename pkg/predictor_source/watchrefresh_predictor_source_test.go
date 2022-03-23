@@ -23,7 +23,7 @@ import (
 
 	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
