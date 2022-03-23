@@ -95,5 +95,3 @@ require (
 )
 
 replace go.uber.org/atomic => github.com/uber-go/atomic v1.9.0
-
-replace github.com/onsi/ginkgo => github.com/phil9909/ginkgo v1.16.6-0.20220211153547-67da0e38b07d
