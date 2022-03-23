@@ -14,14 +14,11 @@
 package fvt
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -31,13 +28,8 @@ import (
 // TestFVT is the main Ginko test driver. This adds a junit report to a target dir.
 func TestFVT(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("../target/test-reports/junit_fvt_%d.xml", config.GinkgoConfig.ParallelNode))
 
-	config.DefaultReporterConfig.SlowSpecThreshold = time.Minute.Seconds() * 3
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Fvt Suite",
-		[]Reporter{junitReporter})
+	RunSpecs(t, "Fvt Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -75,7 +67,7 @@ var _ = BeforeSuite(func() {
 	fvtClient.CreateTLSSecrets()
 
 	log.Info("Setup completed")
-}, 60)
+})
 
 var _ = AfterSuite(func() {
 	// Clean up any custom TLS secrets generated for this testing

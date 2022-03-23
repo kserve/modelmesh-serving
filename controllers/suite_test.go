@@ -31,7 +31,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -47,9 +46,7 @@ import (
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
-	. "github.com/onsi/ginkgo"
-	ginkgoConfig "github.com/onsi/ginkgo/config"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tommy351/goldga"
 	corev1 "k8s.io/api/core/v1"
@@ -93,14 +90,11 @@ func SnapshotMatcher() *goldga.Matcher {
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("../target/test-reports/junit_Controller_%d.xml", ginkgoConfig.GinkgoConfig.ParallelNode))
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{junitReporter})
+	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(func() {
 	//Set template dir to account for test working dirs
 	SetTemplateDir()
 
@@ -182,9 +176,7 @@ var _ = BeforeSuite(func(done Done) {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()
-
-	close(done)
-}, 60)
+})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

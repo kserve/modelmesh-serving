@@ -27,8 +27,7 @@ import (
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 
-	"github.com/onsi/ginkgo"
-	ginkgoConfig "github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -96,7 +95,8 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	Expect(err).ToNot(HaveOccurred())
 
 	// set port based on worker index to support parallel port-forwards
-	localPort := 8032 + ginkgoConfig.GinkgoConfig.ParallelNode
+	suitConfig, _ := ginkgo.GinkgoConfiguration()
+	localPort := 8032 + suitConfig.ParallelProcess
 
 	return &FVTClient{client, namespace, serviceName, controllerNamespace, nil, nil, nil, localPort, log}, nil
 }
