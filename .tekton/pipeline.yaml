@@ -173,9 +173,24 @@ spec:
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc
-    - name: undeploy
+    - name: run-perf-test
       runAfter:
         - run-fvt
+      taskRef:
+        name: run-perf-test
+      params:
+        - name: kubernetes-cluster
+          value: $(params.kubernetes-cluster)
+        - name: apikey
+          value: $(params.apikey)
+        - name: serving-ns
+          value: $(params.serving-ns)
+      workspaces:
+      - name: task-pvc
+        workspace: pipeline-pvc
+    - name: undeploy
+      runAfter:
+        - run-perf-test
       taskRef:
         name: undeploy
       params:
