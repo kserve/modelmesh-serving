@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/pkg/config"
 
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
@@ -55,7 +56,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
@@ -425,9 +425,9 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	}
 
 	if watchInferenceServices {
-		builder = builder.Watches(&source.Kind{Type: &servingv1beta1.InferenceService{}},
+		builder = builder.Watches(&source.Kind{Type: &v1beta1.InferenceService{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				if p, _ := predictor_source.BuildBasePredictorFromInferenceService(o.(*servingv1beta1.InferenceService)); p != nil {
+				if p, _ := predictor_source.BuildBasePredictorFromInferenceService(o.(*v1beta1.InferenceService)); p != nil {
 					return r.runtimeRequestsForPredictor(p, "InferenceService")
 				}
 				return []reconcile.Request{}
