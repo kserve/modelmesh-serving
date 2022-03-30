@@ -84,7 +84,7 @@ type runtimeInfo struct {
 }
 
 var builtInServerTypes = map[api.ServerType]interface{}{
-	api.MLServer: nil, api.Triton: nil,
+	api.MLServer: nil, api.Triton: nil, api.OVMS: nil,
 }
 
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete

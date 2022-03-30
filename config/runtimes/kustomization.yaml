@@ -14,6 +14,7 @@
 resources:
   - triton-2.x.yaml
   - mlserver-0.x.yaml
+  - ovms-1.x.yaml
 
 images:
   - name: tritonserver-2
@@ -23,6 +24,10 @@ images:
   - name: mlserver-0
     newName: seldonio/mlserver
     newTag: 0.5.2
+
+  - name: ovms-1
+    newName: openvino/model_server
+    newTag: 2022.4.2
 
 transformers:
   - ../default/metadataLabelTransformer.yaml

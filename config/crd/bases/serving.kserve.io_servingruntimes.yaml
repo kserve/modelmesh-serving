@@ -999,11 +999,12 @@ spec:
                       type: integer
                     serverType:
                       description:
-                        ServerType can be one of triton/mlserver and the
-                        runtime's container must have the same name
+                        ServerType can be one of triton/mlserver/ovms and
+                        the runtime's container must have the same name
                       enum:
                         - triton
                         - mlserver
+                        - ovms
                       type: string
                   type: object
                 containers:
