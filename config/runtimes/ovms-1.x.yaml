@@ -35,12 +35,12 @@ spec:
     - name: ovms
       image: ovms-1:replace
       args:
-      - --port=8001
-      - --rest_port=8888
-      - --config_path=/models/model_config_list.json # must match the default value in the ovms adapter server
-      - --file_system_poll_wait_seconds=0
-      - --grpc_bind_address=127.0.0.1
-      - --rest_bind_address=127.0.0.1
+        - --port=8001
+        - --rest_port=8888
+        - --config_path=/models/model_config_list.json # must match the default value in the ovms adapter server
+        - --file_system_poll_wait_seconds=0
+        - --grpc_bind_address=127.0.0.1
+        - --rest_bind_address=127.0.0.1
       resources:
         limits:
           cpu: "5"
