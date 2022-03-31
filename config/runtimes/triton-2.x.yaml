@@ -87,7 +87,7 @@ spec:
         periodSeconds: 30
         timeoutSeconds: 10
   builtInAdapter:
-    serverType: "triton"
+    serverType: triton
     runtimeManagementPort: 8001
     memBufferBytes: 134217728
     modelLoadingTimeoutMillis: 90000

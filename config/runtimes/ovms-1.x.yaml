@@ -20,11 +20,10 @@ metadata:
 spec:
   supportedModelFormats:
     - name: openvino_ir
-      version: "opset1"
+      version: opset1
       autoSelect: true
     - name: onnx
       version: "1"
-      autoSelect: false
 
   multiModel: true
 
@@ -37,8 +36,11 @@ spec:
       args:
         - --port=8001
         - --rest_port=8888
-        - --config_path=/models/model_config_list.json # must match the default value in the ovms adapter server
+        # must match the default value in the ovms adapter server
+        - --config_path=/models/model_config_list.json
+        # the adapter will call `/v1/config/reload` to trigger reloads
         - --file_system_poll_wait_seconds=0
+        # bind to localhost only to contrain requests to containers in the pod
         - --grpc_bind_address=127.0.0.1
         - --rest_bind_address=127.0.0.1
       resources:
@@ -49,7 +51,7 @@ spec:
           cpu: 500m
           memory: 1Gi
   builtInAdapter:
-    serverType: "ovms"
+    serverType: ovms
     runtimeManagementPort: 8888
     memBufferBytes: 134217728
     modelLoadingTimeoutMillis: 90000
