@@ -947,7 +947,7 @@ spec:
         - name: ADAPTER_PORT
           value: "8085"
         - name: RUNTIME_PORT
-          value: "8001"
+          value: "8888"
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
