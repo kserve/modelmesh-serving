@@ -329,6 +329,43 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
+  name: run-perf-test
+spec:
+  params:
+    - name: apikey
+      description: the ibmcloud api key
+    - name: serving-ns
+      description: kubeflow namespace
+      default: kubeflow
+    - name: archive-dir
+      description: archive directory
+      default: "."
+    - name: kubernetes-cluster
+      description: cluster name
+  workspaces:
+  - name: task-pvc
+    mountPath: /artifacts
+  steps:
+    - name: run-performance-test
+      image: docker.io/aipipeline/pipeline-base-image:1.2
+      env:
+        - name: SERVING_KUBERNETES_CLUSTER_NAME
+          value: $(params.kubernetes-cluster)
+        - name: IBM_CLOUD_API_KEY
+          value: $(params.apikey)
+        - name: ARCHIVE_DIR
+          value: $(params.archive-dir)
+        - name: SERVING_NS
+          value: $(params.serving-ns)
+      command: ["/bin/bash", "-c"]
+      args:
+        - set -ex;
+          cd /artifacts && source build.properties;
+          source ./scripts/deploy/iks/run-perf-test.sh;
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
   name: undeploy
 spec:
   params:
