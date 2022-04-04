@@ -24,11 +24,10 @@ import (
 	"regexp"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
+	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	config2 "github.com/kserve/modelmesh-serving/pkg/config"
-
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
+	corev1 "k8s.io/api/core/v1"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -52,7 +51,6 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	servingv1alpha1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
@@ -90,7 +88,7 @@ func init() {
 	}
 	_ = batchv1.AddToScheme(scheme)
 	_ = servingv1alpha1.AddToScheme(scheme)
-	_ = servingv1beta1.AddToScheme(scheme)
+	_ = v1beta1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -332,7 +330,7 @@ func main() {
 		return false
 	}
 
-	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &servingv1beta1.InferenceService{},
+	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &v1beta1.InferenceService{},
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent

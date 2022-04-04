@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -40,7 +41,6 @@ import (
 
 	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	servingv1beta1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -598,7 +598,7 @@ func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *m
 	}
 
 	if watchInferenceServices {
-		builder = builder.Watches(&src.Kind{Type: &servingv1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
+		builder = builder.Watches(&src.Kind{Type: &v1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
 	}
 	return builder.Complete(pr)
 }

@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	"github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -128,8 +128,8 @@ var (
 		Resource: "deployments", // this must be the plural form
 	}
 	gvrIsvc = schema.GroupVersionResource{
-		Group:    v1beta1.GroupVersion.Group,
-		Version:  v1beta1.GroupVersion.Version,
+		Group:    v1beta1.SchemeGroupVersion.Group,
+		Version:  v1beta1.SchemeGroupVersion.Version,
 		Resource: "inferenceservices", // this must be the plural form
 	}
 )
