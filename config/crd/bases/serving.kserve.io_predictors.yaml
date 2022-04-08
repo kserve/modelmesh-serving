@@ -151,8 +151,8 @@ spec:
                 activeModelState: Pending
                 available: false
                 failedCopies: 0
-                loadedCopies: 0
                 targetModelState: ""
+                totalCopies: 0
                 transitionStatus: UpToDate
               description: PredictorStatus defines the observed state of Predictor
               properties:
