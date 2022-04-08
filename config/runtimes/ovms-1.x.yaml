@@ -40,15 +40,15 @@ spec:
         - --config_path=/models/model_config_list.json
         # the adapter will call `/v1/config/reload` to trigger reloads
         - --file_system_poll_wait_seconds=0
-        # bind to localhost only to contrain requests to containers in the pod
+        # bind to localhost only to constrain requests to containers in the pod
         - --grpc_bind_address=127.0.0.1
         - --rest_bind_address=127.0.0.1
       resources:
-        limits:
-          cpu: "5"
-          memory: 1Gi
         requests:
           cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 5
           memory: 1Gi
   builtInAdapter:
     serverType: ovms
