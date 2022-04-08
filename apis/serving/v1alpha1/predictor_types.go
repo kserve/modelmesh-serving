@@ -126,7 +126,7 @@ type Predictor struct {
 
 	// Add these to the default below once reinstated: {loadedCopies:0, loadingCopies:0}
 
-	// +kubebuilder:default={transitionStatus:UpToDate, activeModelState:Pending, targetModelState:"", available:false, failedCopies:0}
+	// +kubebuilder:default={transitionStatus:UpToDate, activeModelState:Pending, targetModelState:"", available:false, failedCopies:0, loadedCopies:0}
 	Status common.PredictorStatus `json:"status,omitempty"`
 }
 

@@ -537,6 +537,10 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *common.Pr
 	//	status.LoadingCopies, status.LoadedCopies, status.FailedCopies = counts[0], counts[1], counts[2]
 	//	changed = true
 	//}
+	if counts[1] != status.TotalCopies {
+		status.TotalCopies = counts[1]
+		changed = true
+	}
 
 	if counts[2] != status.FailedCopies {
 		status.FailedCopies = counts[2]
