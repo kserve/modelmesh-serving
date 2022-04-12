@@ -137,14 +137,17 @@ type PredictorStatus struct {
 	// +optional
 	GrpcEndpoint string `json:"grpcEndpoint"`
 
-	// Total number copies of this predictor's models that are currently loaded
-	// +kubebuilder:default=0
-	TotalCopies int `json:"totalCopies"`
-
-	//TODO TBC whether or not this is exposed here
+	//TODO TBC whether or not these are exposed here
+	//	// How many copies of this predictor's models are currently loaded - NOT YET SUPPORTED
+	//	// +kubebuilder:default=0
+	//	LoadedCopies int `json:"loadedCopies"`
 	//	// How many copies of this predictor's models are currently loading - NOT YET SUPPORTED
 	//	// +kubebuilder:default=0
 	//	LoadingCopies int `json:"loadingCopies"`
+
+	// Total number copies of this predictor's models
+	// +kubebuilder:default=0
+	TotalCopies int `json:"totalCopies"`
 
 	// How many copies of this predictor's models failed to load recently
 	// +kubebuilder:default=0

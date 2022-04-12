@@ -433,7 +433,7 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *common.Pr
 	}
 
 	tmsBefore := status.TargetModelState
-	counts := [3]int{}
+	counts := [4]int{}
 	if amfr == "" || amfr == common.ModelLoadFailed {
 		countModelCopyStates(vModelState.ActiveModelStatus, &counts)
 	}
@@ -533,17 +533,13 @@ func (pr *PredictorReconciler) updatePredictorStatusFromVModel(status *common.Pr
 	}
 
 	// This will be reinstated once the loading/loaded counts are added back to the Predictor CRD Status
-	//if counts != [3]int{status.LoadingCopies, status.LoadedCopies, status.FailedCopies} {
-	//	status.LoadingCopies, status.LoadedCopies, status.FailedCopies = counts[0], counts[1], counts[2]
+	//if counts != [4]int{status.LoadingCopies, status.LoadedCopies, status.FailedCopies, status.TotalCopies} {
+	//	status.LoadingCopies, status.LoadedCopies, status.FailedCopies, status.TotalCopies = counts[0], counts[1], counts[2], counts[3]
 	//	changed = true
 	//}
-	if counts[1] != status.TotalCopies {
-		status.TotalCopies = counts[1]
-		changed = true
-	}
 
-	if counts[2] != status.FailedCopies {
-		status.FailedCopies = counts[2]
+	if counts[2] != status.FailedCopies || counts[3] != status.TotalCopies {
+		status.FailedCopies, status.TotalCopies = counts[2], counts[3]
 		changed = true
 	}
 
@@ -559,7 +555,7 @@ func setStatusFailureInfo(crStatus *common.PredictorStatus, info *common.Failure
 	return true
 }
 
-func countModelCopyStates(statusInfo *mmeshapi.ModelStatusInfo, counts *[3]int) {
+func countModelCopyStates(statusInfo *mmeshapi.ModelStatusInfo, counts *[4]int) {
 	if statusInfo == nil {
 		return
 	}
@@ -573,6 +569,7 @@ func countModelCopyStates(statusInfo *mmeshapi.ModelStatusInfo, counts *[3]int) 
 			case mmeshapi.ModelStatusInfo_LOADING_FAILED:
 				counts[2] += 1
 			}
+			counts[3] += 1
 		}
 	}
 }

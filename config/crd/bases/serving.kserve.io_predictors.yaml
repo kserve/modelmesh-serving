@@ -228,9 +228,7 @@ spec:
                   type: string
                 totalCopies:
                   default: 0
-                  description:
-                    Total number copies of this predictor's models that are
-                    currently loaded
+                  description: Total number copies of this predictor's models
                   type: integer
                 transitionStatus:
                   default: UpToDate
