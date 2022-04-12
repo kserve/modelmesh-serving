@@ -145,7 +145,7 @@ type PredictorStatus struct {
 	//	// +kubebuilder:default=0
 	//	LoadingCopies int `json:"loadingCopies"`
 
-	// Total number copies of this predictor's models
+	// Total number of copies of this predictor's models
 	// +kubebuilder:default=0
 	TotalCopies int `json:"totalCopies"`
 
