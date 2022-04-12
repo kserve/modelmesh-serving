@@ -80,14 +80,22 @@ var _ = AfterSuite(func() {
 	fvtClient.DisconnectFromModelServing()
 })
 
-// register hanlders for a failed test case to print info to the console
+// register handlers for a failed test case to print info to the console
 var startTime string
 var _ = JustBeforeEach(func() {
 	startTime = time.Now().Format("2006-01-02T15:04:05Z")
 })
 var _ = JustAfterEach(func() {
 	if CurrentGinkgoTestDescription().Failed {
+		fvtClient.PrintPods()
+		// REMOVEME
+		err := fvtClient.RunKubectl("describe", "node")
+		if err != nil {
+			fvtClient.log.Error(err, "Error running kubectl describe node")
+		}
+		// END REMOVEME
 		fvtClient.PrintPredictors()
+		fvtClient.PrintEvents()
 		fvtClient.TailPodLogs(startTime)
 	}
 })

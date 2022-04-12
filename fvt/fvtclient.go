@@ -253,6 +253,20 @@ func (fvt *FVTClient) PrintPredictors() {
 	}
 }
 
+func (fvt *FVTClient) PrintPods() {
+	err := fvt.RunKubectl("get", "pods")
+	if err != nil {
+		fvt.log.Error(err, "Error running get pods command")
+	}
+}
+
+func (fvt *FVTClient) PrintEvents() {
+	err := fvt.RunKubectl("get", "events")
+	if err != nil {
+		fvt.log.Error(err, "Error running get events command")
+	}
+}
+
 func (fvt *FVTClient) TailPodLogs(sinceTime string) {
 	var err error
 	// grab logs from the controller
