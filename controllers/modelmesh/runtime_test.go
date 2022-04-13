@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -239,5 +240,66 @@ func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 		if !cmp.Equal(*d, expectedDeployment) {
 			t.Error("Configured Deployment did not contain expected pod template")
 		}
+	})
+}
+
+func TestConfigureRuntimeAnnotations(t *testing.T) {
+	t.Run("success-set-annotations", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &api.ServingRuntime{}
+		annotationsData := map[string]string{
+			"foo":            "bar",
+			"network-policy": "allow-egress",
+		}
+
+		m := Deployment{Owner: sr, AnnotationsMap: annotationsData}
+
+		err := m.configureRuntimePodSpecAnnotations(deploy)
+		assert.Nil(t, err)
+		// assert.Equal(t, deploy.Spec.Template.Labels, labelData)
+		assert.Equal(t, deploy.Spec.Template.Annotations["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Annotations["network-policy"], "allow-egress")
+	})
+
+	t.Run("success-no-annotations", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &api.ServingRuntime{}
+		m := Deployment{Owner: sr, AnnotationsMap: map[string]string{}}
+
+		err := m.configureRuntimePodSpecAnnotations(deploy)
+		assert.Nil(t, err)
+		assert.Empty(t, deploy.Spec.Template.Annotations)
+	})
+}
+
+func TestConfigureRuntimeLabels(t *testing.T) {
+
+	t.Run("success-set-labels", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &api.ServingRuntime{}
+		labelData := map[string]string{
+			"foo":            "bar",
+			"network-policy": "allow-egress",
+			"cp4s-internet":  "allow",
+		}
+
+		m := Deployment{Owner: sr, LabelsMap: labelData}
+
+		err := m.configureRuntimePodSpecLabels(deploy)
+		assert.Nil(t, err)
+		// assert.Equal(t, deploy.Spec.Template.Labels, labelData)
+		assert.Equal(t, deploy.Spec.Template.Labels["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Labels["network-policy"], "allow-egress")
+		assert.Equal(t, deploy.Spec.Template.Labels["cp4s-internet"], "allow")
+	})
+
+	t.Run("success-no-labels", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &api.ServingRuntime{}
+		m := Deployment{Owner: sr, LabelsMap: map[string]string{}}
+
+		err := m.configureRuntimePodSpecLabels(deploy)
+		assert.Nil(t, err)
+		assert.Empty(t, deploy.Spec.Template.Labels)
 	})
 }

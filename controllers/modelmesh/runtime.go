@@ -333,3 +333,32 @@ func (m *Deployment) addPassThroughPodFieldsToDeployment(deployment *appsv1.Depl
 
 	return nil
 }
+
+func (m *Deployment) configureRuntimePodSpecAnnotations(deployment *appsv1.Deployment) error {
+
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = make(map[string]string)
+	}
+
+	// apply user configmap annotations
+	for key, value := range m.AnnotationsMap {
+		// set labels for pods created by deployment
+		deployment.Spec.Template.Annotations[key] = value
+	}
+
+	return nil
+}
+
+func (m *Deployment) configureRuntimePodSpecLabels(deployment *appsv1.Deployment) error {
+
+	if deployment.Spec.Template.Labels == nil {
+		deployment.Spec.Template.Labels = make(map[string]string)
+	}
+
+	for key, value := range m.LabelsMap {
+		// set labels for pods created by deployment
+		deployment.Spec.Template.Labels[key] = value
+	}
+
+	return nil
+}

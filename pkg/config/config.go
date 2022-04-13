@@ -77,6 +77,9 @@ type Config struct {
 	Metrics     PrometheusConfig
 	ScaleToZero ScaleToZeroConfig
 
+	Labels      map[string]string
+	Annotations map[string]string
+
 	// For internal use only
 	InternalModelMeshEnvVars EnvVarList
 }
