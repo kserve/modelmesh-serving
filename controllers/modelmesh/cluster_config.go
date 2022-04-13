@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +48,7 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
 // A ClusterConfig represents the configuration shared across
 // a logical model mesh cluster
 type ClusterConfig struct {
-	Runtimes *api.ServingRuntimeList
+	Runtimes *kserveapi.ServingRuntimeList
 	Scheme   *runtime.Scheme
 }
 
@@ -86,7 +86,7 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 }
 
 // Add constraint data to the provided config map
-func (cc ClusterConfig) addConstraints(rts *api.ServingRuntimeList, m *corev1.ConfigMap) {
+func (cc ClusterConfig) addConstraints(rts *kserveapi.ServingRuntimeList, m *corev1.ConfigMap) {
 	b := calculateConstraintData(rts.Items)
 	if m.BinaryData == nil {
 		m.BinaryData = make(map[string][]byte)
@@ -95,7 +95,7 @@ func (cc ClusterConfig) addConstraints(rts *api.ServingRuntimeList, m *corev1.Co
 	m.BinaryData[MMDataPlaneConfigKey] = dataPlaneApiJsonConfigBytes
 }
 
-func calculateConstraintData(rts []api.ServingRuntime) []byte {
+func calculateConstraintData(rts []kserveapi.ServingRuntime) []byte {
 	/*b := []byte(`{
 	  "rt:tf-serving-runtime": {
 	    "required": ["rt:tf-serving-runtime"]

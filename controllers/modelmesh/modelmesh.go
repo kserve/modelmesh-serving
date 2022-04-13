@@ -19,7 +19,7 @@ import (
 	"strconv"
 
 	"github.com/go-logr/logr"
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/config"
 	mf "github.com/manifestival/manifestival"
 	appsv1 "k8s.io/api/apps/v1"
@@ -40,7 +40,7 @@ type Deployment struct {
 	ServicePort        uint16
 	Name               string
 	Namespace          string
-	Owner              *api.ServingRuntime
+	Owner              *kserveapi.ServingRuntime
 	DefaultVModelOwner string
 	Log                logr.Logger
 	Metrics            bool

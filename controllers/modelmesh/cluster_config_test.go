@@ -16,7 +16,7 @@ package modelmesh
 import (
 	"testing"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,14 +27,14 @@ func TestCalculateConstraintData(t *testing.T) {
 	v2 := "2"
 	a := true
 	mm := true
-	l := api.ServingRuntimeList{
-		Items: []api.ServingRuntime{
+	l := kserveapi.ServingRuntimeList{
+		Items: []kserveapi.ServingRuntime{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "tf-serving-runtime",
 				},
-				Spec: api.ServingRuntimeSpec{
-					SupportedModelFormats: []api.SupportedModelFormat{
+				Spec: kserveapi.ServingRuntimeSpec{
+					SupportedModelFormats: []kserveapi.SupportedModelFormat{
 						{
 							Name:       "tensorflow",
 							Version:    &v,

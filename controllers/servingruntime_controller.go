@@ -55,6 +55,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
@@ -83,8 +84,8 @@ type runtimeInfo struct {
 	TimeTransitionedToNoPredictors *time.Time
 }
 
-var builtInServerTypes = map[api.ServerType]interface{}{
-	api.MLServer: nil, api.Triton: nil, api.OVMS: nil,
+var builtInServerTypes = map[kserveapi.ServerType]interface{}{
+	kserveapi.MLServer: nil, kserveapi.Triton: nil, kserveapi.OVMS: nil,
 }
 
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
@@ -102,9 +103,9 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		return RequeueResult, err
 	}
-	var runtimes *api.ServingRuntimeList
+	var runtimes *kserveapi.ServingRuntimeList
 	if mmEnabled {
-		runtimes = &api.ServingRuntimeList{}
+		runtimes = &kserveapi.ServingRuntimeList{}
 		if err = r.Client.List(ctx, runtimes, client.InNamespace(req.Namespace)); err != nil {
 			return RequeueResult, err
 		}
@@ -168,7 +169,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Reconcile this serving runtime
-	rt := &api.ServingRuntime{}
+	rt := &kserveapi.ServingRuntime{}
 	if err = r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
 		log.Info("Runtime is not found")
 
@@ -253,7 +254,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger,
-	config *config.Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
+	config *config.Config, rt *kserveapi.ServingRuntime) (uint16, time.Duration, error) {
 
 	var err error
 	const scaledToZero = uint16(0)
@@ -326,7 +327,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 	return scaledToZero, time.Duration(0), nil
 }
 
-func (r *ServingRuntimeReconciler) determineReplicas(rt *api.ServingRuntime) uint16 {
+func (r *ServingRuntimeReconciler) determineReplicas(rt *kserveapi.ServingRuntime) uint16 {
 	if rt.Spec.Replicas == nil {
 		return r.ConfigProvider.GetConfig().PodsPerRuntime
 	}
@@ -335,7 +336,7 @@ func (r *ServingRuntimeReconciler) determineReplicas(rt *api.ServingRuntime) uin
 }
 
 // runtimeHasPredictors returns true if the runtime supports an existing Predictor
-func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt *api.ServingRuntime) (bool, error) {
+func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt *kserveapi.ServingRuntime) (bool, error) {
 	f := func(p *api.Predictor) bool {
 		return runtimeSupportsPredictor(rt, p)
 	}
@@ -348,7 +349,7 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 	return false, nil
 }
 
-func runtimeSupportsPredictor(rt *api.ServingRuntime, p *api.Predictor) bool {
+func runtimeSupportsPredictor(rt *kserveapi.ServingRuntime, p *api.Predictor) bool {
 	// assignment to a runtime depends on the model type labels
 	runtimeLabelSet := modelmesh.GetServingRuntimeSupportedModelTypeLabelSet(rt)
 	predictorLabel := modelmesh.GetPredictorModelTypeLabel(p)
@@ -362,7 +363,7 @@ func runtimeSupportsPredictor(rt *api.ServingRuntime, p *api.Predictor) bool {
 // A predictor may be supported by multiple runtimes.
 func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Context, p *api.Predictor) ([]types.NamespacedName, error) {
 	// list all runtimes
-	runtimes := &api.ServingRuntimeList{}
+	runtimes := &kserveapi.ServingRuntimeList{}
 	if err := r.Client.List(ctx, runtimes, client.InNamespace(p.Namespace)); err != nil {
 		return nil, err
 	}
@@ -385,12 +386,12 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		Named("ServingRuntimeReconciler").
-		For(&api.ServingRuntime{}).
+		For(&kserveapi.ServingRuntime{}).
 		Owns(&appsv1.Deployment{}).
 		// watch the user configmap and reconcile all runtimes when it changes
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				return r.requestsForRuntimes("", func(rt *api.ServingRuntime) bool {
+				return r.requestsForRuntimes("", func(rt *kserveapi.ServingRuntime) bool {
 					mme, err := modelMeshEnabled2(context.TODO(), rt.GetNamespace(),
 						r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
 					return err != nil || mme // in case of error just reconcile anyhow
@@ -438,12 +439,12 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 func (r *ServingRuntimeReconciler) requestsForRuntimes(namespace string,
-	filter func(*api.ServingRuntime) bool) []reconcile.Request {
+	filter func(*kserveapi.ServingRuntime) bool) []reconcile.Request {
 	var opts []client.ListOption
 	if namespace != "" {
 		opts = []client.ListOption{client.InNamespace(namespace)}
 	}
-	list := &api.ServingRuntimeList{}
+	list := &kserveapi.ServingRuntimeList{}
 	if err := r.Client.List(context.TODO(), list, opts...); err != nil {
 		r.Log.Error(err, "Error listing ServingRuntimes to reconcile", "namespace", namespace)
 		return []reconcile.Request{}

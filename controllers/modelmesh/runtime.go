@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"strings"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -86,7 +86,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 }
 
 // calculate emptyDir Size
-func calculateModelDirSize(rt *api.ServingRuntime) *resource.Quantity {
+func calculateModelDirSize(rt *kserveapi.ServingRuntime) *resource.Quantity {
 
 	memorySize := resource.MustParse("0")
 
@@ -254,7 +254,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 	return nil
 }
 
-func addDomainSocketMount(rt *api.ServingRuntime, c *corev1.Container) error {
+func addDomainSocketMount(rt *kserveapi.ServingRuntime, c *corev1.Container) error {
 	var requiresDomainSocketMounting bool
 	var domainSocketMountPoint string
 	endpoints := []*string{

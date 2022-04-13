@@ -16,6 +16,7 @@ package modelmesh
 import (
 	"testing"
 
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,12 +25,12 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 	version_semver := "12345.312.2"
 	version_someString := "someString"
 	autoSelectVal := true
-	rt := api.ServingRuntime{
+	rt := kserveapi.ServingRuntime{
 		ObjectMeta: v1.ObjectMeta{
 			Name: "runtimename",
 		},
-		Spec: api.ServingRuntimeSpec{
-			SupportedModelFormats: []api.SupportedModelFormat{
+		Spec: kserveapi.ServingRuntimeSpec{
+			SupportedModelFormats: []kserveapi.SupportedModelFormat{
 				{
 					Name:       "type1",
 					AutoSelect: &autoSelectVal,

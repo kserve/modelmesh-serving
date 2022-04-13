@@ -21,7 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
@@ -33,7 +33,7 @@ import (
 // - containers do not mount internal only volumes
 // - some fields in containers are controlled by model mesh and cannot be set
 // - check for overlaps in declared ports with internal ports
-func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
+func validateServingRuntimeSpec(rt *kserveapi.ServingRuntime) error {
 	return validationChain(rt,
 		validateBuiltInAdapterSpec,
 		validateContainers,
@@ -41,7 +41,7 @@ func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
 	)
 }
 
-func validationChain(rt *api.ServingRuntime, funcs ...func(*api.ServingRuntime) error) error {
+func validationChain(rt *kserveapi.ServingRuntime, funcs ...func(*kserveapi.ServingRuntime) error) error {
 	for _, f := range funcs {
 		if err := f(rt); err != nil {
 			return err
@@ -50,7 +50,7 @@ func validationChain(rt *api.ServingRuntime, funcs ...func(*api.ServingRuntime) 
 	return nil
 }
 
-func validateBuiltInAdapterSpec(rt *api.ServingRuntime) error {
+func validateBuiltInAdapterSpec(rt *kserveapi.ServingRuntime) error {
 	if rt.Spec.BuiltInAdapter == nil {
 		return nil // nothing to check
 	}
@@ -68,7 +68,7 @@ func validateBuiltInAdapterSpec(rt *api.ServingRuntime) error {
 	return fmt.Errorf("must include runtime container with name %s", st)
 }
 
-func validateContainers(rt *api.ServingRuntime) error {
+func validateContainers(rt *kserveapi.ServingRuntime) error {
 	for i := range rt.Spec.Containers {
 		c := &rt.Spec.Containers[i]
 		if err := validateContainer(c); err != nil {
@@ -116,7 +116,7 @@ func validateContainer(c *corev1.Container) error {
 	return nil
 }
 
-func validateVolumes(rt *api.ServingRuntime) error {
+func validateVolumes(rt *kserveapi.ServingRuntime) error {
 	// Block volume names that conflict with injected volumes or reserved prefixes
 	for vi := range rt.Spec.Volumes {
 		if err := checkName(rt.Spec.Volumes[vi].Name, internalVolumes, "volume"); err != nil {
