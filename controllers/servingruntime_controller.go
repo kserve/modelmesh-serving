@@ -222,8 +222,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		ServiceAccountName:  cfg.ServiceAccountName,
 		EnableAccessLogging: cfg.EnableAccessLogging,
 		Client:              r.Client,
-		AnnotationsMap:      config.Annotations,
-		LabelsMap:           config.Labels,
+		AnnotationsMap:      cfg.Annotations,
+		LabelsMap:           cfg.Labels,
 	}
 
 	// if the runtime is disabled, delete the deployment

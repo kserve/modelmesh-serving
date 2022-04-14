@@ -51,3 +51,6 @@ storageHelperResources:
 serviceAccountName: ""
 metrics:
   enabled: true
+labels:
+  # Required in Watson Cloud envs to allow outbound access to etcd
+  network-policy: allow-egress
