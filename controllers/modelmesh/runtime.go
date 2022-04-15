@@ -187,7 +187,9 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 
 		// the puller and adapter containers are the same image and are given the
 		// same resources
-		builtInAdapterContainer.Resources = *m.PullerResources
+		if m.PullerResources != nil {
+			builtInAdapterContainer.Resources = *m.PullerResources
+		}
 
 		builtInAdapterContainer.VolumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      ConfigStorageMount,
@@ -195,7 +197,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			ReadOnly:  true,
 		})
 
-		builtInAdapterContainer.Env = []corev1.EnvVar{
+		defaultEnvVars := []corev1.EnvVar{
 			{
 				Name:  "ADAPTER_PORT",
 				Value: "8085",
@@ -229,8 +231,13 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 				Name:  "RUNTIME_VERSION",
 				Value: runtimeVersion,
 			},
-			{}, {}, // allocate larger array to avoid reallocation
-		}[:7]
+		}
+
+		// To avoid reallocation, count the maximum number of env vars there could be
+		numVarsDefault := len(defaultEnvVars) // count of default env vars
+		numVarsOptional := 2                  // count of envs that may be added from annotations below
+		builtInAdapterContainer.Env = make([]corev1.EnvVar, numVarsDefault, numVarsDefault+numVarsOptional+len(rt.Spec.BuiltInAdapter.Env))
+		copy(builtInAdapterContainer.Env, defaultEnvVars)
 
 		if mlc, ok := rt.Annotations["maxLoadingConcurrency"]; ok {
 			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
@@ -246,6 +253,18 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			})
 		}
 
+		if len(rt.Spec.BuiltInAdapter.Env) > 0 {
+		outer:
+			for oidx := range rt.Spec.BuiltInAdapter.Env {
+				for eidx := range builtInAdapterContainer.Env {
+					if builtInAdapterContainer.Env[eidx].Name == rt.Spec.BuiltInAdapter.Env[oidx].Name {
+						builtInAdapterContainer.Env[eidx] = rt.Spec.BuiltInAdapter.Env[oidx]
+						continue outer
+					}
+				}
+				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, rt.Spec.BuiltInAdapter.Env[oidx])
+			}
+		}
 		deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, builtInAdapterContainer)
 	}
 

@@ -14,9 +14,11 @@
 package modelmesh
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/go-logr/logr/testr"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -28,16 +30,20 @@ import (
 )
 
 func TestOverlayMockRuntime(t *testing.T) {
-	version := "version"
+	const adapterEnvOverrideName = "ADAPTER_PORT"
+	const adapterEnvOverrideValue = "override"
+	const adapterEnvNewName = "NEW_ENV_VAR"
+	const adapterEnvNewValue = "some value"
+	const adapterType = "custom"
 	v := &api.ServingRuntime{
 		Spec: api.ServingRuntimeSpec{
 			ServingRuntimePodSpec: api.ServingRuntimePodSpec{
 				Containers: []v1.Container{
 					{
-						Name:            "mock-runtime",
+						Name:            "my-runtime",
 						Image:           "image",
 						ImagePullPolicy: "IfNotPresent",
-						WorkingDir:      "mock-working-dir",
+						WorkingDir:      "my-working-dir",
 						Env: []corev1.EnvVar{
 							{
 								Name:  "simple",
@@ -61,7 +67,23 @@ func TestOverlayMockRuntime(t *testing.T) {
 			SupportedModelFormats: []api.SupportedModelFormat{
 				{
 					Name:    "name",
-					Version: &version,
+					Version: &[]string{"version"}[0],
+				},
+			},
+			BuiltInAdapter: &api.BuiltInAdapter{
+				ServerType:                adapterType,
+				RuntimeManagementPort:     0,
+				MemBufferBytes:            1337,
+				ModelLoadingTimeoutMillis: 1000,
+				Env: []v1.EnvVar{
+					{
+						Name:  adapterEnvOverrideName,
+						Value: adapterEnvOverrideValue,
+					},
+					{
+						Name:  adapterEnvNewName,
+						Value: adapterEnvNewValue,
+					},
 				},
 			},
 		},
@@ -73,7 +95,7 @@ func TestOverlayMockRuntime(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name: "mm",
+							Name: adapterType,
 						},
 					},
 				},
@@ -81,22 +103,46 @@ func TestOverlayMockRuntime(t *testing.T) {
 		},
 	}
 
-	m := Deployment{Owner: v}
+	m := Deployment{Owner: v, Log: testr.New(t)}
 	m.addRuntimeToDeployment(deployment)
 
 	scontainer := v.Spec.Containers[0]
 	tcontainer := deployment.Spec.Template.Spec.Containers[1]
 	if tcontainer.Name != scontainer.Name {
-		t.Fatal("The runtime should have added a container into the deployment")
+		t.Error("The runtime should have added a container into the deployment")
 	}
 	if tcontainer.Image != scontainer.Image {
-		t.Fatalf("Expected the added container image to be %v but it was %v", scontainer.Image, tcontainer.Image)
+		t.Errorf("Expected the added container image to be %v but it was %v", scontainer.Image, tcontainer.Image)
 	}
 	if !reflect.DeepEqual(tcontainer.Args, scontainer.Args) {
-		t.Fatalf("Expected the added container args to be %v but it was %v", scontainer.Args, tcontainer.Args)
+		t.Errorf("Expected the added container args to be %v but it was %v", scontainer.Args, tcontainer.Args)
 	}
 	if !reflect.DeepEqual(tcontainer.Env, scontainer.Env) {
-		t.Fatalf("Expected the env in target container to be \n%v but it was \n%v", toString(scontainer.Env), toString(tcontainer.Env))
+		t.Errorf("Expected the env in target container to be \n%v but it was \n%v", toString(scontainer.Env), toString(tcontainer.Env))
+	}
+
+	// check the injected adapter
+	if len(deployment.Spec.Template.Spec.Containers) != 3 {
+		t.Fatalf("Expected 3 containers to be be added, but got \n%v", len(deployment.Spec.Template.Spec.Containers))
+	}
+
+	acontainer := deployment.Spec.Template.Spec.Containers[2]
+	expectedAdapterName := fmt.Sprintf("%s-adapter", adapterType)
+	if acontainer.Name != expectedAdapterName {
+		t.Errorf("Expected the adapter container name to be %v but it was %v", expectedAdapterName, acontainer.Name)
+	}
+
+	for _, env := range acontainer.Env {
+		if env.Name == adapterEnvOverrideName {
+			if env.Value != adapterEnvOverrideValue {
+				t.Errorf("Expected the env var %s in adapter container to be \"%s\" but it was \"%s\"", adapterEnvOverrideName, adapterEnvOverrideValue, env.Value)
+			}
+		}
+		if env.Name == adapterEnvNewName {
+			if env.Value != adapterEnvNewValue {
+				t.Errorf("Expected the env var %s in adapter container to be \"%s\" but it was \"%s\"", adapterEnvNewName, adapterEnvNewValue, env.Value)
+			}
+		}
 	}
 }
 
