@@ -87,14 +87,9 @@ var _ = JustBeforeEach(func() {
 })
 var _ = JustAfterEach(func() {
 	if CurrentGinkgoTestDescription().Failed {
-		fvtClient.PrintPods()
-		// REMOVEME
-		err := fvtClient.RunKubectl("describe", "node")
-		if err != nil {
-			fvtClient.log.Error(err, "Error running kubectl describe node")
-		}
-		// END REMOVEME
 		fvtClient.PrintPredictors()
+		fvtClient.PrintPods()
+		fvtClient.PrintDescribeNodes()
 		fvtClient.PrintEvents()
 		fvtClient.TailPodLogs(startTime)
 	}

@@ -260,6 +260,13 @@ func (fvt *FVTClient) PrintPods() {
 	}
 }
 
+func (fvt *FVTClient) PrintDescribeNodes() {
+	err := fvt.RunKubectl("describe", "nodes")
+	if err != nil {
+		fvt.log.Error(err, "Error running describe nodes command")
+	}
+}
+
 func (fvt *FVTClient) PrintEvents() {
 	err := fvt.RunKubectl("get", "events")
 	if err != nil {
