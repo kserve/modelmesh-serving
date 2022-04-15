@@ -38,7 +38,7 @@ jobs:
         # is adjusted for these environments.
         run: |
           sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
-          sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 50m/' \
+          sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-0.x.yaml \
             config/runtimes/triton-2.x.yaml \
@@ -56,9 +56,8 @@ jobs:
       - name: Install ModelMesh Serving
         run: |
           kubectl create ns modelmesh-serving
-          kubectl create ns modelmesh-user
           kubectl apply -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml
-          ./scripts/install.sh --namespace modelmesh-serving -u modelmesh-user --fvt --dev-mode-logging
+          ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
       - name: Free up disk space
         run: |
           echo "Pruning images"
@@ -81,6 +80,4 @@ jobs:
       - name: Run FVTs
         run: |
           export NAMESPACE=modelmesh-serving
-          make fvt
-          export NAMESPACE=modelmesh-user
           make fvt
