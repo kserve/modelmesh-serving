@@ -337,7 +337,8 @@ func (m *Deployment) addPassThroughPodFieldsToDeployment(deployment *appsv1.Depl
 func (m *Deployment) configureRuntimePodSpecAnnotations(deployment *appsv1.Deployment) error {
 
 	if deployment.Spec.Template.Annotations == nil {
-		deployment.Spec.Template.Annotations = make(map[string]string)
+		deployment.Spec.Template.Annotations = m.AnnotationsMap
+		return nil
 	}
 
 	// apply user configmap annotations
@@ -352,7 +353,8 @@ func (m *Deployment) configureRuntimePodSpecAnnotations(deployment *appsv1.Deplo
 func (m *Deployment) configureRuntimePodSpecLabels(deployment *appsv1.Deployment) error {
 
 	if deployment.Spec.Template.Labels == nil {
-		deployment.Spec.Template.Labels = make(map[string]string)
+		deployment.Spec.Template.Labels = m.LabelsMap
+		return nil
 	}
 
 	for key, value := range m.LabelsMap {

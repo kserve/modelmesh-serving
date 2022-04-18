@@ -34,7 +34,6 @@ spec:
         component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
@@ -284,7 +283,6 @@ spec:
         component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
@@ -556,7 +554,6 @@ spec:
         component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
@@ -803,7 +800,6 @@ spec:
         component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-triton-2.x
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
@@ -1060,7 +1056,6 @@ spec:
         component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-custom-runtime-pullerless
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
