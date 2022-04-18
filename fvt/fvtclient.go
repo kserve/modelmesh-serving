@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/go-logr/logr"
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -335,7 +337,7 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		conn, connErr = grpc.DialContext(
 			ctx,
 			fmt.Sprintf("localhost:%d", fvt.localPort),
-			grpc.WithInsecure(),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithBlock(),
 		)
 	} else {
