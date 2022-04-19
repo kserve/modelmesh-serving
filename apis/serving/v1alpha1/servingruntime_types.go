@@ -17,7 +17,8 @@ import (
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 )
 
-// use types directly from KServe, but register them to generate CRDs
+// just register types from KServe
+// `make manifests` also pulls from kserve
 
 func init() {
 	SchemeBuilder.Register(&kserveapi.ServingRuntime{}, &kserveapi.ServingRuntimeList{})
