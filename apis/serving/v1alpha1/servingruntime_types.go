@@ -14,6 +14,7 @@
 package v1alpha1
 
 import (
+	"github.com/kserve/kserve/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -50,6 +51,13 @@ type ServingRuntimePodSpec struct {
 	// +patchStrategy=merge
 	Containers []corev1.Container `json:"containers" patchStrategy:"merge" patchMergeKey:"name" validate:"required"`
 
+	// List of volumes that can be mounted by containers belonging to the pod.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge,retainKeys
+	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
@@ -82,6 +90,10 @@ type ServingRuntimeSpec struct {
 	// Set to true to disable use of this runtime
 	// +optional
 	Disabled *bool `json:"disabled,omitempty"`
+
+	// Supported protocol versions (i.e. v1 or v2 or grpc-v1 or grpc-v2)
+	// +optional
+	ProtocolVersions []constants.InferenceServiceProtocol `json:"protocolVersions,omitempty"`
 
 	ServingRuntimePodSpec `json:",inline"`
 
@@ -123,22 +135,22 @@ type ServingRuntimeStatus struct {
 
 // ServerType constant for specifying the runtime name
 // +k8s:openapi-gen=true
-// +kubebuilder:validation:Enum=triton;mlserver;ovms
 type ServerType string
 
-// ServerType Enum
+// Built-in ServerTypes (others may be supported)
 const (
 	// Model server is Triton
 	Triton ServerType = "triton"
 	// Model server is MLServer
 	MLServer ServerType = "mlserver"
-	// Model server is OVMS
+	// Model server is OpenVino Model Server
 	OVMS ServerType = "ovms"
 )
 
 // +k8s:openapi-gen=true
 type BuiltInAdapter struct {
-	// ServerType can be one of triton/mlserver/ovms and the runtime's container must have the same name
+	// ServerType must be one of the supported built-in types such as "triton" or "mlserver",
+	// and the runtime's container must have the same name
 	ServerType ServerType `json:"serverType,omitempty"`
 	// Port which the runtime server listens for model management requests
 	RuntimeManagementPort int `json:"runtimeManagementPort,omitempty"`
@@ -199,6 +211,12 @@ type ClusterServingRuntimeList struct {
 	Items           []ClusterServingRuntime `json:"items"`
 }
 
+// SupportedRuntime is the schema for supported runtime result of automatic selection
+type SupportedRuntime struct {
+	Name string
+	Spec ServingRuntimeSpec
+}
+
 func init() {
 	SchemeBuilder.Register(&ServingRuntime{}, &ServingRuntimeList{})
 	SchemeBuilder.Register(&ClusterServingRuntime{}, &ClusterServingRuntimeList{})
@@ -210,4 +228,16 @@ func (srSpec *ServingRuntimeSpec) IsDisabled() bool {
 
 func (srSpec *ServingRuntimeSpec) IsMultiModelRuntime() bool {
 	return srSpec.MultiModel != nil && *srSpec.MultiModel
+}
+
+func (srSpec *ServingRuntimeSpec) IsProtocolVersionSupported(modelProtocolVersion constants.InferenceServiceProtocol) bool {
+	if len(modelProtocolVersion) == 0 || srSpec.ProtocolVersions == nil || len(srSpec.ProtocolVersions) == 0 {
+		return true
+	}
+	for _, srProtocolVersion := range srSpec.ProtocolVersions {
+		if srProtocolVersion == modelProtocolVersion {
+			return true
+		}
+	}
+	return false
 }
