@@ -67,14 +67,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 		})
 	}
 
-	deployment.Spec.Template.Spec.Volumes = volumes
-
-	return nil
-}
-
-func (m *Deployment) addStorageConfigVolume(deployment *appsv1.Deployment) error {
-	rt := m.Owner
-	// need to mount storage volume for built-in adapters and the scenarios where StorageHelper is not disabled/specified.
+	// need to mount storage volume for built-in adapters and the scenarios where StorageHelper is not disabled
 	if rt.Spec.BuiltInAdapter != nil || useStorageHelper(rt) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,
@@ -85,8 +78,10 @@ func (m *Deployment) addStorageConfigVolume(deployment *appsv1.Deployment) error
 			},
 		}
 
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, storageVolume)
+		volumes = append(volumes, storageVolume)
 	}
+
+	deployment.Spec.Template.Spec.Volumes = volumes
 
 	return nil
 }

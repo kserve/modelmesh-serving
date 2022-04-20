@@ -105,40 +105,41 @@ func toString(o interface{}) string {
 	return string(b)
 }
 
-var addStorageConfigVolumeTests = []struct {
-	name           string
-	servingRuntime *api.ServingRuntime
-	expectError    bool
-	expectVolume   bool
-}{
-	{
-		name:           "default",
-		servingRuntime: &api.ServingRuntime{},
-		expectError:    false,
-		expectVolume:   true,
-	},
-	{
-		name: "helper-disabled",
-		servingRuntime: &api.ServingRuntime{
-			Spec: api.ServingRuntimeSpec{
-				StorageHelper: &api.StorageHelper{
-					Disabled: true,
+func TestAddVolumesToDeployment(t *testing.T) {
+	for _, tt := range []struct {
+		name                 string
+		servingRuntime       *api.ServingRuntime
+		expectError          bool
+		expectStorageVolumes bool
+		expectSocketVolume   bool
+	}{
+		{
+			name:                 "default",
+			servingRuntime:       &api.ServingRuntime{},
+			expectError:          false,
+			expectStorageVolumes: true,
+			expectSocketVolume:   false,
+		},
+		{
+			name: "helper-disabled",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					StorageHelper: &api.StorageHelper{
+						Disabled: true,
+					},
 				},
 			},
+			expectError:          false,
+			expectStorageVolumes: false,
+			expectSocketVolume:   false,
 		},
-		expectError:  false,
-		expectVolume: false,
-	},
-}
-
-func TestAddStorageConfigVolume(t *testing.T) {
-	for _, tt := range addStorageConfigVolumeTests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			deployment := &appsv1.Deployment{}
 			rt := tt.servingRuntime
 
 			m := Deployment{Owner: rt}
-			err := m.addStorageConfigVolume(deployment)
+			err := m.addVolumesToDeployment(deployment)
 
 			if tt.expectError && err == nil {
 				t.Error("Expected an error, but didn't get one")
@@ -147,18 +148,32 @@ func TestAddStorageConfigVolume(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 			}
 
-			numVols := len(deployment.Spec.Template.Spec.Volumes)
-			var volNames []string
-			for _, v := range deployment.Spec.Template.Spec.Volumes {
-				volNames = append(volNames, v.Name)
+			// map of expected volume names to bool of whether or not it is found
+			expectedVolumes := map[string]bool{
+				modelsDirVolume: false,
 			}
-			if tt.expectVolume && numVols != 1 {
-				t.Errorf("Expected a single volume but found %d: %s", numVols, volNames)
+			if tt.expectStorageVolumes {
+				expectedVolumes[ConfigStorageMount] = false
 			}
-			if !tt.expectVolume && numVols != 0 {
-				t.Errorf("Unexpected volume(s) added to deployment: %s", volNames)
+			if tt.expectSocketVolume {
+				expectedVolumes[socketVolume] = false
 			}
 
+			for _, v := range deployment.Spec.Template.Spec.Volumes {
+				if _, ok := expectedVolumes[v.Name]; !ok {
+					t.Errorf("Unexpected volume found: %s", v.Name)
+				} else if expectedVolumes[v.Name] {
+					t.Errorf("Duplicate volume found: %s", v.Name)
+				} else {
+					expectedVolumes[v.Name] = true
+				}
+			}
+
+			for volumeName, volumeFound := range expectedVolumes {
+				if !volumeFound {
+					t.Errorf("Expected to find volume that does not exist: %s", volumeName)
+				}
+			}
 		})
 	}
 }

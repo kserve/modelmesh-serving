@@ -111,7 +111,6 @@ func (m *Deployment) Apply(ctx context.Context) error {
 
 			if tErr := m.transform(deployment,
 				m.addVolumesToDeployment,
-				m.addStorageConfigVolume,
 				m.addMMDomainSocketMount,
 				m.addPassThroughPodFieldsToDeployment,
 				m.addRuntimeToDeployment,
