@@ -5,15 +5,15 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: servingruntimes.serving.kserve.io
+  name: clusterservingruntimes.serving.kserve.io
 spec:
   group: serving.kserve.io
   names:
-    kind: ServingRuntime
-    listKind: ServingRuntimeList
-    plural: servingruntimes
-    singular: servingruntime
-  scope: Namespaced
+    kind: ClusterServingRuntime
+    listKind: ClusterServingRuntimeList
+    plural: clusterservingruntimes
+    singular: clusterservingruntime
+  scope: Cluster
   versions:
     - additionalPrinterColumns:
         - jsonPath: .spec.disabled
@@ -31,7 +31,7 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: ServingRuntime is the Schema for the servingruntimes API
+          description: ClusterServingRuntime is the Schema for the servingruntimes API
           properties:
             apiVersion:
               description:
