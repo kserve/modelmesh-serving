@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
+	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
+	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
 )
 
 // Predictor struct - used to store data about the predictor that FVT suite can use
@@ -92,6 +94,14 @@ var predictorsArray = []FVTPredictor{
 		updatedModelPath:           "fvt/lightgbm/mushroom-dup",
 		differentPredictorName:     "onnx",
 		differentPredictorFilename: "onnx-predictor.yaml",
+	},
+	{
+		predictorName:              "openvino",
+		predictorFilename:          "openvino-mnist-predictor.yaml",
+		currentModelPath:           "fvt/openvino/mnist",
+		updatedModelPath:           "fvt/openvino/mnist-dup",
+		differentPredictorName:     "xgboost",
+		differentPredictorFilename: "xgboost-predictor.yaml",
 	},
 }
 
@@ -424,6 +434,61 @@ var _ = Describe("Predictor", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
+		})
+	})
+
+	var _ = Describe("OVMS Inference", func() {
+		var openvinoPredictorObject *unstructured.Unstructured
+		var openvinoPredictorName string
+
+		BeforeEach(func() {
+			// load the test predictor object
+			openvinoPredictorObject = NewPredictorForFVT("openvino-mnist-predictor.yaml")
+			openvinoPredictorName = openvinoPredictorObject.GetName()
+
+			CreatePredictorAndWaitAndExpectLoaded(openvinoPredictorObject)
+
+			err := fvtClient.ConnectToModelServing(Insecure)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			fvtClient.DeletePredictor(openvinoPredictorName)
+		})
+
+		It("should successfully run an inference", func() {
+			ExpectSuccessfulInference_openvinoMnistTFSPredict(openvinoPredictorName)
+		})
+
+		It("should fail to run an inference with invalid shape", func() {
+			image := LoadMnistImage(0)
+
+			// build the grpc inference call
+			// convert the image array of floats to raw bytes
+			imageBytes, err := convertFloatArrayToRawContent(image)
+			Expect(err).ToNot(HaveOccurred())
+
+			inferRequest := &tfsapi.PredictRequest{
+				ModelSpec: &tfsapi.ModelSpec{
+					Name: openvinoPredictorName,
+				},
+				Inputs: map[string]*tfsframework.TensorProto{
+					"Input3": {
+						Dtype: tfsframework.DataType_DT_FLOAT,
+						TensorShape: &tfsframework.TensorShapeProto{
+							Dim: []*tfsframework.TensorShapeProto_Dim{
+								{Size: 28}, {Size: 28},
+							},
+						},
+						TensorContent: imageBytes,
+					},
+				},
+			}
+
+			inferResponse, err := fvtClient.RunTfsInference(inferRequest)
+			Expect(err).To(HaveOccurred())
+			Expect(inferResponse).To(BeNil())
+			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: Invalid number of shape dimensions"))
 		})
 	})
 

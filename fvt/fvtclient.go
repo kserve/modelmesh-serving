@@ -43,11 +43,12 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/yaml"
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	ctrl "sigs.k8s.io/controller-runtime"
+	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
 )
 
 var defaultTimeout = int64(180)
@@ -254,6 +255,27 @@ func (fvt *FVTClient) PrintPredictors() {
 	}
 }
 
+func (fvt *FVTClient) PrintPods() {
+	err := fvt.RunKubectl("get", "pods")
+	if err != nil {
+		fvt.log.Error(err, "Error running get pods command")
+	}
+}
+
+func (fvt *FVTClient) PrintDescribeNodes() {
+	err := fvt.RunKubectl("describe", "nodes")
+	if err != nil {
+		fvt.log.Error(err, "Error running describe nodes command")
+	}
+}
+
+func (fvt *FVTClient) PrintEvents() {
+	err := fvt.RunKubectl("get", "events")
+	if err != nil {
+		fvt.log.Error(err, "Error running get events command")
+	}
+}
+
 func (fvt *FVTClient) TailPodLogs(sinceTime string) {
 	var err error
 	// grab logs from the controller
@@ -291,6 +313,18 @@ func (fvt *FVTClient) RunKfsInference(req *inference.ModelInferRequest) (*infere
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	return grpcClient.ModelInfer(ctx, req)
+}
+
+func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.PredictResponse, error) {
+	if fvt.grpcConn == nil {
+		return nil, errors.New("you must connect to model mesh before running an inference")
+	}
+
+	grpcClient := tfsapi.NewPredictionServiceClient(fvt.grpcConn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	return grpcClient.Predict(ctx, req)
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {

@@ -25,6 +25,9 @@ import (
 	"github.com/moverest/mnist"
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
+
+	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
+	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
 )
 
 // Used for checking if floats are sufficiently close enough.
@@ -54,6 +57,49 @@ func ExpectSuccessfulInference_onnxMnist(predictorName string) {
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
 	// Expect(inferResponse.RawOutputContents[0][0]).To(BeEquivalentTo(0))
+}
+
+func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
+	image := LoadMnistImage(0)
+
+	// build the grpc inference call
+	// convert the image array of floats to raw bytes
+	imageBytes, err := convertFloatArrayToRawContent(image)
+	Expect(err).ToNot(HaveOccurred())
+
+	inferRequest := &tfsapi.PredictRequest{
+		ModelSpec: &tfsapi.ModelSpec{
+			Name: predictorName,
+		},
+		Inputs: map[string]*tfsframework.TensorProto{
+			"Input3": {
+				Dtype: tfsframework.DataType_DT_FLOAT,
+				TensorShape: &tfsframework.TensorShapeProto{
+					Dim: []*tfsframework.TensorShapeProto_Dim{
+						{Size: 1}, {Size: 1}, {Size: 28}, {Size: 28},
+					},
+				},
+				TensorContent: imageBytes,
+			},
+		},
+	}
+
+	inferResponse, err := fvtClient.RunTfsInference(inferRequest)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
+	// NOTE: ModelSpec is not included in the response, so we can't assert on the name
+	// validate the the activation for the digit 7 is the maximum
+	activations, err := convertRawOutputContentsTo10Floats(inferResponse.Outputs["Plus214_Output_0"].TensorContent)
+	max := activations[0]
+	maxI := 0
+	for i := 1; i < 10; i++ {
+		if activations[i] > max {
+			max = activations[i]
+			maxI = i
+		}
+	}
+	Expect(maxI).To(Equal(7))
+	Expect(err).ToNot(HaveOccurred())
 }
 
 // PyTorch CIFAR
@@ -219,6 +265,16 @@ func LoadCifarImage(index int) []float32 {
 	}
 
 	return imageFloat[:]
+}
+
+func convertFloatArrayToRawContent(in []float32) ([]byte, error) {
+	var buf bytes.Buffer
+
+	err := binary.Write(&buf, binary.LittleEndian, &in)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func convertRawOutputContentsTo10Floats(raw []byte) ([10]float32, error) {

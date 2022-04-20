@@ -146,7 +146,7 @@ type ServingRuntimeStatus struct {
 }
 
 // ServerType constant for specifying the runtime name
-// +kubebuilder:validation:Enum=triton;mlserver
+// +kubebuilder:validation:Enum=triton;mlserver;ovms
 type ServerType string
 
 // ServerType Enum
@@ -155,10 +155,12 @@ const (
 	Triton ServerType = "triton"
 	// Model server is MLServer
 	MLServer ServerType = "mlserver"
+	// Model server is OVMS
+	OVMS ServerType = "ovms"
 )
 
 type BuiltInAdapter struct {
-	// ServerType can be one of triton/mlserver and the runtime's container must have the same name
+	// ServerType can be one of triton/mlserver/ovms and the runtime's container must have the same name
 	ServerType ServerType `json:"serverType,omitempty"`
 	// Port which the runtime server listens for model management requests
 	RuntimeManagementPort int `json:"runtimeManagementPort,omitempty"`

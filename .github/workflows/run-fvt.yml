@@ -33,7 +33,7 @@ jobs:
       - name: Set controller image tag
         run: echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
       - name: Update configs
-        # Update the image tag and reduce some CPU request amounts to allow FVTs to run
+        # Update the image tag and reduce some resource request amounts to allow FVTs to run
         # on reduced resource environments. Also the RollingUpdate strategy for Runtime deployments
         # is adjusted for these environments.
         run: |
@@ -41,7 +41,12 @@ jobs:
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-0.x.yaml \
-            config/runtimes/triton-2.x.yaml
+            config/runtimes/triton-2.x.yaml \
+            config/runtimes/ovms-1.x.yaml
+          sed -i 's/memory:.*$/memory: 512Mi/g' \
+            config/runtimes/mlserver-0.x.yaml \
+            config/runtimes/triton-2.x.yaml \
+            config/runtimes/ovms-1.x.yaml
           sed -i 's/maxSurge:.*$/maxSurge: 0/' config/internal/base/deployment.yaml.tmpl
           sed -i 's/maxUnavailable:.*$/maxUnavailable: 100%/' config/internal/base/deployment.yaml.tmpl
       - name: Build Controller image
@@ -51,9 +56,8 @@ jobs:
       - name: Install ModelMesh Serving
         run: |
           kubectl create ns modelmesh-serving
-          kubectl create ns modelmesh-user
           kubectl apply -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml
-          ./scripts/install.sh --namespace modelmesh-serving -u modelmesh-user --fvt --dev-mode-logging
+          ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
       - name: Free up disk space
         run: |
           echo "Pruning images"
@@ -64,6 +68,10 @@ jobs:
         run: |
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
+          docker pull openvino/model_server:2022.1
+          docker pull kserve/modelmesh-runtime-adapter
+          docker pull kserve/rest-proxy
+          docker pull kserve/modelmesh
       - name: Check installation
         run: |
           docker images
@@ -72,6 +80,4 @@ jobs:
       - name: Run FVTs
         run: |
           export NAMESPACE=modelmesh-serving
-          make fvt
-          export NAMESPACE=modelmesh-user
           make fvt
