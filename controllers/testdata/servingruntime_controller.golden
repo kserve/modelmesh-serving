@@ -776,7 +776,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-ovms-1.x
   strategy:
@@ -791,10 +790,8 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-ovms-1.x
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:
