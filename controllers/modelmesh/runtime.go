@@ -112,7 +112,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			},
 		},
 	}
-	securityContext := &corev1.SecurityContext{
+	dropAllSecurityContext := &corev1.SecurityContext{
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{"ALL"},
 		},
@@ -129,30 +129,24 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 	for i := range rt.Spec.Containers {
 		cspec := &rt.Spec.Containers[i]
 
-		//translate our container spec to corev1 container spec
-		corecspec := corev1.Container{
-			Args:            cspec.Args,
-			Command:         cspec.Command,
-			Env:             cspec.Env,
-			Image:           cspec.Image,
-			Name:            cspec.Name,
-			Resources:       cspec.Resources,
-			ImagePullPolicy: cspec.ImagePullPolicy,
-			WorkingDir:      cspec.WorkingDir,
-			LivenessProbe:   cspec.LivenessProbe,
-			VolumeMounts:    volumeMounts,
-			Lifecycle:       lifecycle,
-			SecurityContext: securityContext,
+		// defaults
+		if cspec.SecurityContext == nil {
+			cspec.SecurityContext = dropAllSecurityContext
 		}
 
-		if err := addDomainSocketMount(rt, &corecspec); err != nil {
+		// add internal fields
+		cspec.VolumeMounts = append(volumeMounts, cspec.VolumeMounts...)
+		cspec.Lifecycle = lifecycle
+
+		if err := addDomainSocketMount(rt, cspec); err != nil {
 			return err
 		}
 
+		// if multiple containers with the same name are included, the last one wins
 		if i, _ := findContainer(cspec.Name, deployment); i >= 0 {
-			deployment.Spec.Template.Spec.Containers[i] = corecspec
+			deployment.Spec.Template.Spec.Containers[i] = *cspec
 		} else {
-			deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, corecspec)
+			deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, *cspec)
 		}
 	}
 
@@ -167,7 +161,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			Image:           m.PullerImage,
 			Name:            runtimeAdapterName,
 			Lifecycle:       lifecycle,
-			SecurityContext: securityContext,
+			SecurityContext: dropAllSecurityContext,
 		}
 
 		var runtimeVersion string
