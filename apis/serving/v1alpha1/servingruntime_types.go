@@ -14,12 +14,12 @@
 package v1alpha1
 
 import (
+	"github.com/kserve/kserve/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
+// +k8s:openapi-gen=true
 type SupportedModelFormat struct {
 	// Name of the model format.
 	// +required
@@ -35,29 +35,13 @@ type SupportedModelFormat struct {
 	AutoSelect *bool `json:"autoSelect,omitempty"`
 }
 
-type Container struct {
-	Name            string                      `json:"name,omitempty" validate:"required"`
-	Image           string                      `json:"image,omitempty" validate:"required"`
-	Command         []string                    `json:"command,omitempty"`
-	Args            []string                    `json:"args,omitempty"`
-	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []corev1.EnvVar             `json:"env,omitempty"`
-	ImagePullPolicy corev1.PullPolicy           `json:"imagePullPolicy,omitempty"`
-	WorkingDir      string                      `json:"workingDir,omitempty"`
-
-	// Periodic probe of container liveness.
-	// Container will be restarted if the probe fails.
-	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
-	// +optional
-	LivenessProbe  *corev1.Probe `json:"livenessProbe,omitempty"`
-	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
-}
-
+// +k8s:openapi-gen=true
 type StorageHelper struct {
 	// +optional
 	Disabled bool `json:"disabled,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type ServingRuntimePodSpec struct {
 	// List of containers belonging to the pod.
 	// Containers cannot currently be added or removed.
@@ -65,7 +49,14 @@ type ServingRuntimePodSpec struct {
 	// Cannot be updated.
 	// +patchMergeKey=name
 	// +patchStrategy=merge
-	Containers []Container `json:"containers" patchStrategy:"merge" patchMergeKey:"name" validate:"required"`
+	Containers []corev1.Container `json:"containers" patchStrategy:"merge" patchMergeKey:"name" validate:"required"`
+
+	// List of volumes that can be mounted by containers belonging to the pod.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge,retainKeys
+	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
 
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
@@ -84,7 +75,10 @@ type ServingRuntimePodSpec struct {
 	// Possibly other things here
 }
 
-// ServingRuntimeSpec defines the desired state of ServingRuntime
+// ServingRuntimeSpec defines the desired state of ServingRuntime. This spec is currently provisional
+// and are subject to change as details regarding single-model serving and multi-model serving
+// are hammered out.
+// +k8s:openapi-gen=true
 type ServingRuntimeSpec struct {
 	// Model formats and version supported by this runtime
 	SupportedModelFormats []SupportedModelFormat `json:"supportedModelFormats,omitempty"`
@@ -96,33 +90,28 @@ type ServingRuntimeSpec struct {
 	// Set to true to disable use of this runtime
 	// +optional
 	Disabled *bool `json:"disabled,omitempty"`
-	// Whether this runtime is GPU-capable
-	// NOT YET SUPPORTED
+
+	// Supported protocol versions (i.e. v1 or v2 or grpc-v1 or grpc-v2)
 	// +optional
-	//	Gpu *bool `json:"gpu,omitempty"`
+	ProtocolVersions []constants.InferenceServiceProtocol `json:"protocolVersions,omitempty"`
 
-	//TODO subject to change, will include optional indication of inference API schema
+	ServingRuntimePodSpec `json:",inline"`
 
-	// Name for each of the Endpoint fields is either like "port:1234" or "unix:/tmp/mserve/grpc.sock"
+	// The following fields apply to ModelMesh deployments.
+
+	// Name for each of the Endpoint fields is either like "port:1234" or "unix:/tmp/kserve/grpc.sock"
 
 	// Grpc endpoint for internal model-management (implementing mmesh.ModelRuntime gRPC service)
 	// Assumed to be single-model runtime if omitted
 	// +optional
 	GrpcMultiModelManagementEndpoint *string `json:"grpcEndpoint,omitempty"`
 
-	//TODO maybe we change these to be reported by the runtime itself on startup for multi-model case
-
 	// Grpc endpoint for inferencing
 	// +optional
 	GrpcDataEndpoint *string `json:"grpcDataEndpoint,omitempty"`
-	// HTTP endpoint for inferencing - NOT YET SUPPORTED
+	// HTTP endpoint for inferencing
 	// +optional
-	//	HTTPDataEndpoint *string `json:"httpDataEndpoint,omitempty"`
-
-	// Name of model-holding container which can be vertically auto-scaled
-	// NOT YET SUPPORTED
-	// +optional
-	//	AutoSizeModelContainer *string `json:"autoSizeModelContainer,omitempty"`
+	HTTPDataEndpoint *string `json:"httpDataEndpoint,omitempty"`
 
 	// Configure the number of replicas in the Deployment generated by this ServingRuntime
 	// If specified, this overrides the podsPerRuntime configuration value
@@ -134,31 +123,34 @@ type ServingRuntimeSpec struct {
 	// +optional
 	StorageHelper *StorageHelper `json:"storageHelper,omitempty"`
 
-	ServingRuntimePodSpec `json:",inline"`
-
 	// Provide the details about built-in runtime adapter
 	// +optional
 	BuiltInAdapter *BuiltInAdapter `json:"builtInAdapter,omitempty"`
 }
 
 // ServingRuntimeStatus defines the observed state of ServingRuntime
+// +k8s:openapi-gen=true
 type ServingRuntimeStatus struct {
 }
 
 // ServerType constant for specifying the runtime name
-// +kubebuilder:validation:Enum=triton;mlserver
+// +k8s:openapi-gen=true
 type ServerType string
 
-// ServerType Enum
+// Built-in ServerTypes (others may be supported)
 const (
 	// Model server is Triton
 	Triton ServerType = "triton"
 	// Model server is MLServer
 	MLServer ServerType = "mlserver"
+	// Model server is OpenVino Model Server
+	OVMS ServerType = "ovms"
 )
 
+// +k8s:openapi-gen=true
 type BuiltInAdapter struct {
-	// ServerType can be one of triton/mlserver and the runtime's container must have the same name
+	// ServerType must be one of the supported built-in types such as "triton" or "mlserver",
+	// and the runtime's container must have the same name
 	ServerType ServerType `json:"serverType,omitempty"`
 	// Port which the runtime server listens for model management requests
 	RuntimeManagementPort int `json:"runtimeManagementPort,omitempty"`
@@ -166,12 +158,15 @@ type BuiltInAdapter struct {
 	MemBufferBytes int `json:"memBufferBytes,omitempty"`
 	// Timeout for model loading operations in milliseconds
 	ModelLoadingTimeoutMillis int `json:"modelLoadingTimeoutMillis,omitempty"`
+	// Environment variables used to control other aspects of the built-in adapter's behaviour (uncommon)
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // ServingRuntime is the Schema for the servingruntimes API
+// +k8s:openapi-gen=true
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Disabled",type="boolean",JSONPath=".spec.disabled"
-// +kubebuilder:printcolumn:name="ModelFormat",type="string",JSONPath=".spec.SupportedModelFormats[*].name"
+// +kubebuilder:printcolumn:name="ModelType",type="string",JSONPath=".spec.supportedModelFormats[*].name"
 // +kubebuilder:printcolumn:name="Containers",type="string",JSONPath=".spec.containers[*].name"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type ServingRuntime struct {
@@ -183,6 +178,7 @@ type ServingRuntime struct {
 }
 
 // ServingRuntimeList contains a list of ServingRuntime
+// +k8s:openapi-gen=true
 // +kubebuilder:object:root=true
 type ServingRuntimeList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -190,14 +186,58 @@ type ServingRuntimeList struct {
 	Items           []ServingRuntime `json:"items"`
 }
 
+// ClusterServingRuntime is the Schema for the servingruntimes API
+// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope="Cluster"
+// +kubebuilder:printcolumn:name="Disabled",type="boolean",JSONPath=".spec.disabled"
+// +kubebuilder:printcolumn:name="ModelType",type="string",JSONPath=".spec.supportedModelFormats[*].name"
+// +kubebuilder:printcolumn:name="Containers",type="string",JSONPath=".spec.containers[*].name"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+type ClusterServingRuntime struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ServingRuntimeSpec   `json:"spec,omitempty"`
+	Status ServingRuntimeStatus `json:"status,omitempty"`
+}
+
+// ServingRuntimeList contains a list of ServingRuntime
+// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+type ClusterServingRuntimeList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ClusterServingRuntime `json:"items"`
+}
+
+// SupportedRuntime is the schema for supported runtime result of automatic selection
+type SupportedRuntime struct {
+	Name string
+	Spec ServingRuntimeSpec
+}
+
 func init() {
 	SchemeBuilder.Register(&ServingRuntime{}, &ServingRuntimeList{})
+	SchemeBuilder.Register(&ClusterServingRuntime{}, &ClusterServingRuntimeList{})
 }
 
-func (sr ServingRuntime) Disabled() bool {
-	return sr.Spec.Disabled != nil && *sr.Spec.Disabled
+func (srSpec *ServingRuntimeSpec) IsDisabled() bool {
+	return srSpec.Disabled != nil && *srSpec.Disabled
 }
 
-func (sr ServingRuntime) IsMultiModelRuntime() bool {
-	return sr.Spec.MultiModel != nil && *sr.Spec.MultiModel
+func (srSpec *ServingRuntimeSpec) IsMultiModelRuntime() bool {
+	return srSpec.MultiModel != nil && *srSpec.MultiModel
+}
+
+func (srSpec *ServingRuntimeSpec) IsProtocolVersionSupported(modelProtocolVersion constants.InferenceServiceProtocol) bool {
+	if len(modelProtocolVersion) == 0 || srSpec.ProtocolVersions == nil || len(srSpec.ProtocolVersions) == 0 {
+		return true
+	}
+	for _, srProtocolVersion := range srSpec.ProtocolVersions {
+		if srProtocolVersion == modelProtocolVersion {
+			return true
+		}
+	}
+	return false
 }

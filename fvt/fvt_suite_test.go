@@ -58,7 +58,7 @@ var _ = BeforeSuite(func() {
 	// confirm 3 serving runtimes exist
 	list, err := fvtClient.ListServingRuntimes(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
-	Expect(list.Items).To(HaveLen(2))
+	Expect(list.Items).To(HaveLen(3))
 
 	// cleanup any predictors if they exist
 	fvtClient.DeleteAllPredictors()
@@ -80,7 +80,7 @@ var _ = AfterSuite(func() {
 	fvtClient.DisconnectFromModelServing()
 })
 
-// register hanlders for a failed test case to print info to the console
+// register handlers for a failed test case to print info to the console
 var startTime string
 var _ = JustBeforeEach(func() {
 	startTime = time.Now().Format("2006-01-02T15:04:05Z")
@@ -88,6 +88,9 @@ var _ = JustBeforeEach(func() {
 var _ = JustAfterEach(func() {
 	if CurrentGinkgoTestDescription().Failed {
 		fvtClient.PrintPredictors()
+		fvtClient.PrintPods()
+		fvtClient.PrintDescribeNodes()
+		fvtClient.PrintEvents()
 		fvtClient.TailPodLogs(startTime)
 	}
 })

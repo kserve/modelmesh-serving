@@ -253,6 +253,7 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	p.Status.TransitionStatus = common.TransitionStatus(inferenceService.Status.ModelStatus.TransitionStatus)
 	if inferenceService.Status.ModelStatus.ModelCopies != nil {
 		p.Status.FailedCopies = inferenceService.Status.ModelStatus.ModelCopies.FailedCopies
+		p.Status.TotalCopies = inferenceService.Status.ModelStatus.ModelCopies.TotalCopies
 	}
 	if inferenceService.Status.ModelStatus.ModelRevisionStates != nil {
 		p.Status.ActiveModelState = common.ModelState(inferenceService.Status.ModelStatus.ModelRevisionStates.ActiveModelState)
@@ -325,6 +326,7 @@ func (isvcr InferenceServiceRegistry) UpdateStatus(ctx context.Context, predicto
 	}
 	inferenceService.Status.ModelStatus.ModelCopies = &v1beta1.ModelCopies{
 		FailedCopies: predictor.Status.FailedCopies,
+		TotalCopies:  predictor.Status.TotalCopies,
 	}
 	if predictor.Status.LastFailureInfo != nil {
 		inferenceService.Status.ModelStatus.LastFailureInfo = &v1beta1.FailureInfo{

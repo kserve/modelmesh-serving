@@ -152,6 +152,7 @@ spec:
                 available: false
                 failedCopies: 0
                 targetModelState: ""
+                totalCopies: 0
                 transitionStatus: UpToDate
               description: PredictorStatus defines the observed state of Predictor
               properties:
@@ -225,6 +226,10 @@ spec:
                     - Loaded
                     - FailedToLoad
                   type: string
+                totalCopies:
+                  default: 0
+                  description: Total number of copies of this predictor's models
+                  type: integer
                 transitionStatus:
                   default: UpToDate
                   description:
@@ -241,6 +246,7 @@ spec:
                 - available
                 - failedCopies
                 - targetModelState
+                - totalCopies
                 - transitionStatus
               type: object
           type: object

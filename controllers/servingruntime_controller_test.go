@@ -55,6 +55,7 @@ var _ = Describe("Sample Runtime", func() {
 	samplesToTest := []string{
 		"config/runtimes/mlserver-0.x.yaml",
 		"config/runtimes/triton-2.x.yaml",
+		"config/runtimes/ovms-1.x.yaml",
 	}
 	for _, f := range samplesToTest {
 		// capture the value in new variable for each iteration

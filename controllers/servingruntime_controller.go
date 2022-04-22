@@ -84,7 +84,7 @@ type runtimeInfo struct {
 }
 
 var builtInServerTypes = map[api.ServerType]interface{}{
-	api.MLServer: nil, api.Triton: nil,
+	api.MLServer: nil, api.Triton: nil, api.OVMS: nil,
 }
 
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
@@ -227,7 +227,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// if the runtime is disabled, delete the deployment
-	if rt.Disabled() || !rt.IsMultiModelRuntime() || !mmEnabled {
+	if rt.Spec.IsDisabled() || !rt.Spec.IsMultiModelRuntime() || !mmEnabled {
 		log.Info("Runtime is disabled, incompatible with modelmesh, or namespace is not modelmesh-enabled")
 		if err = mmDeployment.Delete(ctx, r.Client); err != nil {
 			return ctrl.Result{}, fmt.Errorf("could not delete the model mesh deployment: %w", err)
@@ -386,7 +386,7 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	srnns := make([]types.NamespacedName, 0, len(runtimes.Items))
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.IsMultiModelRuntime() && runtimeSupportsPredictor(rt, p) {
+		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(rt, p) {
 			srnns = append(srnns, types.NamespacedName{
 				Name:      rt.GetName(),
 				Namespace: p.Namespace,

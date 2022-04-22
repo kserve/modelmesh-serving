@@ -36,6 +36,10 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
         "inference.GRPCInferenceService/ModelInfer": {
             "idExtractionPath": [1],
             "vModelId": true
+        },
+        "tensorflow.serving.PredictionService/Predict": {
+            "idExtractionPath": [1, 1],
+            "vModelId": true
         }
     },
     "allowOtherRpcs": true
@@ -109,7 +113,7 @@ func calculateConstraintData(rts []api.ServingRuntime) []byte {
 
 	m := make(map[string]interface{})
 	for _, rt := range rts {
-		if !rt.Disabled() && rt.IsMultiModelRuntime() {
+		if !rt.Spec.IsDisabled() && rt.Spec.IsMultiModelRuntime() {
 			labels := GetServingRuntimeSupportedModelTypeLabelSet(&rt)
 			// treat each label as a separate model type
 			for l := range labels {
