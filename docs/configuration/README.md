@@ -19,10 +19,10 @@ data:
     podsPerRuntime: 2
     metrics:
       enabled: true
-    labels:
+    runtimePodLabels:
       app: myApp
       network-policy: allow-ingress
-    annotations:
+    runtimePodAnnotations:
       app: myApp
 ```
 
