@@ -19,7 +19,9 @@ spec:
   podSelector:
     matchLabels:
       app.kubernetes.io/managed-by: modelmesh-controller
-      component: model-mesh
+    matchExpressions:
+      - key: modelmesh-service
+        operator: Exists
   ingress:
     # internal model-mesh communication
     - from:

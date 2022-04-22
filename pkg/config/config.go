@@ -40,8 +40,9 @@ const (
 	EnvEtcdSecretName     = "ETCD_SECRET_NAME"
 	DefaultEtcdSecretName = "model-serving-etcd"
 
-	ConfigType    = "yaml"
-	MountLocation = "/etc/model-serving/config-defaults.yaml"
+	ConfigType        = "yaml"
+	MountLocation     = "/etc/model-serving/config-defaults.yaml"
+	ViperKeyDelimiter = "::"
 )
 
 var (
@@ -328,16 +329,23 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("PodsPerRuntime", 2)
 	v.SetDefault("StorageSecretName", "storage-config")
 	v.SetDefault("ServiceAccountName", "")
-	v.SetDefault("Metrics.Port", 2112)
-	v.SetDefault("Metrics.Scheme", "https")
-	v.SetDefault("ScaleToZero.Enabled", true)
-	v.SetDefault("ScaleToZero.GracePeriodSeconds", 60)
+	// strings.Join([]string{"Metrics", "Port"}, ViperKeyDelimiter)
+	// concatConfigMapKeysWithDelimiter([]string{"Metrics", "Port"})
+	// concatStringsWithDelimiter([]string{"Metrics", "Port"})
+	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Port"}), 2112)
+	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Scheme"}), "https")
+	v.SetDefault(concatStringsWithDelimiter([]string{"ScaleToZero", "Enabled"}), true)
+	v.SetDefault(concatStringsWithDelimiter([]string{"ScaleToZero", "GracePeriodSeconds"}), 60)
 	// default size 16MiB in bytes
 	v.SetDefault("GrpcMaxMessageSizeBytes", 16777216)
 }
 
+func concatStringsWithDelimiter(elems []string) string {
+	return strings.Join(elems, ViperKeyDelimiter)
+}
+
 func init() {
-	defaultConfig = viper.New()
+	defaultConfig = viper.NewWithOptions(viper.KeyDelimiter(ViperKeyDelimiter))
 
 	defaults(defaultConfig)
 
@@ -370,7 +378,7 @@ func NewMergedConfigFromConfigMap(m corev1.ConfigMap) (*Config, error) {
 func NewMergedConfigFromString(configYaml string) (*Config, error) {
 	var err error
 
-	v := viper.New()
+	v := viper.NewWithOptions(viper.KeyDelimiter(ViperKeyDelimiter))
 	v.SetConfigType(ConfigType)
 	for _, key := range defaultConfig.AllKeys() {
 		v.SetDefault(key, defaultConfig.Get(key))

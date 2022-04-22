@@ -11,7 +11,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-mlserver-0.x
   strategy:
@@ -31,7 +30,6 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
     spec:
@@ -265,7 +263,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-mlserver-0.x
   strategy:
@@ -280,7 +277,6 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
     spec:
@@ -536,7 +532,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-mlserver-0.x
   strategy:
@@ -551,7 +546,6 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-mlserver-0.x
     spec:
@@ -782,7 +776,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-triton-2.x
   strategy:
@@ -797,7 +790,6 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-triton-2.x
     spec:
@@ -1038,7 +1030,6 @@ spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      component: model-mesh
       modelmesh-service: modelmesh-serving
       name: modelmesh-serving-custom-runtime-pullerless
   strategy:
@@ -1053,7 +1044,6 @@ spec:
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        component: model-mesh
         modelmesh-service: modelmesh-serving
         name: modelmesh-serving-custom-runtime-pullerless
     spec:
