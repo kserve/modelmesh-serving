@@ -22,6 +22,12 @@ const (
 	GrpcUdsPathEnvVar      = "INTERNAL_GRPC_SOCKET_PATH"
 	ServeGrpcUdsPathEnvVar = "INTERNAL_SERVING_GRPC_SOCKET_PATH"
 
+	EtcdSecretKey = "etcd_connection"
+	EtcdVolume    = "etcd-config"
+
+	ModelsDirVolume = "models-dir"
+	SocketVolume    = "domain-socket"
+
 	ConfigStorageMount = "storage-config"
 
 	//The name of the puller container

@@ -250,22 +250,6 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
 
-func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
-	if rt.Spec.BuiltInAdapter == nil {
-		return nil // nothing to check
-	}
-	st := rt.Spec.BuiltInAdapter.ServerType
-	if _, ok := builtInServerTypes[st]; !ok {
-		return fmt.Errorf("unrecognized built-in runtime server type %s", st)
-	}
-	for _, c := range rt.Spec.Containers {
-		if c.Name == string(st) {
-			return nil // found, all good
-		}
-	}
-	return fmt.Errorf("must include runtime Container with name %s", st)
-}
-
 func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger,
 	config *config.Config, rt *api.ServingRuntime) (uint16, time.Duration, error) {
 

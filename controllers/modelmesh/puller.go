@@ -81,7 +81,7 @@ func addPullerSidecar(rt *api.ServingRuntime, deployment *appsv1.Deployment, pul
 		Resources: *pullerResources,
 		VolumeMounts: []corev1.VolumeMount{
 			{
-				Name:      modelsDirVolume,
+				Name:      ModelsDirVolume,
 				MountPath: PullerModelPath,
 			},
 			{

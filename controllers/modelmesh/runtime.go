@@ -26,10 +26,8 @@ import (
 )
 
 const (
-	modelsDirVolume string  = "models-dir"
-	socketVolume    string  = "domain-socket"
-	ModelsDir       string  = "/models"
-	ModelDirScale   float64 = 1.5
+	ModelsDir     string  = "/models"
+	ModelDirScale float64 = 1.5
 )
 
 //Sets the model mesh grace period to match the deployment grace period
@@ -38,7 +36,7 @@ func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 		gracePeriodS := deployment.Spec.Template.Spec.TerminationGracePeriodSeconds
 		gracePeriodMs := *gracePeriodS * int64(1000)
 		gracePeriodMsStr := strconv.FormatInt(gracePeriodMs, 10)
-		err := setEnvironmentVar("mm", "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
+		err := setEnvironmentVar(ModelMeshContainer, "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
 		return err
 	}
 
@@ -53,7 +51,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	volumes := rt.Spec.Volumes
 
 	volumes = append(volumes, corev1.Volume{
-		Name: modelsDirVolume,
+		Name: ModelsDirVolume,
 		VolumeSource: corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "", SizeLimit: modelsDirSize},
 		},
@@ -61,7 +59,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 
 	if hasUnixSockets, _, _ := unixDomainSockets(rt); hasUnixSockets {
 		volumes = append(volumes, corev1.Volume{
-			Name: socketVolume,
+			Name: SocketVolume,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
@@ -120,7 +118,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 
 	volumeMounts := []corev1.VolumeMount{
 		{
-			Name:      modelsDirVolume,
+			Name:      ModelsDirVolume,
 			MountPath: ModelsDir,
 		},
 	}
@@ -269,7 +267,7 @@ func addDomainSocketMount(rt *api.ServingRuntime, c *corev1.Container) error {
 	}
 	if requiresDomainSocketMounting {
 		c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
-			Name:      socketVolume,
+			Name:      SocketVolume,
 			MountPath: domainSocketMountPoint,
 		})
 	}

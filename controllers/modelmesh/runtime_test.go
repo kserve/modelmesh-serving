@@ -176,12 +176,8 @@ func TestAddVolumesToDeployment(t *testing.T) {
 
 			// map of expected volume names to bool of whether or not it is found
 			expectedVolumes := map[string]bool{
-<<<<<<< HEAD
-				modelsDirVolume: false,
-=======
 				// models dir is always mounted
 				ModelsDirVolume: false,
->>>>>>> 3f2b16e (fixup: volume  support)
 			}
 			for _, v := range tt.expectedExtraVolumes {
 				expectedVolumes[v] = false
@@ -190,7 +186,7 @@ func TestAddVolumesToDeployment(t *testing.T) {
 				expectedVolumes[ConfigStorageMount] = false
 			}
 			if tt.expectSocketVolume {
-				expectedVolumes[socketVolume] = false
+				expectedVolumes[SocketVolume] = false
 			}
 
 			for _, v := range deployment.Spec.Template.Spec.Volumes {
