@@ -26,8 +26,6 @@ spec:
     metadata:
       labels:
         control-plane: modelmesh-controller
-        # Required in Watson Cloud envs to allow outbound access to etcd
-        network-policy: allow-egress
     spec:
       affinity:
         nodeAffinity:

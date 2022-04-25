@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -45,6 +46,21 @@ storageHelperImage:
 		t.Fatalf("Expected StorageHelperImage=%v but found %v",
 			expectedStorageHelperImage, conf.StorageHelperImage.TaggedImage())
 	}
+}
+
+func TestNewMergedConfigFromStringWithDotNotationKeys(t *testing.T) {
+	yaml := `
+runtimePodLabels:
+  foo.bar: test
+  network-policy: allow-egress`
+
+	conf, err := NewMergedConfigFromString(yaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, conf.RuntimePodLabels["foo.bar"], "test")
+	assert.Equal(t, conf.RuntimePodLabels["network-policy"], "allow-egress")
 }
 
 func TestNewMergedConfigFromStringImage(t *testing.T) {

@@ -17,7 +17,6 @@ metadata:
   name: {{.ServiceName}}-{{.Name}}
   labels:
     modelmesh-service: {{.ServiceName}}
-    component: model-mesh
     app.kubernetes.io/instance: modelmesh-controller
     app.kubernetes.io/managed-by: modelmesh-controller
     app.kubernetes.io/name: modelmesh-controller
@@ -27,7 +26,6 @@ spec:
   selector:
     matchLabels:
       modelmesh-service: {{.ServiceName}}
-      component: model-mesh
       name: {{.ServiceName}}-{{.Name}}
   template:
     metadata:
@@ -41,12 +39,9 @@ spec:
       {{end}}
       labels:
         modelmesh-service: {{.ServiceName}}
-        component: model-mesh
         app.kubernetes.io/instance: modelmesh-controller
         app.kubernetes.io/managed-by: modelmesh-controller
         app.kubernetes.io/name: modelmesh-controller
-        # Required in Watson Cloud envs to allow outbound access to etcd
-        network-policy: allow-egress
         name: {{.ServiceName}}-{{.Name}}
     spec:
       serviceAccountName: {{.ServiceAccountName}}

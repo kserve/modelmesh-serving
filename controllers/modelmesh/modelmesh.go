@@ -70,6 +70,8 @@ type Deployment struct {
 	ServiceAccountName  string
 	GrpcMaxMessageSize  int
 	AnnotationConfigMap *corev1.ConfigMap
+	AnnotationsMap      map[string]string
+	LabelsMap           map[string]string
 	EnableAccessLogging bool
 	Client              client.Client
 }
@@ -121,6 +123,8 @@ func (m *Deployment) Apply(ctx context.Context) error {
 				m.configureMMDeploymentForEtcdSecret,
 				m.addRESTProxyToDeployment,
 				m.configureMMDeploymentForTLSSecret,
+				m.configureRuntimePodSpecAnnotations,
+				m.configureRuntimePodSpecLabels,
 			); tErr != nil {
 				return tErr
 			}
