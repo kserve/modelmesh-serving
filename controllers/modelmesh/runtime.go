@@ -246,17 +246,15 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			})
 		}
 
-		if len(rt.Spec.BuiltInAdapter.Env) > 0 {
-		outer:
-			for oidx := range rt.Spec.BuiltInAdapter.Env {
-				for eidx := range builtInAdapterContainer.Env {
-					if builtInAdapterContainer.Env[eidx].Name == rt.Spec.BuiltInAdapter.Env[oidx].Name {
-						builtInAdapterContainer.Env[eidx] = rt.Spec.BuiltInAdapter.Env[oidx]
-						continue outer
-					}
+	outer:
+		for oidx := range rt.Spec.BuiltInAdapter.Env {
+			for eidx := range builtInAdapterContainer.Env {
+				if builtInAdapterContainer.Env[eidx].Name == rt.Spec.BuiltInAdapter.Env[oidx].Name {
+					builtInAdapterContainer.Env[eidx] = rt.Spec.BuiltInAdapter.Env[oidx]
+					continue outer
 				}
-				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, rt.Spec.BuiltInAdapter.Env[oidx])
 			}
+			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, rt.Spec.BuiltInAdapter.Env[oidx])
 		}
 		deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, builtInAdapterContainer)
 	}
