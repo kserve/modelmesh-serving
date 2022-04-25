@@ -187,9 +187,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 
 		// the puller and adapter containers are the same image and are given the
 		// same resources
-		if m.PullerResources != nil {
-			builtInAdapterContainer.Resources = *m.PullerResources
-		}
+		builtInAdapterContainer.Resources = *m.PullerResources
 
 		builtInAdapterContainer.VolumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      ConfigStorageMount,
@@ -197,7 +195,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			ReadOnly:  true,
 		})
 
-		defaultEnvVars := []corev1.EnvVar{
+		builtInAdapterContainer.Env = []corev1.EnvVar{
 			{
 				Name:  "ADAPTER_PORT",
 				Value: "8085",
@@ -231,13 +229,8 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 				Name:  "RUNTIME_VERSION",
 				Value: runtimeVersion,
 			},
-		}
-
-		// To avoid reallocation, count the maximum number of env vars there could be
-		numVarsDefault := len(defaultEnvVars) // count of default env vars
-		numVarsOptional := 2                  // count of envs that may be added from annotations below
-		builtInAdapterContainer.Env = make([]corev1.EnvVar, numVarsDefault, numVarsDefault+numVarsOptional+len(rt.Spec.BuiltInAdapter.Env))
-		copy(builtInAdapterContainer.Env, defaultEnvVars)
+			{}, {}, {}, {}, // allocate larger array to avoid reallocation
+		}[:7]
 
 		if mlc, ok := rt.Annotations["maxLoadingConcurrency"]; ok {
 			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{

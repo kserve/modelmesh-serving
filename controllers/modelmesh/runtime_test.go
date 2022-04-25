@@ -29,6 +29,17 @@ import (
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 )
 
+func newMockModelMeshDeployment(t *testing.T, rt *api.ServingRuntime) *Deployment {
+	return &Deployment{
+		Owner: rt,
+		Log:   testr.New(t),
+
+		PullerResources: &v1.ResourceRequirements{},
+		// may need to add more as tests expand
+	}
+
+}
+
 func TestOverlayMockRuntime(t *testing.T) {
 	const adapterEnvOverrideName = "ADAPTER_PORT"
 	const adapterEnvOverrideValue = "override"
@@ -40,10 +51,10 @@ func TestOverlayMockRuntime(t *testing.T) {
 			ServingRuntimePodSpec: api.ServingRuntimePodSpec{
 				Containers: []v1.Container{
 					{
-						Name:            "my-runtime",
+						Name:            adapterType,
 						Image:           "image",
 						ImagePullPolicy: "IfNotPresent",
-						WorkingDir:      "my-working-dir",
+						WorkingDir:      "mock-working-dir",
 						Env: []corev1.EnvVar{
 							{
 								Name:  "simple",
@@ -95,7 +106,7 @@ func TestOverlayMockRuntime(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name: adapterType,
+							Name: "mm",
 						},
 					},
 				},
@@ -103,7 +114,7 @@ func TestOverlayMockRuntime(t *testing.T) {
 		},
 	}
 
-	m := Deployment{Owner: v, Log: testr.New(t)}
+	m := newMockModelMeshDeployment(t, v)
 	m.addRuntimeToDeployment(deployment)
 
 	scontainer := v.Spec.Containers[0]
