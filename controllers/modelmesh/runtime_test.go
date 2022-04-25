@@ -109,14 +109,46 @@ func TestAddVolumesToDeployment(t *testing.T) {
 	for _, tt := range []struct {
 		name                 string
 		servingRuntime       *api.ServingRuntime
-		expectError          bool
+		expectedExtraVolumes []string
 		expectStorageVolumes bool
 		expectSocketVolume   bool
 	}{
 		{
-			name:                 "default",
-			servingRuntime:       &api.ServingRuntime{},
-			expectError:          false,
+			name: "with-volume",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+						Volumes: []v1.Volume{
+							{
+								Name: "my-volume",
+							},
+						},
+					},
+				},
+			},
+			expectedExtraVolumes: []string{"my-volume"},
+			expectStorageVolumes: true,
+			expectSocketVolume:   false,
+		},
+		{
+			name: "unix-socket-grpc",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					GrpcDataEndpoint: &[]string{"unix:///socket"}[0],
+				},
+			},
+			expectStorageVolumes: true,
+			expectSocketVolume:   true,
+		},
+		{
+			name: "built-in-adapter",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					BuiltInAdapter: &api.BuiltInAdapter{
+						ServerType: api.MLServer,
+					},
+				},
+			},
 			expectStorageVolumes: true,
 			expectSocketVolume:   false,
 		},
@@ -129,7 +161,6 @@ func TestAddVolumesToDeployment(t *testing.T) {
 					},
 				},
 			},
-			expectError:          false,
 			expectStorageVolumes: false,
 			expectSocketVolume:   false,
 		},
@@ -139,18 +170,21 @@ func TestAddVolumesToDeployment(t *testing.T) {
 			rt := tt.servingRuntime
 
 			m := Deployment{Owner: rt}
-			err := m.addVolumesToDeployment(deployment)
-
-			if tt.expectError && err == nil {
-				t.Error("Expected an error, but didn't get one")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
+			if err := m.addVolumesToDeployment(deployment); err != nil {
+				t.Errorf("Call to add volumes failed: %v", err)
 			}
 
 			// map of expected volume names to bool of whether or not it is found
 			expectedVolumes := map[string]bool{
+<<<<<<< HEAD
 				modelsDirVolume: false,
+=======
+				// models dir is always mounted
+				ModelsDirVolume: false,
+>>>>>>> 3f2b16e (fixup: volume  support)
+			}
+			for _, v := range tt.expectedExtraVolumes {
+				expectedVolumes[v] = false
 			}
 			if tt.expectStorageVolumes {
 				expectedVolumes[ConfigStorageMount] = false

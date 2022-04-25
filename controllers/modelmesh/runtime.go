@@ -49,14 +49,15 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	rt := m.Owner
 	modelsDirSize := calculateModelDirSize(rt)
 
-	volumes := []corev1.Volume{
-		{
-			Name: modelsDirVolume,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "", SizeLimit: modelsDirSize},
-			},
+	// start from the volumes specified in the runtime spec
+	volumes := rt.Spec.Volumes
+
+	volumes = append(volumes, corev1.Volume{
+		Name: modelsDirVolume,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "", SizeLimit: modelsDirSize},
 		},
-	}
+	})
 
 	if hasUnixSockets, _, _ := unixDomainSockets(rt); hasUnixSockets {
 		volumes = append(volumes, corev1.Volume{
@@ -67,7 +68,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 		})
 	}
 
-	// need to mount storage volume for built-in adapters and the scenarios where StorageHelper is not disabled
+	// need to mount storage config for built-in adapters and the scenarios where StorageHelper is not disabled
 	if rt.Spec.BuiltInAdapter != nil || useStorageHelper(rt) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,
