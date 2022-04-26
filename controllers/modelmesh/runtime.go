@@ -125,6 +125,10 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 
 	// Now add the containers specified in serving runtime spec
 	for i := range rt.Spec.Containers {
+		// by modifying in-place we rely on the fact that the cacheing
+		// client in controller-runtime deep copies objects it retrieves
+		// by default, this would be a problem if that was disabled
+		// REF: https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/cache
 		cspec := &rt.Spec.Containers[i]
 
 		// defaults
