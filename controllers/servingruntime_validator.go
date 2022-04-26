@@ -99,13 +99,9 @@ func validateContainer(c *corev1.Container) error {
 	}
 
 	// Check for overlapping port declarations
-	// TODO: just Reserve 8000-8999 for internal use?
 	for _, p := range c.Ports {
-		// 8080 is used for LiteLinks communication in Model Mesh
-		// 8089 is used for Model Mesh probes
-		// 8085 is the port the built-in adapter listens on
-		if p.ContainerPort == 8080 || p.ContainerPort == 8089 || p.ContainerPort == 8085 {
-			return errors.New("Ports 8080 and 8089 are reserved for internal use")
+		if internal, ok := internalPorts[p.ContainerPort]; ok {
+			return fmt.Errorf("Port %d is reserved for internal use", internal)
 		}
 	}
 
@@ -145,6 +141,13 @@ var internalOnlyVolumeMounts = map[string]interface{}{
 	modelmesh.EtcdVolume:            nil,
 	modelmesh.InternalConfigMapName: nil,
 	modelmesh.SocketVolume:          nil,
+}
+
+var internalPorts = map[int32]interface{}{
+	8080: nil, // is used for LiteLinks communication in Model Mesh
+	8085: nil, // is the port the built-in adapter listens on
+	8089: nil, // is used for Model Mesh probes
+	8090: nil, // is used for default preStop hooks
 }
 
 var internalVolumes = map[string]interface{}{
