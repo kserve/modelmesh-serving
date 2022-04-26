@@ -14,8 +14,8 @@
 package modelmesh
 
 const (
-	ModelMeshContainer = "mm"
-	RESTProxyContainer = "rest-proxy"
+	ModelMeshContainerName = "mm"
+	RESTProxyContainerName = "rest-proxy"
 
 	GrpcPortEnvVar         = "INTERNAL_GRPC_PORT"
 	ServeGrpcPortEnvVar    = "INTERNAL_SERVING_GRPC_PORT"
@@ -31,7 +31,7 @@ const (
 	ConfigStorageMount = "storage-config"
 
 	//The name of the puller container
-	PullerContainer = "puller"
+	PullerContainerName = "puller"
 
 	//The env variable puller uses to configure it's own listen port
 	PullerEnvListenPort = "PORT"

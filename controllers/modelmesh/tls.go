@@ -63,7 +63,7 @@ func (m *Deployment) configureMMDeploymentForTLSSecret(deployment *appsv1.Deploy
 	podSpec := &deployment.Spec.Template.Spec
 	for ci := range podSpec.Containers {
 		container := &podSpec.Containers[ci]
-		if container.Name == ModelMeshContainer || (m.RESTProxyEnabled && container.Name == RESTProxyContainer) {
+		if container.Name == ModelMeshContainerName || (m.RESTProxyEnabled && container.Name == RESTProxyContainerName) {
 			container.Env = append(container.Env, corev1.EnvVar{
 				Name: tlsCertEnvVar, Value: tlsSecretMountPath + "/" + TLSSecretCertKey,
 			})

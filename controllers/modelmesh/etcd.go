@@ -28,7 +28,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 	EtcdSecretName := m.EtcdSecretName
 
 	for containerI, container := range deployment.Spec.Template.Spec.Containers {
-		if container.Name == ModelMeshContainer {
+		if container.Name == ModelMeshContainerName {
 			for i, env := range container.Env {
 				if env.Name == kvStoreEnvVar {
 					env.Value = "etcd:" + etcdMountPath + "/" + EtcdSecretKey

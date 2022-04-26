@@ -93,7 +93,7 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 								Name: "some-container",
 							},
 							{
-								Name: modelmesh.ModelMeshContainer,
+								Name: modelmesh.ModelMeshContainerName,
 							},
 						},
 					},

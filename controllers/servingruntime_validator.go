@@ -81,9 +81,9 @@ func validateContainers(rt *api.ServingRuntime) error {
 func validateContainer(c *corev1.Container) error {
 	// Block container names that conflict with injected containers or reserved prefixes
 	internalContainerNames := []string{
-		modelmesh.ModelMeshContainer,
-		modelmesh.RESTProxyContainer,
-		modelmesh.PullerContainer,
+		modelmesh.ModelMeshContainerName,
+		modelmesh.RESTProxyContainerName,
+		modelmesh.PullerContainerName,
 	}
 	if err := checkName(c.Name, internalContainerNames, "container name"); err != nil {
 		return err

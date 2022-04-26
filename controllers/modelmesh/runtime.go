@@ -36,7 +36,7 @@ func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 		gracePeriodS := deployment.Spec.Template.Spec.TerminationGracePeriodSeconds
 		gracePeriodMs := *gracePeriodS * int64(1000)
 		gracePeriodMsStr := strconv.FormatInt(gracePeriodMs, 10)
-		err := setEnvironmentVar(ModelMeshContainer, "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
+		err := setEnvironmentVar(ModelMeshContainerName, "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
 		return err
 	}
 

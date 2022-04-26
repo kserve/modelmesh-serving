@@ -30,7 +30,7 @@ const (
 func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) error {
 	rt := m.Owner
 	var container *corev1.Container
-	if _, container = findContainer(ModelMeshContainer, deployment); container == nil {
+	if _, container = findContainer(ModelMeshContainerName, deployment); container == nil {
 		return errors.New("unable to find the model mesh container")
 	}
 

@@ -70,7 +70,7 @@ func addPullerSidecar(rt *api.ServingRuntime, deployment *appsv1.Deployment, pul
 			},
 		},
 		Image:   pullerImage,
-		Name:    PullerContainer,
+		Name:    PullerContainerName,
 		Command: pullerImageCommand,
 		Ports: []corev1.ContainerPort{
 			{
