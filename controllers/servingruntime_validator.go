@@ -80,11 +80,6 @@ func validateContainers(rt *api.ServingRuntime) error {
 
 func validateContainer(c *corev1.Container) error {
 	// Block container names that conflict with injected containers or reserved prefixes
-	internalContainerNames := []string{
-		modelmesh.ModelMeshContainerName,
-		modelmesh.RESTProxyContainerName,
-		modelmesh.PullerContainerName,
-	}
 	if err := checkName(c.Name, internalContainerNames, "container name"); err != nil {
 		return err
 	}
@@ -97,12 +92,6 @@ func validateContainer(c *corev1.Container) error {
 	}
 
 	// Block volume mounts for private internal volumes
-	internalOnlyVolumeMounts := []string{
-		modelmesh.ConfigStorageMount,
-		modelmesh.EtcdVolume,
-		modelmesh.InternalConfigMapName,
-		modelmesh.SocketVolume,
-	}
 	for vmi := range c.VolumeMounts {
 		if err := checkName(c.VolumeMounts[vmi].Name, internalOnlyVolumeMounts, "volume"); err != nil {
 			return err
@@ -124,13 +113,7 @@ func validateContainer(c *corev1.Container) error {
 }
 
 func validateVolumes(rt *api.ServingRuntime) error {
-	internalVolumes := []string{
-		modelmesh.ConfigStorageMount,
-		modelmesh.EtcdVolume,
-		modelmesh.InternalConfigMapName,
-		modelmesh.SocketVolume,
-		modelmesh.ModelsDirVolume,
-	}
+	// Block volume names that conflict with injected volumes or reserved prefixes
 	for vi := range rt.Spec.Volumes {
 		if err := checkName(rt.Spec.Volumes[vi].Name, internalVolumes, "volume"); err != nil {
 			return err
@@ -140,15 +123,34 @@ func validateVolumes(rt *api.ServingRuntime) error {
 	return nil
 }
 
-func checkName(name string, internalNames []string, logStr string) error {
-	for _, in := range internalNames {
-		if name == in {
-			return fmt.Errorf("%s %s is reserved for internal use", logStr, in)
-		}
+func checkName(name string, internalNames map[string]interface{}, logStr string) error {
+	if internal, ok := internalNames[name]; ok {
+		return fmt.Errorf("%s %s is reserved for internal use", logStr, internal)
 	}
 
 	if strings.HasPrefix(name, "mm") || strings.HasPrefix(name, "kserve") {
 		return fmt.Errorf("%s cannot start with \"mm\" or \"kserve\", which are reserved for internal use", logStr)
 	}
 	return nil
+}
+
+var internalContainerNames = map[string]interface{}{
+	modelmesh.ModelMeshContainerName: nil,
+	modelmesh.RESTProxyContainerName: nil,
+	modelmesh.PullerContainerName:    nil,
+}
+
+var internalOnlyVolumeMounts = map[string]interface{}{
+	modelmesh.ConfigStorageMount:    nil,
+	modelmesh.EtcdVolume:            nil,
+	modelmesh.InternalConfigMapName: nil,
+	modelmesh.SocketVolume:          nil,
+}
+
+var internalVolumes = map[string]interface{}{
+	modelmesh.ConfigStorageMount:    nil,
+	modelmesh.EtcdVolume:            nil,
+	modelmesh.InternalConfigMapName: nil,
+	modelmesh.SocketVolume:          nil,
+	modelmesh.ModelsDirVolume:       nil,
 }
