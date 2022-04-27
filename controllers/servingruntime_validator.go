@@ -29,8 +29,8 @@ import (
 // Checks include:
 // - BuiltInAdapter has a container matching the name of the type
 // - names of entries do not overlap with reserved names
-// - spec does not override required internals like Volumes or Containers
-// - containers do not mount internal only Volumes
+// - spec does not override required internals like volumes or containers
+// - containers do not mount internal only volumes
 // - some fields in containers are controlled by model mesh and cannot be set
 // - check for overlaps in declared ports with internal ports
 func validateServingRuntimeSpec(rt *api.ServingRuntime) error {
@@ -83,8 +83,6 @@ func validateContainer(c *corev1.Container) error {
 	if err := checkName(c.Name, internalContainerNames, "container name"); err != nil {
 		return err
 	}
-
-	// TODO: block if container name matches `*-adapter`??
 
 	// Block fields required for model-mesh to control the pod lifecycle
 	if c.ReadinessProbe != nil || c.Lifecycle != nil {
