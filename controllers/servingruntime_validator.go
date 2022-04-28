@@ -118,8 +118,8 @@ func validateVolumes(rt *api.ServingRuntime) error {
 }
 
 func checkName(name string, internalNames map[string]interface{}, logStr string) error {
-	if internal, ok := internalNames[name]; ok {
-		return fmt.Errorf("%s %s is reserved for internal use", logStr, internal)
+	if _, ok := internalNames[name]; ok {
+		return fmt.Errorf("%s %s is reserved for internal use", logStr, name)
 	}
 
 	if strings.HasPrefix(name, "mm") || strings.HasPrefix(name, "kserve") {
