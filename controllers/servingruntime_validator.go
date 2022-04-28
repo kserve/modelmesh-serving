@@ -96,8 +96,13 @@ func validateContainer(c *corev1.Container) error {
 		}
 	}
 
-	// Check for overlapping port declarations
 	for _, p := range c.Ports {
+		// Block port names that conflict with injected containers or reserved prefixes
+		if err := checkName(p.Name, internalNamedPorts, "port name"); err != nil {
+			return err
+		}
+
+		// Check for conflicting port usage
 		if internal, ok := internalPorts[p.ContainerPort]; ok {
 			return fmt.Errorf("Port %d is reserved for internal use", internal)
 		}
@@ -139,6 +144,12 @@ var internalOnlyVolumeMounts = map[string]interface{}{
 	modelmesh.EtcdVolume:            nil,
 	modelmesh.InternalConfigMapName: nil,
 	modelmesh.SocketVolume:          nil,
+}
+
+var internalNamedPorts = map[string]interface{}{
+	"grpc":       nil,
+	"http":       nil,
+	"prometheus": nil,
 }
 
 var internalPorts = map[int32]interface{}{

@@ -152,6 +152,54 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name: "block conflicting port name",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "some-container",
+							},
+							{
+								Name: "bad-container",
+								Ports: []v1.ContainerPort{
+									{
+										Name:          "grpc",
+										ContainerPort: 32768,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "block reserved port name",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "some-container",
+							},
+							{
+								Name: "bad-container",
+								Ports: []v1.ContainerPort{
+									{
+										Name:          "mm-arbitrary",
+										ContainerPort: 32768,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
 			name: "block conflicting port",
 			servingRuntime: &api.ServingRuntime{
 				Spec: api.ServingRuntimeSpec{
