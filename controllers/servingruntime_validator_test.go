@@ -223,6 +223,29 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name: "block reserved port",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "some-container",
+							},
+							{
+								Name: "bad-container",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 11888,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
 			name: "block mount of internal volume",
 			servingRuntime: &api.ServingRuntime{
 				Spec: api.ServingRuntimeSpec{

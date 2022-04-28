@@ -106,6 +106,11 @@ func validateContainer(c *corev1.Container) error {
 		if internal, ok := internalPorts[p.ContainerPort]; ok {
 			return fmt.Errorf("Port %d is reserved for internal use", internal)
 		}
+		// Reserve a range for future use
+		// ascii 'm' is 109. ModelMesh -> mm -> m*m = 11881
+		if p.ContainerPort >= 11881 && p.ContainerPort < 11900 {
+			return fmt.Errorf("Port range [11881-11899] is reserved for internal use")
+		}
 	}
 
 	return nil
