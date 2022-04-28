@@ -108,7 +108,7 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
-								Name: "kserve-arbitrary",
+								Name: "mm-arbitrary",
 							},
 						},
 					},
@@ -258,7 +258,7 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 								Name: "bad-container",
 								VolumeMounts: []v1.VolumeMount{
 									{
-										Name: "kserve-internal",
+										Name: "mm-arbitrary",
 									},
 								},
 							},

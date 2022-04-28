@@ -127,8 +127,8 @@ func checkName(name string, internalNames map[string]interface{}, logStr string)
 		return fmt.Errorf("%s %s is reserved for internal use", logStr, name)
 	}
 
-	if strings.HasPrefix(name, "mm") || strings.HasPrefix(name, "kserve") {
-		return fmt.Errorf("%s cannot start with \"mm\" or \"kserve\", which are reserved for internal use", logStr)
+	if strings.HasPrefix(name, "mm-") {
+		return fmt.Errorf("%s cannot start with \"mm-\", which is reserved for internal use", logStr)
 	}
 	return nil
 }
