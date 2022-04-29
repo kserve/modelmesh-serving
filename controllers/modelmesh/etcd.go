@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	EtcdSecretKey = "etcd_connection" //TODO probably move this const
-	etcdVolume    = "etcd-config"
 	etcdMountPath = "/opt/kserve/mmesh/etcd"
 	kvStoreEnvVar = "KV_STORE"
 )
@@ -30,7 +28,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 	EtcdSecretName := m.EtcdSecretName
 
 	for containerI, container := range deployment.Spec.Template.Spec.Containers {
-		if container.Name == ModelMeshContainer {
+		if container.Name == ModelMeshContainerName {
 			for i, env := range container.Env {
 				if env.Name == kvStoreEnvVar {
 					env.Value = "etcd:" + etcdMountPath + "/" + EtcdSecretKey
@@ -40,7 +38,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 
 			volumeMountExists := false
 			for i := range container.VolumeMounts {
-				if container.VolumeMounts[i].Name == etcdVolume {
+				if container.VolumeMounts[i].Name == EtcdVolume {
 					volumeMountExists = true
 					container.VolumeMounts[i].ReadOnly = true
 					container.VolumeMounts[i].MountPath = etcdMountPath
@@ -48,7 +46,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 			}
 			if !volumeMountExists {
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      etcdVolume,
+					Name:      EtcdVolume,
 					ReadOnly:  true,
 					MountPath: etcdMountPath,
 				})
@@ -60,7 +58,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 
 	volumeExists := false
 	for _, volume := range deployment.Spec.Template.Spec.Volumes {
-		if volume.Name == etcdVolume {
+		if volume.Name == EtcdVolume {
 			volumeExists = true
 			volume.Secret = &corev1.SecretVolumeSource{
 				SecretName: EtcdSecretName,
@@ -69,7 +67,7 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 	}
 	if !volumeExists {
 		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
-			Name: etcdVolume,
+			Name: EtcdVolume,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: EtcdSecretName,

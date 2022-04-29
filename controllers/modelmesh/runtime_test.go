@@ -164,60 +164,105 @@ func toString(o interface{}) string {
 	return string(b)
 }
 
-var addStorageConfigVolumeTests = []struct {
-	name           string
-	servingRuntime *api.ServingRuntime
-	expectError    bool
-	expectVolume   bool
-}{
-	{
-		name:           "default",
-		servingRuntime: &api.ServingRuntime{},
-		expectError:    false,
-		expectVolume:   true,
-	},
-	{
-		name: "helper-disabled",
-		servingRuntime: &api.ServingRuntime{
-			Spec: api.ServingRuntimeSpec{
-				StorageHelper: &api.StorageHelper{
-					Disabled: true,
+func TestAddVolumesToDeployment(t *testing.T) {
+	for _, tt := range []struct {
+		name                 string
+		servingRuntime       *api.ServingRuntime
+		expectedExtraVolumes []string
+		expectStorageVolumes bool
+		expectSocketVolume   bool
+	}{
+		{
+			name: "with-volume",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+						Volumes: []v1.Volume{
+							{
+								Name: "my-volume",
+							},
+						},
+					},
 				},
 			},
+			expectedExtraVolumes: []string{"my-volume"},
+			expectStorageVolumes: true,
+			expectSocketVolume:   false,
 		},
-		expectError:  false,
-		expectVolume: false,
-	},
-}
-
-func TestAddStorageConfigVolume(t *testing.T) {
-	for _, tt := range addStorageConfigVolumeTests {
+		{
+			name: "unix-socket-grpc",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					GrpcDataEndpoint: &[]string{"unix:///socket"}[0],
+				},
+			},
+			expectStorageVolumes: true,
+			expectSocketVolume:   true,
+		},
+		{
+			name: "built-in-adapter",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					BuiltInAdapter: &api.BuiltInAdapter{
+						ServerType: api.MLServer,
+					},
+				},
+			},
+			expectStorageVolumes: true,
+			expectSocketVolume:   false,
+		},
+		{
+			name: "helper-disabled",
+			servingRuntime: &api.ServingRuntime{
+				Spec: api.ServingRuntimeSpec{
+					StorageHelper: &api.StorageHelper{
+						Disabled: true,
+					},
+				},
+			},
+			expectStorageVolumes: false,
+			expectSocketVolume:   false,
+		},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			deployment := &appsv1.Deployment{}
 			rt := tt.servingRuntime
 
 			m := Deployment{Owner: rt}
-			err := m.addStorageConfigVolume(deployment)
-
-			if tt.expectError && err == nil {
-				t.Error("Expected an error, but didn't get one")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
+			if err := m.addVolumesToDeployment(deployment); err != nil {
+				t.Errorf("Call to add volumes failed: %v", err)
 			}
 
-			numVols := len(deployment.Spec.Template.Spec.Volumes)
-			var volNames []string
+			// map of expected volume names to bool of whether or not it is found
+			expectedVolumes := map[string]bool{
+				// models dir is always mounted
+				ModelsDirVolume: false,
+			}
+			for _, v := range tt.expectedExtraVolumes {
+				expectedVolumes[v] = false
+			}
+			if tt.expectStorageVolumes {
+				expectedVolumes[ConfigStorageMount] = false
+			}
+			if tt.expectSocketVolume {
+				expectedVolumes[SocketVolume] = false
+			}
+
 			for _, v := range deployment.Spec.Template.Spec.Volumes {
-				volNames = append(volNames, v.Name)
-			}
-			if tt.expectVolume && numVols != 1 {
-				t.Errorf("Expected a single volume but found %d: %s", numVols, volNames)
-			}
-			if !tt.expectVolume && numVols != 0 {
-				t.Errorf("Unexpected volume(s) added to deployment: %s", volNames)
+				if _, ok := expectedVolumes[v.Name]; !ok {
+					t.Errorf("Unexpected volume found: %s", v.Name)
+				} else if expectedVolumes[v.Name] {
+					t.Errorf("Duplicate volume found: %s", v.Name)
+				} else {
+					expectedVolumes[v.Name] = true
+				}
 			}
 
+			for volumeName, volumeFound := range expectedVolumes {
+				if !volumeFound {
+					t.Errorf("Expected to find volume that does not exist: %s", volumeName)
+				}
+			}
 		})
 	}
 }

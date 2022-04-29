@@ -26,10 +26,8 @@ import (
 )
 
 const (
-	modelsDirVolume string  = "models-dir"
-	socketVolume    string  = "domain-socket"
-	ModelsDir       string  = "/models"
-	ModelDirScale   float64 = 1.5
+	ModelsDir     string  = "/models"
+	ModelDirScale float64 = 1.5
 )
 
 //Sets the model mesh grace period to match the deployment grace period
@@ -38,7 +36,7 @@ func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 		gracePeriodS := deployment.Spec.Template.Spec.TerminationGracePeriodSeconds
 		gracePeriodMs := *gracePeriodS * int64(1000)
 		gracePeriodMsStr := strconv.FormatInt(gracePeriodMs, 10)
-		err := setEnvironmentVar("mm", "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
+		err := setEnvironmentVar(ModelMeshContainerName, "SHUTDOWN_TIMEOUT_MS", gracePeriodMsStr, deployment)
 		return err
 	}
 
@@ -49,32 +47,26 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	rt := m.Owner
 	modelsDirSize := calculateModelDirSize(rt)
 
-	volumes := []corev1.Volume{
-		{
-			Name: modelsDirVolume,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "", SizeLimit: modelsDirSize},
-			},
+	// start from the volumes specified in the runtime spec
+	volumes := rt.Spec.Volumes
+
+	volumes = append(volumes, corev1.Volume{
+		Name: ModelsDirVolume,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "", SizeLimit: modelsDirSize},
 		},
-	}
+	})
 
 	if hasUnixSockets, _, _ := unixDomainSockets(rt); hasUnixSockets {
 		volumes = append(volumes, corev1.Volume{
-			Name: socketVolume,
+			Name: SocketVolume,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
 		})
 	}
 
-	deployment.Spec.Template.Spec.Volumes = volumes
-
-	return nil
-}
-
-func (m *Deployment) addStorageConfigVolume(deployment *appsv1.Deployment) error {
-	rt := m.Owner
-	// need to mount storage volume for built-in adapters and the scenarios where StorageHelper is not disabled/specified.
+	// need to mount storage config for built-in adapters and the scenarios where StorageHelper is not disabled
 	if rt.Spec.BuiltInAdapter != nil || useStorageHelper(rt) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,
@@ -85,8 +77,10 @@ func (m *Deployment) addStorageConfigVolume(deployment *appsv1.Deployment) error
 			},
 		}
 
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, storageVolume)
+		volumes = append(volumes, storageVolume)
 	}
+
+	deployment.Spec.Template.Spec.Volumes = volumes
 
 	return nil
 }
@@ -116,7 +110,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			},
 		},
 	}
-	securityContext := &corev1.SecurityContext{
+	dropAllSecurityContext := &corev1.SecurityContext{
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{"ALL"},
 		},
@@ -124,39 +118,37 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 
 	volumeMounts := []corev1.VolumeMount{
 		{
-			Name:      modelsDirVolume,
+			Name:      ModelsDirVolume,
 			MountPath: ModelsDir,
 		},
 	}
 
 	// Now add the containers specified in serving runtime spec
 	for i := range rt.Spec.Containers {
+		// by modifying in-place we rely on the fact that the cacheing
+		// client in controller-runtime deep copies objects it retrieves
+		// by default, this would be a problem if that was disabled
+		// REF: https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/cache
 		cspec := &rt.Spec.Containers[i]
 
-		//translate our container spec to corev1 container spec
-		corecspec := corev1.Container{
-			Args:            cspec.Args,
-			Command:         cspec.Command,
-			Env:             cspec.Env,
-			Image:           cspec.Image,
-			Name:            cspec.Name,
-			Resources:       cspec.Resources,
-			ImagePullPolicy: cspec.ImagePullPolicy,
-			WorkingDir:      cspec.WorkingDir,
-			LivenessProbe:   cspec.LivenessProbe,
-			VolumeMounts:    volumeMounts,
-			Lifecycle:       lifecycle,
-			SecurityContext: securityContext,
+		// defaults
+		if cspec.SecurityContext == nil {
+			cspec.SecurityContext = dropAllSecurityContext
 		}
 
-		if err := addDomainSocketMount(rt, &corecspec); err != nil {
+		// add internal fields
+		cspec.VolumeMounts = append(volumeMounts, cspec.VolumeMounts...)
+		cspec.Lifecycle = lifecycle
+
+		if err := addDomainSocketMount(rt, cspec); err != nil {
 			return err
 		}
 
+		// if multiple containers with the same name are included, the last one wins
 		if i, _ := findContainer(cspec.Name, deployment); i >= 0 {
-			deployment.Spec.Template.Spec.Containers[i] = corecspec
+			deployment.Spec.Template.Spec.Containers[i] = *cspec
 		} else {
-			deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, corecspec)
+			deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, *cspec)
 		}
 	}
 
@@ -171,7 +163,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			Image:           m.PullerImage,
 			Name:            runtimeAdapterName,
 			Lifecycle:       lifecycle,
-			SecurityContext: securityContext,
+			SecurityContext: dropAllSecurityContext,
 		}
 
 		var runtimeVersion string
@@ -289,7 +281,7 @@ func addDomainSocketMount(rt *api.ServingRuntime, c *corev1.Container) error {
 	}
 	if requiresDomainSocketMounting {
 		c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
-			Name:      socketVolume,
+			Name:      SocketVolume,
 			MountPath: domainSocketMountPoint,
 		})
 	}

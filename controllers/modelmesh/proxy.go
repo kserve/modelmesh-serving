@@ -32,7 +32,7 @@ func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) err
 	if m.RESTProxyEnabled {
 		cspec := corev1.Container{
 			Image: m.RESTProxyImage,
-			Name:  RESTProxyContainer,
+			Name:  RESTProxyContainerName,
 			Env: []corev1.EnvVar{
 				{
 					Name:  restProxyPortEnvVar,
