@@ -79,5 +79,7 @@ jobs:
           kubectl get servingruntimes
       - name: Run FVTs
         run: |
+          go install github.com/onsi/ginkgo/v2/ginkgo
+          export PATH=/root/go/bin/:$PATH
           export NAMESPACE=modelmesh-serving
           make fvt
