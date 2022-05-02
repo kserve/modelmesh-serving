@@ -78,14 +78,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		"podsPerRuntime": 1,
 	}
 	FVTClientInstance.ApplyUserConfigMap(config)
-	// ensure that there are no predictors to start
+	// ensure that there are no predictors or inference services to start
 	FVTClientInstance.DeleteAllPredictors()
+	FVTClientInstance.DeleteAllIsvcs()
 	// ensure a stable deploy state
 	WaitForStableActiveDeployState()
 	//Create TLS secrets before start of tests
 	FVTClientInstance.CreateTLSSecrets()
-	// ensure that there are no predictors to start
-	FVTClientInstance.DeleteAllPredictors()
 
 	return nil
 }, func(_ []byte) {
@@ -110,7 +109,7 @@ var _ = SynchronizedAfterSuite(func() {
 	FVTClientInstance.RestartDeploys()
 })
 
-// register hanlders for a failed test case to print info to the console
+// register handlers for a failed test case to print info to the console
 var startTime string
 var _ = JustBeforeEach(func() {
 	startTime = time.Now().Format("2006-01-02T15:04:05Z")

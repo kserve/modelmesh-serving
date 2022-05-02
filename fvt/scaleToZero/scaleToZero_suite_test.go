@@ -73,8 +73,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 	FVTClientInstance.ApplyUserConfigMap(config)
 
-	// cleanup any predictors if they exist
+	// cleanup any predictors and inference services if they exist
 	FVTClientInstance.DeleteAllPredictors()
+	FVTClientInstance.DeleteAllIsvcs()
 
 	Log.Info("Setup completed")
 })
@@ -89,7 +90,7 @@ var _ = SynchronizedAfterSuite(func() {
 	FVTClientInstance.DeleteAllPredictors()
 })
 
-// register hanlders for a failed test case to print info to the console
+// register handlers for a failed test case to print info to the console
 var startTime string
 var _ = JustBeforeEach(func() {
 	startTime = time.Now().Format("2006-01-02T15:04:05Z")

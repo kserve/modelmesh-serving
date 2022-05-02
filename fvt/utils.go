@@ -63,7 +63,7 @@ func CreateSecret(secretName string, file string, fvt *FVTClient) {
 	fvt.log.Info(fmt.Sprintf("Secret '%s' created", secretObj.GetName()))
 }
 
-// Small functions to work with unstructred objects
+// Small functions to work with unstructured objects
 
 func GetInt64(obj *unstructured.Unstructured, fieldPath ...string) int64 {
 	value, _, err := unstructured.NestedInt64(obj.Object, fieldPath...)
