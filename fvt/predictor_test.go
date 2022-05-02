@@ -60,8 +60,8 @@ var predictorsArray = []FVTPredictor{
 		predictorFilename:          "keras-predictor.yaml",
 		currentModelPath:           "fvt/tensorflow/keras-mnist/mnist.h5",
 		updatedModelPath:           "fvt/tensorflow/keras-mnistnew/mnist.h5",
-		differentPredictorName:     "mleap",
-		differentPredictorFilename: "mleap-predictor.yaml",
+		differentPredictorName:     "tf",
+		differentPredictorFilename: "tf-predictor.yaml",
 	},
 	{
 		predictorName:              "onnx",
