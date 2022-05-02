@@ -35,7 +35,7 @@ func NewPredictorForFVT(filename string) *unstructured.Unstructured {
 }
 
 func NewIsvcForFVT(filename string) *unstructured.Unstructured {
-	p := DecodeResourceFromFile(isvcSamplesPath + filename)
+	p := DecodeResourceFromFile(TestDataPath(isvcSamplesPath + filename))
 	uniqueName := MakeUniquePredictorName(p.GetName())
 	p.SetName(uniqueName)
 
