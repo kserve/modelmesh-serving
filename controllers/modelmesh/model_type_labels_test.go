@@ -14,14 +14,17 @@
 package modelmesh
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
+	"github.com/kserve/kserve/pkg/constants"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
+func TestGetServingRuntimeLabelSets(t *testing.T) {
 	version_semver := "12345.312.2"
 	version_someString := "someString"
 	autoSelectVal := true
@@ -52,26 +55,37 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 					Name: "type3",
 				},
 			},
+			ProtocolVersions: []constants.InferenceServiceProtocol{
+				"v1", "v2",
+			},
 		},
 	}
 
-	expectedLabels := []string{
+	expectedMtLabels := []string{
 		"mt:type1",
 		"mt:type2",
 		"mt:type2:" + version_semver,
 		"mt:type2:" + version_someString,
-		//runtime
-		"rt:runtimename",
 	}
+	sort.Strings(expectedMtLabels)
 
-	labelSet := GetServingRuntimeSupportedModelTypeLabelSet(&rt)
-	if len(labelSet) != len(expectedLabels) {
-		t.Errorf("Length of set %v should be %d, but got %d", labelSet, len(expectedLabels), len(labelSet))
+	expectedPvLabels := []string{
+		"pv:v1",
+		"pv:v2",
 	}
-	for _, e := range expectedLabels {
-		if !labelSet.Has(e) {
-			t.Errorf("Missing expected entry [%s] in set: %v", e, labelSet)
-		}
+	sort.Strings(expectedPvLabels)
+
+	expectedRtLabel := "rt:runtimename"
+
+	mtLabelSet, pvLabelSet, rtLabel := GetServingRuntimeLabelSets(&rt, false)
+	if expectedRtLabel != rtLabel {
+		t.Errorf("Missing expected entry [%s] in set: %v", expectedRtLabel, rtLabel)
+	}
+	if !reflect.DeepEqual(mtLabelSet.List(), expectedMtLabels) {
+		t.Errorf("Labels [%s] don't match expected: %v", mtLabelSet.List(), expectedMtLabels)
+	}
+	if !reflect.DeepEqual(pvLabelSet.List(), expectedPvLabels) {
+		t.Errorf("Labels [%s] don't match expected: %v", pvLabelSet.List(), expectedPvLabels)
 	}
 }
 
@@ -123,7 +137,7 @@ func TestGetPredictorModelTypeLabel(t *testing.T) {
 			p := api.Predictor{
 				Spec: tt.spec,
 			}
-			label := GetPredictorModelTypeLabel(&p)
+			label := GetPredictorTypeLabel(&p)
 			if label != tt.expectedLabel {
 				t.Errorf("Got wrong predictor label, expected [%s], got [%s]", tt.expectedLabel, label)
 			}

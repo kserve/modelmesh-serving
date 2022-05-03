@@ -14,6 +14,7 @@
 package v1alpha1
 
 import (
+	"github.com/kserve/kserve/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -104,6 +105,9 @@ type PredictorSpec struct {
 	// If omitted a compatible runtime is selected based on the model type (if available)
 	// +optional
 	Runtime *PredictorRuntime `json:"runtime,omitempty"`
+	// Protocol version to be exposed by the predictor (i.e. v1 or v2 or grpc-v1 or grpc-v2)
+	// +optional
+	ProtocolVersion *constants.InferenceServiceProtocol `json:"protocolVersion,omitempty"`
 }
 
 // too wide if this is included

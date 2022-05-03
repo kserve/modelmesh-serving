@@ -25,6 +25,7 @@ spec:
     - name: onnx
       version: "1"
 
+  protocolVersions: [grpc-v1]
   multiModel: true
 
   grpcEndpoint: "port:8085"

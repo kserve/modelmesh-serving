@@ -34,7 +34,7 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 		return errors.New("unable to find the model mesh container")
 	}
 
-	labelString := generateLabelsEnvVar(rt)
+	labelString := generateLabelsEnvVar(rt, m.RESTProxyEnabled)
 	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "MM_LABELS",
 		Value: labelString,
@@ -66,7 +66,6 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 	return nil
 }
 
-func generateLabelsEnvVar(rt *kserveapi.ServingRuntime) string {
-	labelSet := GetServingRuntimeSupportedModelTypeLabelSet(rt)
-	return strings.Join(labelSet.List(), ",")
+func generateLabelsEnvVar(rt *kserveapi.ServingRuntime, restProxyEnabled bool) string {
+	return strings.Join(GetServingRuntimeLabelSet(rt, restProxyEnabled).List(), ",")
 }

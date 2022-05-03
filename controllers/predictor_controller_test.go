@@ -47,7 +47,7 @@ func Test_DecodeModelState(t *testing.T) {
 			Status: mmeshapi.ModelStatusInfo_LOADING_FAILED,
 			Errors: []string{"There are no running instances that meet the label requirements of type mt:SomeType: [_no_runtime]"},
 		}: {
-			common.FailedToLoad, common.NoSupportingRuntime, "No ServingRuntime supports specified model type",
+			common.FailedToLoad, common.NoSupportingRuntime, "No ServingRuntime supports specified model type and/or protocol",
 		},
 		{
 			Status: mmeshapi.ModelStatusInfo_LOADING_FAILED,

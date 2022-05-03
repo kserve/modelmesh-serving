@@ -16,6 +16,9 @@ package modelmesh
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
+	"github.com/kserve/modelmesh-serving/pkg/config"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -52,7 +55,7 @@ type ClusterConfig struct {
 	Scheme   *runtime.Scheme
 }
 
-func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl client.Client) error {
+func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl client.Client, cfg *config.Config) error {
 	m := &corev1.ConfigMap{}
 	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: namespace}, m)
 	notfound := errors.IsNotFound(err)
@@ -76,7 +79,7 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 			"app.kubernetes.io/name":       commonLabelValue,
 		},
 	}
-	cc.addConstraints(cc.Runtimes, m)
+	cc.addConstraints(cc.Runtimes, m, cfg.RESTProxy.Enabled)
 
 	if notfound {
 		return cl.Create(ctx, m)
@@ -86,8 +89,8 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 }
 
 // Add constraint data to the provided config map
-func (cc ClusterConfig) addConstraints(rts *kserveapi.ServingRuntimeList, m *corev1.ConfigMap) {
-	b := calculateConstraintData(rts.Items)
+func (cc ClusterConfig) addConstraints(rts *kserveapi.ServingRuntimeList, m *corev1.ConfigMap, restProxyEnabled bool) {
+	b := calculateConstraintData(rts.Items, restProxyEnabled)
 	if m.BinaryData == nil {
 		m.BinaryData = make(map[string][]byte)
 	}
@@ -95,7 +98,7 @@ func (cc ClusterConfig) addConstraints(rts *kserveapi.ServingRuntimeList, m *cor
 	m.BinaryData[MMDataPlaneConfigKey] = dataPlaneApiJsonConfigBytes
 }
 
-func calculateConstraintData(rts []kserveapi.ServingRuntime) []byte {
+func calculateConstraintData(rts []kserveapi.ServingRuntime, restProxyEnabled bool) []byte {
 	/*b := []byte(`{
 	  "rt:tf-serving-runtime": {
 	    "required": ["rt:tf-serving-runtime"]
@@ -114,10 +117,14 @@ func calculateConstraintData(rts []kserveapi.ServingRuntime) []byte {
 	m := make(map[string]interface{})
 	for _, rt := range rts {
 		if !rt.Spec.IsDisabled() && rt.Spec.IsMultiModelRuntime() {
-			labels := GetServingRuntimeSupportedModelTypeLabelSet(&rt)
-			// treat each label as a separate model type
-			for l := range labels {
+			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&rt, restProxyEnabled)
+			m[rtLabel] = map[string]interface{}{"required": []string{rtLabel}}
+			// treat each combo of model-type label and proto version label as a separate model type
+			for l := range mtLabels {
 				m[l] = map[string]interface{}{"required": []string{l}}
+				for pvl := range pvLabels {
+					m[fmt.Sprintf("%s|%s", l, pvl)] = map[string]interface{}{"required": []string{l, pvl}}
+				}
 			}
 		}
 	}

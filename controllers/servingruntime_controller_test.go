@@ -171,7 +171,7 @@ var _ = Describe("REST Proxy configuration", func() {
 	var m mf.Manifest
 	var err error
 
-	It("deployment should contain REST Proxy container", func() {
+	It("deployment should contain REST Proxy container and extra v2 protocol label", func() {
 		By("enable REST Proxy in the config")
 		reconcilerConfig.RESTProxy.Enabled = true
 

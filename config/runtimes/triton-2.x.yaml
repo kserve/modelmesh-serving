@@ -40,6 +40,7 @@ spec:
       version: "7" # 7.2.1
       autoSelect: true
 
+  protocolVersions: [grpc-v2]
   multiModel: true
 
   grpcEndpoint: "port:8085"

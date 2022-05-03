@@ -31,6 +31,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,13 +111,14 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
+	cfg := r.ConfigProvider.GetConfig()
 	cc := modelmesh.ClusterConfig{Runtimes: runtimes, Scheme: r.Scheme}
-	if err = cc.Reconcile(ctx, req.Namespace, r.Client); err != nil {
+	if err = cc.Reconcile(ctx, req.Namespace, r.Client, cfg); err != nil {
 		return RequeueResult, fmt.Errorf("could not reconcile the modelmesh type-constraints configmap: %w", err)
 	}
 
 	// Delete etcd secret when there is no ServingRuntimes in a namespace
-	etcdSecretName := r.ConfigProvider.GetConfig().GetEtcdSecretName()
+	etcdSecretName := cfg.GetEtcdSecretName()
 	if len(runtimes.Items) == 0 {
 		// We don't delete the etcd secret in the controller namespace
 		if req.Namespace != r.ControllerNamespace {
@@ -191,7 +193,6 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// construct the deployment
-	cfg := r.ConfigProvider.GetConfig()
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:                cfg.InferenceServiceName,
 		ServicePort:                cfg.InferenceServicePort,
@@ -336,8 +337,9 @@ func (r *ServingRuntimeReconciler) determineReplicas(rt *kserveapi.ServingRuntim
 
 // runtimeHasPredictors returns true if the runtime supports an existing Predictor
 func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt *kserveapi.ServingRuntime) (bool, error) {
+	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
 	f := func(p *api.Predictor) bool {
-		return runtimeSupportsPredictor(rt, p)
+		return runtimeSupportsPredictor(rt, p, restProxyEnabled)
 	}
 
 	for _, pr := range r.RegistryMap {
@@ -348,13 +350,17 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 	return false, nil
 }
 
-func runtimeSupportsPredictor(rt *kserveapi.ServingRuntime, p *api.Predictor) bool {
+func runtimeSupportsPredictor(rt *kserveapi.ServingRuntime, p *api.Predictor, restProxyEnabled bool) bool {
 	// assignment to a runtime depends on the model type labels
-	runtimeLabelSet := modelmesh.GetServingRuntimeSupportedModelTypeLabelSet(rt)
-	predictorLabel := modelmesh.GetPredictorModelTypeLabel(p)
-
-	// if the runtime has the predictor's label, then it supports that predictor
-	return runtimeLabelSet.Has(predictorLabel)
+	runtimeLabelSet := modelmesh.GetServingRuntimeLabelSet(rt, restProxyEnabled)
+	predictorTypeString := modelmesh.GetPredictorTypeLabel(p)
+	for _, label := range strings.Split(predictorTypeString, "|") {
+		// if the runtime does not have the predictor's label, then it does not support that predictor
+		if !runtimeLabelSet.Has(label) {
+			return false
+		}
+	}
+	return true
 }
 
 // getRuntimesSupportingPredictor returns a list of keys for runtimes that support the predictor p
@@ -367,10 +373,11 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 		return nil, err
 	}
 
+	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
 	srnns := make([]types.NamespacedName, 0, len(runtimes.Items))
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(rt, p) {
+		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(rt, p, restProxyEnabled) {
 			srnns = append(srnns, types.NamespacedName{
 				Name:      rt.GetName(),
 				Namespace: p.Namespace,
