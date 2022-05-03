@@ -68,5 +68,5 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 
 func generateLabelsEnvVar(rt *api.ServingRuntime) string {
 	labelSet := GetServingRuntimeSupportedModelTypeLabelSet(rt)
-	return strings.Join(labelSet.ToSlice(), ",")
+	return strings.Join(labelSet.List(), ",")
 }
