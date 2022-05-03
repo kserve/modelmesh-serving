@@ -14,14 +14,12 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	"errors"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
