@@ -16,9 +16,9 @@ package modelmesh
 import (
 	"testing"
 
-	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/stretchr/testify/assert"
 
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )

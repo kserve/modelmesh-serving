@@ -19,7 +19,6 @@ import (
 
 // just register types from KServe
 // `make manifests` also pulls from kserve
-
 func init() {
 	SchemeBuilder.Register(&kserveapi.ServingRuntime{}, &kserveapi.ServingRuntimeList{})
 	SchemeBuilder.Register(&kserveapi.ClusterServingRuntime{}, &kserveapi.ClusterServingRuntimeList{})
