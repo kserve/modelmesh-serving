@@ -117,6 +117,7 @@ var _ = JustBeforeEach(func() {
 var _ = JustAfterEach(func() {
 	if CurrentSpecReport().Failed() {
 		FVTClientInstance.PrintPredictors()
+		FVTClientInstance.PrintIsvcs()
 		FVTClientInstance.PrintPods()
 		FVTClientInstance.PrintDescribeNodes()
 		FVTClientInstance.PrintEvents()

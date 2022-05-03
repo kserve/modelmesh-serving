@@ -252,6 +252,13 @@ func (fvt *FVTClient) PrintPredictors() {
 	}
 }
 
+func (fvt *FVTClient) PrintIsvcs() {
+	err := fvt.RunKubectl("get", "inferenceservices")
+	if err != nil {
+		fvt.log.Error(err, "Error running get inferenceservices command")
+	}
+}
+
 func (fvt *FVTClient) PrintPods() {
 	err := fvt.RunKubectl("get", "pods")
 	if err != nil {
