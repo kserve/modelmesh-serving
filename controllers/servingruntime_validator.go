@@ -103,7 +103,7 @@ func validateContainer(c *corev1.Container) error {
 		}
 
 		// Check for conflicting port usage
-		if _, ok := internalPorts[p.ContainerPort]; ok {
+		if internalPorts.Has(p.ContainerPort) {
 			return fmt.Errorf("Port %d is reserved for internal use", p.ContainerPort)
 		}
 		// Reserve a range for future use
@@ -153,12 +153,12 @@ var internalOnlyVolumeMounts = sets.NewString(
 
 var internalNamedPorts = sets.NewString("grpc", "http", "prometheus")
 
-var internalPorts = map[int32]struct{}{
-	8080: {}, // is used for LiteLinks communication in Model Mesh
-	8085: {}, // is the port the built-in adapter listens on
-	8089: {}, // is used for Model Mesh probes
-	8090: {}, // is used for default preStop hooks
-}
+var internalPorts = sets.NewInt32(
+	8080, // is used for LiteLinks communication in Model Mesh
+	8085, // is the port the built-in adapter listens on
+	8089, // is used for Model Mesh probes
+	8090, // is used for default preStop hooks
+)
 
 var internalVolumes = sets.NewString(
 	modelmesh.ConfigStorageMount,
