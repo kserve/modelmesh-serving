@@ -18,15 +18,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func TestAddMMDomainSocketMount(t *testing.T) {
 	path := "unix:///var/mount/path"
-	rt := &api.ServingRuntime{
-		Spec: api.ServingRuntimeSpec{
+	rt := &kserveapi.ServingRuntime{
+		Spec: kserveapi.ServingRuntimeSpec{
 			GrpcDataEndpoint: &path,
 		},
 	}
@@ -57,7 +57,7 @@ func TestAddMMDomainSocketMount(t *testing.T) {
 }
 
 func TestEnableAccessLogging(t *testing.T) {
-	rt := &api.ServingRuntime{}
+	rt := &kserveapi.ServingRuntime{}
 	d := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
@@ -85,7 +85,7 @@ func TestEnableAccessLogging(t *testing.T) {
 }
 
 func TestSetConfigMap(t *testing.T) {
-	rt := &api.ServingRuntime{}
+	rt := &kserveapi.ServingRuntime{}
 	m := Deployment{Owner: rt}
 
 	err := m.setConfigMap()
@@ -94,7 +94,7 @@ func TestSetConfigMap(t *testing.T) {
 }
 
 func TestModelMeshAdditionalEnvVars(t *testing.T) {
-	rt := &api.ServingRuntime{}
+	rt := &kserveapi.ServingRuntime{}
 	d := &appsv1.Deployment{Spec: appsv1.DeploymentSpec{
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{

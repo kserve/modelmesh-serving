@@ -18,21 +18,21 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
 func TestValidateServingRuntimeSpec(t *testing.T) {
 	for _, tt := range []struct {
 		name           string
-		servingRuntime *api.ServingRuntime
+		servingRuntime *kserveapi.ServingRuntime
 		expectError    bool
 	}{
 		{
 			name: "valid serving runtime",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "arbitrary-name",
@@ -66,18 +66,18 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "valid serving runtime with adapter",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							// A container matching the name of the adapter ServerType must exist
 							{
-								Name: string(api.MLServer),
+								Name: string(kserveapi.MLServer),
 							},
 						},
 					},
-					BuiltInAdapter: &api.BuiltInAdapter{
-						ServerType: api.MLServer,
+					BuiltInAdapter: &kserveapi.BuiltInAdapter{
+						ServerType: kserveapi.MLServer,
 					},
 				},
 			},
@@ -85,9 +85,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block container name model mesh",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -103,9 +103,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block container name reserved",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "mm-arbitrary",
@@ -118,9 +118,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block container lifecycle",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -137,9 +137,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block container readiness probe",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name:           "bad-container",
@@ -153,9 +153,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block conflicting port name",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -177,9 +177,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block reserved port name",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -201,9 +201,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block conflicting port",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -224,9 +224,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block reserved port",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -247,9 +247,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block mount of internal volume",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -270,9 +270,9 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block mount of reserved volume name",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
@@ -293,17 +293,17 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 		},
 		{
 			name: "block BuiltInAdapter missing runtime container",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Containers: []v1.Container{
 							{
 								Name: "some-container",
 							},
 						},
 					},
-					BuiltInAdapter: &api.BuiltInAdapter{
-						ServerType: api.MLServer,
+					BuiltInAdapter: &kserveapi.BuiltInAdapter{
+						ServerType: kserveapi.MLServer,
 					},
 				},
 			},

@@ -14,11 +14,12 @@
 package modelmesh
 
 import (
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func GetServingRuntimeSupportedModelTypeLabelSet(rt *api.ServingRuntime) sets.String {
+func GetServingRuntimeSupportedModelTypeLabelSet(rt *kserveapi.ServingRuntime) sets.String {
 	set := make(sets.String, 2*len(rt.Spec.SupportedModelFormats)+1)
 
 	// model type labels

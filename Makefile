@@ -87,7 +87,10 @@ delete: oc-login
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
+        # HACK: ignore errors from generating the TrainedModel CRD from KServe, which is removed below
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1alpha1" output:crd:artifacts:config=config/crd/bases || true
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="./..." output:crd:artifacts:config=config/crd/bases
+	rm -f ./config/crd/bases/serving.kserve.io_trainedmodels.yaml
 	pre-commit run --all-files prettier > /dev/null || true
 
 # Run go fmt against code

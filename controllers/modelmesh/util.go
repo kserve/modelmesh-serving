@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -54,7 +54,7 @@ func setEnvironmentVar(container string, variable string, value string, deployme
 
 // Determines if any unix domain sockets are present and returns
 // the unix:/// path and mount directory
-func unixDomainSockets(rt *api.ServingRuntime) (bool, []string, []string) {
+func unixDomainSockets(rt *kserveapi.ServingRuntime) (bool, []string, []string) {
 	endpoints := []*string{
 		rt.Spec.GrpcDataEndpoint,
 		//rt.Spec.HTTPDataEndpoint,
@@ -81,7 +81,7 @@ func unixDomainSockets(rt *api.ServingRuntime) (bool, []string, []string) {
 
 // useStorageHelper returns true if the model puller needs to be injected into the runtime deployment
 // either built-in adapter is not specified or storage helper is enabled
-func useStorageHelper(rt *api.ServingRuntime) bool {
+func useStorageHelper(rt *kserveapi.ServingRuntime) bool {
 	return rt.Spec.BuiltInAdapter == nil && (rt.Spec.StorageHelper == nil || !rt.Spec.StorageHelper.Disabled)
 }
 
@@ -100,7 +100,7 @@ func toYaml(resources []unstructured.Unstructured) string {
 }
 
 // Finds the common mount point for required unix domain sockets
-func mountPoint(rt *api.ServingRuntime) (bool, string, error) {
+func mountPoint(rt *kserveapi.ServingRuntime) (bool, string, error) {
 	findParentPath := func(str string) (bool, string, error) {
 		e, err := ParseEndpoint(str)
 		if err != nil {

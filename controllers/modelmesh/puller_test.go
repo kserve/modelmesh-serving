@@ -16,15 +16,15 @@ package modelmesh
 import (
 	"testing"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func TestPuller(t *testing.T) {
 	portURI := "port:9103"
-	rt := &api.ServingRuntime{
-		Spec: api.ServingRuntimeSpec{
+	rt := &kserveapi.ServingRuntime{
+		Spec: kserveapi.ServingRuntimeSpec{
 			GrpcMultiModelManagementEndpoint: &portURI,
 		},
 	}

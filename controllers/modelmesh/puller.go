@@ -16,7 +16,7 @@ package modelmesh
 import (
 	"strconv"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -25,7 +25,7 @@ import (
 
 var StorageSecretName string
 
-func addPullerTransform(rt *api.ServingRuntime, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) func(*unstructured.Unstructured) error {
+func addPullerTransform(rt *kserveapi.ServingRuntime, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) func(*unstructured.Unstructured) error {
 	return func(resource *unstructured.Unstructured) error {
 		var deployment = &appsv1.Deployment{}
 		if err := scheme.Scheme.Convert(resource, deployment, nil); err != nil {
@@ -41,7 +41,7 @@ func addPullerTransform(rt *api.ServingRuntime, pullerImage string, pullerImageC
 	}
 }
 
-func addPullerSidecar(rt *api.ServingRuntime, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) error {
+func addPullerSidecar(rt *kserveapi.ServingRuntime, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) error {
 	endpoint, err := ValidateEndpoint(*rt.Spec.GrpcMultiModelManagementEndpoint)
 	if err != nil {
 		return err

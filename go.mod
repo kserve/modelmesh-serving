@@ -7,6 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.7
+	github.com/kserve/kserve v0.8.1-0.20220430002746-5c3e028325ea
 	github.com/manifestival/controller-runtime-client v0.4.0
 	github.com/manifestival/manifestival v0.7.1
 	github.com/moverest/mnist v0.0.0-20160628192128-ec5d9d203b59
@@ -25,13 +26,9 @@ require (
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
 	k8s.io/client-go v0.23.0
+	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
 	sigs.k8s.io/controller-runtime v0.11.1
 	sigs.k8s.io/yaml v1.3.0
-)
-
-require (
-	github.com/kserve/kserve v0.8.1-0.20220330115523-ffa250ad1480
-	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
 )
 
 require (

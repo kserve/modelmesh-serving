@@ -28,10 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 )
 
-func newMockModelMeshDeployment(t *testing.T, rt *api.ServingRuntime) *Deployment {
+func newMockModelMeshDeployment(t *testing.T, rt *kserveapi.ServingRuntime) *Deployment {
 	return &Deployment{
 		Owner: rt,
 		Log:   testr.New(t),
@@ -48,9 +48,9 @@ func TestOverlayMockRuntime(t *testing.T) {
 	const adapterEnvNewName = "NEW_ENV_VAR"
 	const adapterEnvNewValue = "some value"
 	const adapterType = "custom"
-	v := &api.ServingRuntime{
-		Spec: api.ServingRuntimeSpec{
-			ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+	v := &kserveapi.ServingRuntime{
+		Spec: kserveapi.ServingRuntimeSpec{
+			ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 				Containers: []v1.Container{
 					{
 						Name:            adapterType,
@@ -77,13 +77,13 @@ func TestOverlayMockRuntime(t *testing.T) {
 					},
 				},
 			},
-			SupportedModelFormats: []api.SupportedModelFormat{
+			SupportedModelFormats: []kserveapi.SupportedModelFormat{
 				{
 					Name:    "name",
 					Version: &[]string{"version"}[0],
 				},
 			},
-			BuiltInAdapter: &api.BuiltInAdapter{
+			BuiltInAdapter: &kserveapi.BuiltInAdapter{
 				ServerType:                adapterType,
 				RuntimeManagementPort:     0,
 				MemBufferBytes:            1337,
@@ -167,16 +167,16 @@ func toString(o interface{}) string {
 func TestAddVolumesToDeployment(t *testing.T) {
 	for _, tt := range []struct {
 		name                 string
-		servingRuntime       *api.ServingRuntime
+		servingRuntime       *kserveapi.ServingRuntime
 		expectedExtraVolumes []string
 		expectStorageVolumes bool
 		expectSocketVolume   bool
 	}{
 		{
 			name: "with-volume",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 						Volumes: []v1.Volume{
 							{
 								Name: "my-volume",
@@ -191,8 +191,8 @@ func TestAddVolumesToDeployment(t *testing.T) {
 		},
 		{
 			name: "unix-socket-grpc",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
 					GrpcDataEndpoint: &[]string{"unix:///socket"}[0],
 				},
 			},
@@ -201,10 +201,10 @@ func TestAddVolumesToDeployment(t *testing.T) {
 		},
 		{
 			name: "built-in-adapter",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					BuiltInAdapter: &api.BuiltInAdapter{
-						ServerType: api.MLServer,
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					BuiltInAdapter: &kserveapi.BuiltInAdapter{
+						ServerType: kserveapi.MLServer,
 					},
 				},
 			},
@@ -213,9 +213,9 @@ func TestAddVolumesToDeployment(t *testing.T) {
 		},
 		{
 			name: "helper-disabled",
-			servingRuntime: &api.ServingRuntime{
-				Spec: api.ServingRuntimeSpec{
-					StorageHelper: &api.StorageHelper{
+			servingRuntime: &kserveapi.ServingRuntime{
+				Spec: kserveapi.ServingRuntimeSpec{
+					StorageHelper: &kserveapi.StorageHelper{
 						Disabled: true,
 					},
 				},
@@ -270,7 +270,7 @@ func TestAddVolumesToDeployment(t *testing.T) {
 func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 	t.Run("defaults-to-no-changes", func(t *testing.T) {
 		d := &appsv1.Deployment{}
-		sr := &api.ServingRuntime{}
+		sr := &kserveapi.ServingRuntime{}
 		m := Deployment{Owner: sr}
 		err := m.addPassThroughPodFieldsToDeployment(d)
 
@@ -312,9 +312,9 @@ func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 			},
 		}
 
-		sr := &api.ServingRuntime{
-			Spec: api.ServingRuntimeSpec{
-				ServingRuntimePodSpec: api.ServingRuntimePodSpec{
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
 					NodeSelector: nodeSelector,
 					Affinity:     &affinity,
 					Tolerations:  tolerations,
@@ -350,7 +350,7 @@ func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 func TestConfigureRuntimeAnnotations(t *testing.T) {
 	t.Run("success-set-annotations", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
-		sr := &api.ServingRuntime{}
+		sr := &kserveapi.ServingRuntime{}
 		annotationsData := map[string]string{
 			"foo":            "bar",
 			"network-policy": "allow-egress",
@@ -367,7 +367,7 @@ func TestConfigureRuntimeAnnotations(t *testing.T) {
 
 	t.Run("success-no-annotations", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
-		sr := &api.ServingRuntime{}
+		sr := &kserveapi.ServingRuntime{}
 		m := Deployment{Owner: sr, AnnotationsMap: map[string]string{}}
 
 		err := m.configureRuntimePodSpecAnnotations(deploy)
@@ -380,7 +380,7 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 
 	t.Run("success-set-labels", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
-		sr := &api.ServingRuntime{}
+		sr := &kserveapi.ServingRuntime{}
 		labelData := map[string]string{
 			"foo":            "bar",
 			"network-policy": "allow-egress",
@@ -399,7 +399,7 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 
 	t.Run("success-no-labels", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
-		sr := &api.ServingRuntime{}
+		sr := &kserveapi.ServingRuntime{}
 		m := Deployment{Owner: sr, LabelsMap: map[string]string{}}
 
 		err := m.configureRuntimePodSpecLabels(deploy)
