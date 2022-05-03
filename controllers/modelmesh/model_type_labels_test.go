@@ -14,7 +14,6 @@
 package modelmesh
 
 import (
-	"strings"
 	"testing"
 
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -69,7 +68,7 @@ func TestGetServingRuntimeSupportedModelTypeLabelSet(t *testing.T) {
 		t.Errorf("Length of set %v should be %d, but got %d", labelSet, len(expectedLabels), len(labelSet))
 	}
 	for _, e := range expectedLabels {
-		if !labelSet.Contains(e) {
+		if !labelSet.Has(e) {
 			t.Errorf("Missing expected entry [%s] in set: %v", e, labelSet)
 		}
 	}
@@ -128,77 +127,5 @@ func TestGetPredictorModelTypeLabel(t *testing.T) {
 				t.Errorf("Got wrong predictor label, expected [%s], got [%s]", tt.expectedLabel, label)
 			}
 		})
-	}
-}
-
-func makeStringSet(input []string) StringSet {
-	ss := make(StringSet, len(input))
-	for _, s := range input {
-		ss.Add(s)
-	}
-	return ss
-}
-
-func TestStringSetContains(t *testing.T) {
-	inputs := []string{"cat", "frog", "aardvark", "aardvark", "aardvark"}
-	ss := makeStringSet(inputs)
-
-	// should contain these
-	if !ss.Contains("cat") {
-		t.Errorf("Missing expected entry [cat] in set: %v", ss)
-	}
-	if !ss.Contains("aardvark") {
-		t.Errorf("Missing expected entry [aardvark] in set: %v", ss)
-	}
-	if !ss.Contains("frog") {
-		t.Errorf("Missing expected entry [frog] in set: %v", ss)
-	}
-	// and not contain these
-	if ss.Contains("billy goat") {
-		t.Errorf("Unexpected entry [billy goat] in set: %v", ss)
-	}
-	if ss.Contains(".") {
-		t.Errorf("Unexpected entry [.] in set: %v", ss)
-	}
-}
-
-func TestStringSetToSlice(t *testing.T) {
-	inputs := []string{"c", "f", "a", "a", "f", "a"}
-	ss := makeStringSet(inputs)
-
-	hasC := false
-	hasF := false
-	hasA := false
-
-	ssSlice := ss.ToSlice()
-
-	for i, s := range ssSlice {
-		// each entry should only show up once
-		if s == "c" && !hasC {
-			hasC = true
-			continue
-		}
-		if s == "f" && !hasF {
-			hasF = true
-			continue
-		}
-		if s == "a" && !hasA {
-			hasA = true
-			continue
-		}
-		t.Errorf("Unexpected entry in ToSlice at index %d: %v", i, ssSlice)
-	}
-	if !hasC || !hasA || !hasF {
-		t.Errorf("Missing expected entry in ToSlice: %v", ssSlice)
-	}
-
-	// test that the order of entries in ToSlice is consistent
-	expected := strings.Join(ss.ToSlice(), ",")
-	for i := 1; i <= 20; i++ {
-		ssNew := makeStringSet(inputs)
-		got := strings.Join(ssNew.ToSlice(), ",")
-		if got != expected {
-			t.Fatalf("Expected order of ToSlice to result in %v but got %v", expected, got)
-		}
 	}
 }

@@ -14,49 +14,25 @@
 package modelmesh
 
 import (
-	"sort"
-
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-type StringSet map[string]struct{}
-
-var exists = struct{}{} // empty struct placeholder
-
-func (ss StringSet) Add(s string) {
-	ss[s] = exists
-}
-
-func (ss StringSet) Contains(s string) bool {
-	_, found := ss[s]
-	return found
-}
-
-func (ss StringSet) ToSlice() []string {
-	strs := make([]string, 0, len(ss))
-	for s := range ss {
-		strs = append(strs, s)
-	}
-	// map keys are not ordered, so we sort them
-	sort.Strings(strs)
-	return strs
-}
-
-func GetServingRuntimeSupportedModelTypeLabelSet(rt *api.ServingRuntime) StringSet {
-	set := make(StringSet, 2*len(rt.Spec.SupportedModelFormats)+1)
+func GetServingRuntimeSupportedModelTypeLabelSet(rt *api.ServingRuntime) sets.String {
+	set := make(sets.String, 2*len(rt.Spec.SupportedModelFormats)+1)
 
 	// model type labels
 	for _, t := range rt.Spec.SupportedModelFormats {
 		// only include model type labels when autoSelect is true
 		if t.AutoSelect != nil && *t.AutoSelect {
-			set.Add("mt:" + t.Name)
+			set.Insert("mt:" + t.Name)
 			if t.Version != nil {
-				set.Add("mt:" + t.Name + ":" + *t.Version)
+				set.Insert("mt:" + t.Name + ":" + *t.Version)
 			}
 		}
 	}
 	// runtime label
-	set.Add("rt:" + rt.Name)
+	set.Insert("rt:" + rt.Name)
 	return set
 }
 

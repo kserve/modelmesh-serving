@@ -354,7 +354,7 @@ func runtimeSupportsPredictor(rt *api.ServingRuntime, p *api.Predictor) bool {
 	predictorLabel := modelmesh.GetPredictorModelTypeLabel(p)
 
 	// if the runtime has the predictor's label, then it supports that predictor
-	return runtimeLabelSet.Contains(predictorLabel)
+	return runtimeLabelSet.Has(predictorLabel)
 }
 
 // getRuntimesSupportingPredictor returns a list of keys for runtimes that support the predictor p

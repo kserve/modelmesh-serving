@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"errors"
 
 	corev1 "k8s.io/api/core/v1"
@@ -103,8 +105,8 @@ func validateContainer(c *corev1.Container) error {
 		}
 
 		// Check for conflicting port usage
-		if internal, ok := internalPorts[p.ContainerPort]; ok {
-			return fmt.Errorf("Port %d is reserved for internal use", internal)
+		if _, ok := internalPorts[p.ContainerPort]; ok {
+			return fmt.Errorf("Port %d is reserved for internal use", p.ContainerPort)
 		}
 		// Reserve a range for future use
 		// ascii 'm' is 109. ModelMesh -> mm -> m*m = 11881
@@ -127,8 +129,8 @@ func validateVolumes(rt *api.ServingRuntime) error {
 	return nil
 }
 
-func checkName(name string, internalNames map[string]interface{}, logStr string) error {
-	if _, ok := internalNames[name]; ok {
+func checkName(name string, internalNames sets.String, logStr string) error {
+	if internalNames.Has(name) {
 		return fmt.Errorf("%s %s is reserved for internal use", logStr, name)
 	}
 
@@ -138,36 +140,32 @@ func checkName(name string, internalNames map[string]interface{}, logStr string)
 	return nil
 }
 
-var internalContainerNames = map[string]interface{}{
-	modelmesh.ModelMeshContainerName: nil,
-	modelmesh.RESTProxyContainerName: nil,
-	modelmesh.PullerContainerName:    nil,
+var internalContainerNames = sets.NewString(
+	modelmesh.ModelMeshContainerName,
+	modelmesh.RESTProxyContainerName,
+	modelmesh.PullerContainerName,
+)
+
+var internalOnlyVolumeMounts = sets.NewString(
+	modelmesh.ConfigStorageMount,
+	modelmesh.EtcdVolume,
+	modelmesh.InternalConfigMapName,
+	modelmesh.SocketVolume,
+)
+
+var internalNamedPorts = sets.NewString("grpc", "http", "prometheus")
+
+var internalPorts = map[int32]struct{}{
+	8080: {}, // is used for LiteLinks communication in Model Mesh
+	8085: {}, // is the port the built-in adapter listens on
+	8089: {}, // is used for Model Mesh probes
+	8090: {}, // is used for default preStop hooks
 }
 
-var internalOnlyVolumeMounts = map[string]interface{}{
-	modelmesh.ConfigStorageMount:    nil,
-	modelmesh.EtcdVolume:            nil,
-	modelmesh.InternalConfigMapName: nil,
-	modelmesh.SocketVolume:          nil,
-}
-
-var internalNamedPorts = map[string]interface{}{
-	"grpc":       nil,
-	"http":       nil,
-	"prometheus": nil,
-}
-
-var internalPorts = map[int32]interface{}{
-	8080: nil, // is used for LiteLinks communication in Model Mesh
-	8085: nil, // is the port the built-in adapter listens on
-	8089: nil, // is used for Model Mesh probes
-	8090: nil, // is used for default preStop hooks
-}
-
-var internalVolumes = map[string]interface{}{
-	modelmesh.ConfigStorageMount:    nil,
-	modelmesh.EtcdVolume:            nil,
-	modelmesh.InternalConfigMapName: nil,
-	modelmesh.SocketVolume:          nil,
-	modelmesh.ModelsDirVolume:       nil,
-}
+var internalVolumes = sets.NewString(
+	modelmesh.ConfigStorageMount,
+	modelmesh.EtcdVolume,
+	modelmesh.InternalConfigMapName,
+	modelmesh.SocketVolume,
+	modelmesh.ModelsDirVolume,
+)
