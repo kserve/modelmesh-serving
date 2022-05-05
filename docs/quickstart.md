@@ -28,6 +28,8 @@ kubectl create namespace modelmesh-serving
 This will install ModelMesh serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
 Eventually after running this script, you should see a `Successfully installed ModelMesh Serving!` message.
 
+**Note**: These etcd and MinIO deployments are intended for development/experimentation and not for production.
+
 To see more details about installation, click [here](./install/install-script.md).
 
 ### Verify installation

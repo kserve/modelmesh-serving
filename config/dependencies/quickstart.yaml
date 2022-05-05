@@ -24,41 +24,49 @@ spec:
   selector:
     app: etcd
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   labels:
     app: etcd
   name: etcd
 spec:
-  containers:
-    - command:
-        - etcd
-        - --listen-client-urls
-        - http://0.0.0.0:2379
-        - --advertise-client-urls
-        - http://0.0.0.0:2379
-      image: quay.io/coreos/etcd:v3.5.4
-      name: etcd
-      ports:
-        - containerPort: 2379
-          name: client
-          protocol: TCP
-        - containerPort: 2380
-          name: server
-          protocol: TCP
-  restartPolicy: Always
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+    spec:
+      containers:
+        - command:
+            - etcd
+            - --listen-client-urls
+            - http://0.0.0.0:2379
+            - --advertise-client-urls
+            - http://0.0.0.0:2379
+          image: quay.io/coreos/etcd:v3.5.4
+          name: etcd
+          ports:
+            - containerPort: 2379
+              name: client
+              protocol: TCP
+            - containerPort: 2380
+              name: server
+              protocol: TCP
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: model-serving-etcd
 stringData:
   etcd_connection: |
     {
       "endpoints": "http://etcd:2379",
       "root_prefix": "modelmesh-serving"
     }
-kind: Secret
-metadata:
-  name: model-serving-etcd
 ---
 apiVersion: v1
 kind: Service
@@ -73,26 +81,35 @@ spec:
   selector:
     app: minio
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   labels:
     app: minio
   name: minio
 spec:
-  containers:
-    - args:
-        - server
-        # - /data
-        - /data1
-      env:
-        - name: MINIO_ACCESS_KEY
-          value: AKIAIOSFODNN7EXAMPLE
-        - name: MINIO_SECRET_KEY
-          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      # image: quay.io/cloudservices/minio:latest
-      image: kserve/modelmesh-minio-examples:latest
-      name: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - args:
+            - server
+            # - /data
+            - /data1
+          env:
+            - name: MINIO_ACCESS_KEY
+              value: AKIAIOSFODNN7EXAMPLE
+            - name: MINIO_SECRET_KEY
+              value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          # image: quay.io/cloudservices/minio:latest
+          image: kserve/modelmesh-minio-examples:latest
+          name: minio
 ---
 apiVersion: v1
 kind: Secret
