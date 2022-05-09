@@ -86,7 +86,7 @@ type FVTClient struct {
 	restPortForward     *ModelMeshPortForward
 	restConn            *http.Client
 	log                 logr.Logger
-	certGenerator   		CertGenerator
+	certGenerator       CertGenerator
 }
 
 type ModelMeshPortForward struct {
@@ -168,7 +168,7 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	restPort := 8000 + ginkgo.GinkgoParallelProcess()
 
 	return &FVTClient{
-		Interface:       		 client,
+		Interface:           client,
 		namespace:           namespace,
 		serviceName:         serviceName,
 		controllerNamespace: controllerNamespace,

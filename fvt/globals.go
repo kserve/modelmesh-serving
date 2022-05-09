@@ -69,5 +69,5 @@ const (
 	samplesPath                = "predictors/"
 	isvcSamplesPath            = "isvcs/"
 	RuntimeSamplesPath         = "runtimes/"
-	TLSSecretName          		 = "fvt-tls-secret"
+	TLSSecretName              = "fvt-tls-secret"
 )
