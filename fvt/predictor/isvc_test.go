@@ -36,7 +36,7 @@ var inferenceArray = []FVTInferenceService{
 	},
 }
 
-var _ = Describe("Inference service", func() {
+var _ = Describe("Inference service", Ordered, func() {
 	for _, i := range inferenceArray {
 		var _ = Describe("test "+i.name+" isvc", Ordered, func() {
 			var isvcName string
