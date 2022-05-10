@@ -25,7 +25,7 @@ modelMeshResources:
     cpu: "3"
     memory: "448Mi"
 restProxy:
-  enabled: false
+  enabled: true
   port: 8008
   image:
     name: kserve/rest-proxy
