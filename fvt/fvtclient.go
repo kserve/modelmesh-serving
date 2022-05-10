@@ -440,10 +440,7 @@ func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, tls boo
 	}
 
 	resp, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return string(resp), err
-	}
-	return string(resp), nil
+	return string(resp), err
 }
 
 func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.PredictResponse, error) {
@@ -468,13 +465,11 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
 	}
 
-	err := fvt.grpcPortForward.EnsureStarted()
-	if err != nil {
+	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
 		return fmt.Errorf("Error with grpc port-forward, could not connect to model serving")
 	}
 
-	err = fvt.restPortForward.EnsureStarted()
-	if err != nil {
+	if err := fvt.restPortForward.EnsureStarted(); err != nil {
 		return fmt.Errorf("Error with rest port-forward, could not connect to model serving")
 	}
 

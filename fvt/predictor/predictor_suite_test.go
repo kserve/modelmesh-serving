@@ -18,12 +18,12 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 func TestPredictorSuite(t *testing.T) {
@@ -57,7 +57,7 @@ func createFVTClient() {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	//runs *only* on process #1
+	// runs *only* on process #1
 	createFVTClient()
 
 	// confirm 3 serving runtimes exist
@@ -71,13 +71,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.DeleteAllIsvcs()
 	// ensure a stable deploy state
 	WaitForStableActiveDeployState()
-	//Create TLS secrets before start of tests
+	// create TLS secrets before start of tests
 	FVTClientInstance.CreateTLSSecrets()
 
 	return nil
 }, func(_ []byte) {
-	//runs on *all* processes
-	//create the fvtClient Instance on every other process except the first, since it got created in the above function.
+	// runs on *all* processes
+	// create the fvtClient Instance on every other process except the first, since it got created in the above function.
 	if FVTClientInstance == nil {
 		createFVTClient()
 	}
@@ -85,15 +85,15 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = SynchronizedAfterSuite(func() {
-	//runs on *all* processes
+	// runs on *all* processes
 	// ensure we cleanup any port-forward
 	FVTClientInstance.DisconnectFromModelServing()
 }, func() {
-	//runs *only* on process #1
+	// runs *only* on process #1
 	if err := FVTClientInstance.DeleteTLSSecrets(); err != nil {
 		Log.Info("Error deleting test-specific TLS secrets", "error", err)
 	}
-	//Restart pods to reset Bootstrap failure checks
+	// restart pods to reset Bootstrap failure checks
 	FVTClientInstance.RestartDeploys()
 })
 

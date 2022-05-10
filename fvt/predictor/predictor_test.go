@@ -17,16 +17,16 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/kserve/modelmesh-serving/fvt"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
 	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+
+	. "github.com/kserve/modelmesh-serving/fvt"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Predictor struct - used to store data about the predictor that FVT suite can use
@@ -206,7 +206,6 @@ var _ = Describe("Predictor", func() {
 		})
 
 		var _ = Describe("update "+predictor.predictorName+" predictor", Ordered, func() {
-
 			var predictorObject *unstructured.Unstructured
 			var predictorName string
 
@@ -477,7 +476,7 @@ var _ = Describe("Predictor", func() {
 		var openvinoPredictorObject *unstructured.Unstructured
 		var openvinoPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			openvinoPredictorObject = NewPredictorForFVT("openvino-mnist-predictor.yaml")
 			openvinoPredictorName = openvinoPredictorObject.GetName()
@@ -488,7 +487,7 @@ var _ = Describe("Predictor", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
+		AfterAll(func() {
 			FVTClientInstance.DeletePredictor(openvinoPredictorName)
 		})
 
@@ -497,8 +496,6 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should fail to run an inference with invalid shape", func() {
-			image := LoadMnistImage(0)
-
 			inferRequest := &tfsapi.PredictRequest{
 				ModelSpec: &tfsapi.ModelSpec{
 					Name: openvinoPredictorName,
@@ -511,7 +508,8 @@ var _ = Describe("Predictor", func() {
 								{Size: 28}, {Size: 28},
 							},
 						},
-						FloatVal: image,
+						// invalid shape error occurs before the content is inspected
+						// TensorContent:
 					},
 				},
 			}
@@ -617,7 +615,6 @@ var _ = Describe("Predictor", func() {
 	})
 
 	var _ = Describe("Pytorch inference", Ordered, func() {
-
 		var ptPredictorObject *unstructured.Unstructured
 		var ptPredictorName string
 
@@ -667,7 +664,6 @@ var _ = Describe("Predictor", func() {
 	// However config.pbtxt (in COS) by default does not include schema section, instead
 	// schema passed in Predictor CR is updated (in config.pbtxt) after model downloaded.
 	var _ = Describe("Pytorch inference with schema", Ordered, func() {
-
 		var ptPredictorObject *unstructured.Unstructured
 		var ptPredictorName string
 
@@ -877,7 +873,7 @@ var _ = Describe("Predictor", func() {
 // separate block in part because a high frequency of failures can trigger Model
 // Mesh's "bootstrap failure" mechanism which prevents rollouts of new pods that
 // fail frequently by causing them to fail the readiness check.
-// At the end of this block, all runtime deployments are rolled out to remove
+// At the end of the suite, all runtime deployments are rolled out to remove
 // any that may have gone unready.
 var _ = Describe("Invalid Predictors", func() {
 	var predictorObject *unstructured.Unstructured
@@ -967,7 +963,6 @@ var _ = Describe("Invalid Predictors", func() {
 })
 
 var _ = Describe("Non-ModelMesh ServingRuntime", func() {
-
 	runtimeFile := "non-mm-runtime.yaml"
 	runtimeName := "non-mm-runtime"
 

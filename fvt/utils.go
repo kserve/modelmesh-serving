@@ -21,12 +21,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	yamlserializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/types"
+
+	. "github.com/onsi/gomega"
 )
 
 //Utility function to return the testdata directory

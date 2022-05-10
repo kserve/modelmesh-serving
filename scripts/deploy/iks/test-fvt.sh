@@ -49,13 +49,13 @@ run_fvt() {
   export PATH=/root/go/bin/:$PATH
 
   export NAMESPACE=${SERVING_NS}
-  ginkgo -v --progress --fail-fast -p --procs 10 fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+  ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
   cat fvt.out
   RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
 
   if [[ "$RUN_STATUS" == "PASS" ]]; then
     export NAMESPACE="modelmesh-user"
-    ginkgo -v --progress --fail-fast -p --procs 10 fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+    ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
     cat fvt.out
     RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
     if [[ "$RUN_STATUS" == "PASS" ]]; then

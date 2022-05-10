@@ -66,8 +66,8 @@ const (
 	DefaultTestServiceName     = "modelmesh-serving"
 	DefaultControllerNamespace = "modelmesh-serving"
 	UserConfigMapName          = "model-serving-config"
-	samplesPath                = "predictors/"
-	isvcSamplesPath            = "isvcs/"
+	SamplesPath                = "predictors/"
+	IsvcSamplesPath            = "isvcs/"
 	RuntimeSamplesPath         = "runtimes/"
 	TLSSecretName              = "fvt-tls-secret"
 )

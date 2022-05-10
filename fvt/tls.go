@@ -81,20 +81,18 @@ func (g *CertGenerator) generate() error {
 	}
 
 	g.CAPEM = new(bytes.Buffer)
-	err = pem.Encode(g.CAPEM, &pem.Block{
+	if err = pem.Encode(g.CAPEM, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
 	g.PublicKeyPEM = new(bytes.Buffer)
-	err = pem.Encode(g.PublicKeyPEM, &pem.Block{
+	if err = pem.Encode(g.PublicKeyPEM, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certBytes,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -103,11 +101,11 @@ func (g *CertGenerator) generate() error {
 	if err != nil {
 		return err
 	}
-	err = pem.Encode(g.PrivateKeyPEM, &pem.Block{
+
+	if err = pem.Encode(g.PrivateKeyPEM, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privBytes,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 

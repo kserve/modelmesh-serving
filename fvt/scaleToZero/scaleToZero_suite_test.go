@@ -18,12 +18,12 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 func TestScaleToZeroSuite(t *testing.T) {
@@ -32,10 +32,10 @@ func TestScaleToZeroSuite(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	//runs *only* on process #1
+	// runs *only* on process #1
 	return nil
 }, func(_ []byte) {
-	//runs on *all* processes
+	// runs on *all* processes
 	Log = zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter))
 	Log.Info("Initializing test suite")
 
@@ -81,13 +81,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = SynchronizedAfterSuite(func() {
-	//runs on *all* processes
+	// runs on *all* processes
 	// ensure we cleanup any port-forward
 	FVTClientInstance.DisconnectFromModelServing()
 }, func() {
-	//runs *only* on process #1
-	// cleanup any predictors if they exist
+	// runs *only* on process #1
+	// cleanup any predictors and inference services if they exist
 	FVTClientInstance.DeleteAllPredictors()
+	FVTClientInstance.DeleteAllIsvcs()
 })
 
 // register handlers for a failed test case to print info to the console
@@ -98,6 +99,10 @@ var _ = JustBeforeEach(func() {
 var _ = JustAfterEach(func() {
 	if CurrentSpecReport().Failed() {
 		FVTClientInstance.PrintPredictors()
+		FVTClientInstance.PrintIsvcs()
+		FVTClientInstance.PrintPods()
+		FVTClientInstance.PrintDescribeNodes()
+		FVTClientInstance.PrintEvents()
 		FVTClientInstance.TailPodLogs(startTime)
 	}
 })
