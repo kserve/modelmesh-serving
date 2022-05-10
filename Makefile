@@ -42,7 +42,7 @@ test:
 
 # Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 fvt:
-	ginkgo --junit-report=junit_fvt.xml -output-dir=target/test-reports/ -keep-separate-reports -v -p -progress --fail-fast -procs=10 fvt/predictor fvt/scaleToZero --timeout=40m
+	ginkgo -v -p -progress --fail-fast fvt/predictor fvt/scaleToZero --timeout=40m
 
 # Command to regenerate the grpc go files from the proto files
 fvt-protoc:
