@@ -53,12 +53,11 @@ run_fvt() {
   cat fvt.out
   RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
 
-  if [[ "$RUN_STATUS" == "PASS" ]]; then
+  if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
     export NAMESPACE="modelmesh-user"
     ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
     cat fvt.out
-    RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
-    if [[ "$RUN_STATUS" == "PASS" ]]; then
+    if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
       REV=0
     fi
   fi
