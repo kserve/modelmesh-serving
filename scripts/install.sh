@@ -240,8 +240,8 @@ if [[ $quickstart == "true" ]]; then
   kubectl apply -f dependencies/quickstart.yaml
 
   info "Waiting for dependent pods to be up..."
-  wait_for_pods_ready "--field-selector metadata.name=etcd"
-  wait_for_pods_ready "--field-selector metadata.name=minio"
+  wait_for_pods_ready "-l app=etcd"
+  wait_for_pods_ready "-l app=minio"
 fi
 
 # FVT resources
@@ -250,8 +250,8 @@ if [[ $fvt == "true" ]]; then
   kubectl apply -f dependencies/fvt.yaml
 
   info "Waiting for dependent pods to be up..."
-  wait_for_pods_ready "--field-selector metadata.name=etcd"
-  wait_for_pods_ready "--field-selector metadata.name=minio"
+  wait_for_pods_ready "-l app=etcd"
+  wait_for_pods_ready "-l app=minio"
 fi
 
 if ! kubectl get secret model-serving-etcd >/dev/null; then
