@@ -167,6 +167,11 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	grpcPort := 50000 + ginkgo.GinkgoParallelProcess()
 	restPort := 8000 + ginkgo.GinkgoParallelProcess()
 
+	certNamespaces := []string{controllerNamespace}
+	if namespace != controllerNamespace {
+		certNamespaces = append(certNamespaces, namespace)
+	}
+
 	return &FVTClient{
 		Interface:           client,
 		namespace:           namespace,
@@ -179,7 +184,7 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 		restPortForward:     nil,
 		restConn:            nil,
 		log:                 log,
-		certGenerator:       CertGenerator{Namespace: namespace},
+		certGenerator:       CertGenerator{Namespaces: certNamespaces, ServiceName: serviceName},
 	}, nil
 }
 
@@ -608,7 +613,10 @@ func (fvt *FVTClient) CreateTLSSecrets() {
 		},
 	}
 
-	CreateSecret(&TLSSecret, fvt)
+	CreateSecret(&TLSSecret, fvt.controllerNamespace, fvt)
+	if fvt.namespace != fvt.controllerNamespace {
+		CreateSecret(&TLSSecret, fvt.namespace, fvt)
+	}
 }
 
 func (fvt *FVTClient) UpdateConfigMapTLS(tlsConfig map[string]interface{}) {
@@ -700,16 +708,24 @@ func (fvt *FVTClient) DeleteConfigMap(resourceName string) error {
 	return nil
 }
 
-func (fvt FVTClient) DeleteTLSSecrets() error {
-	return fvt.DeleteSecret(TLSSecretName)
+func (fvt FVTClient) DeleteTLSSecrets() {
+	if err := fvt.DeleteSecret(TLSSecretName, fvt.controllerNamespace); err != nil {
+		fvt.log.Error(err, "Unable to delete TLS secret")
+	}
+
+	if fvt.namespace != fvt.controllerNamespace {
+		if err := fvt.DeleteSecret(TLSSecretName, fvt.namespace); err != nil {
+			fvt.log.Error(err, "Unable to delete user namespaced TLS secret")
+		}
+	}
 }
 
-func (fvt *FVTClient) DeleteSecret(resourceName string) error {
-	secretExists, _ := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
+func (fvt *FVTClient) DeleteSecret(resourceName string, namespace string) error {
+	secretExists, _ := fvt.Resource(gvrSecret).Namespace(namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
 	if secretExists != nil {
 		fvt.log.Info(fmt.Sprintf("Found secret '%s'", resourceName))
 		fvt.log.Info(fmt.Sprintf("Deleting secret '%s' ...", resourceName))
-		return fvt.Resource(gvrSecret).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
+		return fvt.Resource(gvrSecret).Namespace(namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
 	}
 	return nil
 }

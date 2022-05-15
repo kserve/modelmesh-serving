@@ -90,9 +90,7 @@ var _ = SynchronizedAfterSuite(func() {
 	FVTClientInstance.DisconnectFromModelServing()
 }, func() {
 	// runs *only* on process #1
-	if err := FVTClientInstance.DeleteTLSSecrets(); err != nil {
-		Log.Info("Error deleting test-specific TLS secrets", "error", err)
-	}
+	FVTClientInstance.DeleteTLSSecrets()
 	// restart pods to reset Bootstrap failure checks
 	FVTClientInstance.RestartDeploys()
 })

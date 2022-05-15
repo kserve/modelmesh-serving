@@ -53,11 +53,11 @@ func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
 	return obj
 }
 
-func CreateSecret(secret *corev1.Secret, fvt *FVTClient) {
+func CreateSecret(secret *corev1.Secret, namespace string, fvt *FVTClient) {
 	patchJson, err := json.Marshal(secret)
 	Expect(err).ToNot(HaveOccurred())
 
-	updatedSecret, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).
+	updatedSecret, err := fvt.Resource(gvrSecret).Namespace(namespace).
 		Patch(context.TODO(), secret.Name, types.ApplyPatchType, patchJson, applyPatchOptions)
 
 	Expect(err).ToNot(HaveOccurred())

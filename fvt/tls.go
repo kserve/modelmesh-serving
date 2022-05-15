@@ -27,7 +27,8 @@ import (
 )
 
 type CertGenerator struct {
-	Namespace     string
+	Namespaces    []string
+	ServiceName   string
 	CAPEM         *bytes.Buffer
 	PublicKeyPEM  *bytes.Buffer
 	PrivateKeyPEM *bytes.Buffer
@@ -53,6 +54,12 @@ func (g *CertGenerator) generate() error {
 		return err
 	}
 
+	dnsNames := make([]string, len(g.Namespaces)+1)
+	dnsNames[0] = g.ServiceName
+	for i, ns := range g.Namespaces {
+		dnsNames[i+1] = fmt.Sprintf("%s.%s", g.ServiceName, ns)
+	}
+
 	certTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1337),
 		Subject:      ca.Subject,
@@ -62,7 +69,7 @@ func (g *CertGenerator) generate() error {
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,
-		DNSNames:     []string{fmt.Sprintf("modelmesh-serving.%s", g.Namespace), "modelmesh-serving"},
+		DNSNames:     dnsNames,
 	}
 
 	certPrivKey, err := rsa.GenerateKey(cryptorand.Reader, 4096)
