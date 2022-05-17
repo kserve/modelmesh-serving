@@ -14,11 +14,15 @@
 package fvt
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"os/exec"
 	"strings"
 	"time"
@@ -35,6 +39,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,8 +55,6 @@ import (
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
 )
-
-var defaultTimeout = int64(180)
 
 const predictorTimeout = time.Second * 120
 const timeForStatusToStabilize = time.Second * 5
@@ -76,11 +79,74 @@ type FVTClient struct {
 	namespace           string
 	serviceName         string
 	controllerNamespace string
+	grpcPort            int
+	grpcPortForward     *ModelMeshPortForward
 	grpcConn            *grpc.ClientConn
-	portForwardCommand  *exec.Cmd
-	portForwardDoneCh   chan struct{}
-	localPort           int
+	restPort            int
+	restPortForward     *ModelMeshPortForward
+	restConn            *http.Client
 	log                 logr.Logger
+	certGenerator       CertGenerator
+}
+
+type ModelMeshPortForward struct {
+	cmd     *exec.Cmd
+	cmdArgs []string
+	done    chan struct{}
+	log     logr.Logger
+}
+
+func (pf *ModelMeshPortForward) EnsureStarted() error {
+	// quick return if command is still running
+	if pf.cmd != nil && pf.cmd.Process != nil {
+		pf.log.Info("Found existing port-forward process")
+		return nil
+	}
+	// port forward localhost to the cluster's model-serving service
+	pf.cmd = exec.Command("kubectl", pf.cmdArgs...)
+	pf.log.Info("Running port-forward in the background", "Command", strings.Join(pf.cmd.Args, " "))
+
+	pf.done = make(chan struct{})
+	go func() {
+		var commandErr error
+		commandOutput, commandErr := pf.cmd.CombinedOutput()
+		pf.log.Info("Port-forward command exited", "Error", commandErr, "Command Output", string(commandOutput))
+		pf.cmd = nil
+		// close the channel to signal that the command exited
+		close(pf.done)
+	}()
+
+	// check that the port forward process is still running after 2s
+	select {
+	case <-pf.done:
+		return fmt.Errorf("Expected the port-forward process to still be running but it is not.")
+	case <-time.After(time.Second * 2):
+		break
+	}
+
+	return nil
+}
+
+func (pf *ModelMeshPortForward) EnsureStopped() {
+	// quick return if command is not running
+	if pf.cmd == nil {
+		return
+	}
+	pf.log.Info("Killing port-forward process")
+	if err := pf.cmd.Process.Kill(); err != nil {
+		pf.log.Error(err, "Failed to send kill signal to the port-forward process, but will attempt to continue")
+		return
+	}
+	// wait until the process exits
+	<-pf.done
+}
+
+func NewModelMeshPortForward(namespace string, podName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
+	portMap := fmt.Sprintf("%d:%d", localPort, targetPort)
+	cmdArgs := []string{"port-forward", "--namespace", namespace, "--address", "0.0.0.0",
+		"pod/" + podName, portMap}
+
+	return &ModelMeshPortForward{nil, cmdArgs, nil, log}
 }
 
 func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace string) (*FVTClient, error) {
@@ -97,11 +163,29 @@ func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace s
 	client, err := dynamic.NewForConfig(config)
 	Expect(err).ToNot(HaveOccurred())
 
-	// set port based on worker index to support parallel port-forwards
-	suitConfig, _ := ginkgo.GinkgoConfiguration()
-	localPort := 8032 + suitConfig.ParallelProcess
+	// set ports based on worker index to support parallel port-forwards
+	grpcPort := 50000 + ginkgo.GinkgoParallelProcess()
+	restPort := 8000 + ginkgo.GinkgoParallelProcess()
 
-	return &FVTClient{client, namespace, serviceName, controllerNamespace, nil, nil, nil, localPort, log}, nil
+	certNamespaces := []string{controllerNamespace}
+	if namespace != controllerNamespace {
+		certNamespaces = append(certNamespaces, namespace)
+	}
+
+	return &FVTClient{
+		Interface:           client,
+		namespace:           namespace,
+		serviceName:         serviceName,
+		controllerNamespace: controllerNamespace,
+		grpcPort:            grpcPort,
+		grpcPortForward:     nil,
+		grpcConn:            nil,
+		restPort:            restPort,
+		restPortForward:     nil,
+		restConn:            nil,
+		log:                 log,
+		certGenerator:       CertGenerator{Namespaces: certNamespaces, ServiceName: serviceName},
+	}, nil
 }
 
 var (
@@ -134,6 +218,11 @@ var (
 		Group:    v1beta1.SchemeGroupVersion.Group,
 		Version:  v1beta1.SchemeGroupVersion.Version,
 		Resource: "inferenceservices", // this must be the plural form
+	}
+	gvrEndpoints = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "endpoints", // this must be the plural form
 	}
 )
 
@@ -193,7 +282,7 @@ func (fvt *FVTClient) ListPredictors(options metav1.ListOptions) *unstructured.U
 		options.Limit = 100
 	}
 	if options.TimeoutSeconds != nil && *options.TimeoutSeconds == int64(0) {
-		options.TimeoutSeconds = &defaultTimeout
+		options.TimeoutSeconds = &DefaultTimeout
 	}
 	list, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).List(context.TODO(), options)
 	Expect(err).ToNot(HaveOccurred())
@@ -248,10 +337,31 @@ func (fvt *FVTClient) WatchPredictorsAsync(c chan *unstructured.Unstructured, op
 
 }
 
+func (fvt *FVTClient) GetRandomReadyRuntimePodNameFromEndpoints() string {
+	obj, err := fvt.Resource(gvrEndpoints).Namespace(fvt.namespace).Get(context.TODO(), fvt.serviceName, metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
+	var endpoints corev1.Endpoints
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &endpoints)
+	Expect(err).ToNot(HaveOccurred())
+
+	addresses := endpoints.Subsets[0].Addresses
+	randomAddress := addresses[rand.Intn(len(addresses))]
+
+	return randomAddress.TargetRef.Name
+}
+
 func (fvt *FVTClient) PrintPredictors() {
 	err := fvt.RunKubectl("get", "predictors")
 	if err != nil {
 		fvt.log.Error(err, "Error running get predictors command")
+	}
+}
+
+func (fvt *FVTClient) PrintIsvcs() {
+	err := fvt.RunKubectl("get", "inferenceservices")
+	if err != nil {
+		fvt.log.Error(err, "Error running get inferenceservices command")
 	}
 }
 
@@ -315,6 +425,29 @@ func (fvt *FVTClient) RunKfsInference(req *inference.ModelInferRequest) (*infere
 	return grpcClient.ModelInfer(ctx, req)
 }
 
+func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, tls bool) (string, error) {
+	if fvt.restConn == nil {
+		return "", errors.New("you must connect to model mesh before running an inference")
+	}
+
+	protocol := "http"
+	if tls {
+		protocol = "https"
+	}
+
+	response, err := fvt.restConn.Post(fmt.Sprintf("%s://localhost:%d/v2/models/%s/infer", protocol, fvt.restPort, modelName), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+
+	if response.StatusCode != 200 {
+		return "", fmt.Errorf("Request failed with code %d", response.StatusCode)
+	}
+
+	resp, err := ioutil.ReadAll(response.Body)
+	return string(resp), err
+}
+
 func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.PredictResponse, error) {
 	if fvt.grpcConn == nil {
 		return nil, errors.New("you must connect to model mesh before running an inference")
@@ -328,38 +461,21 @@ func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.Predi
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
-	if fvt.portForwardCommand != nil && fvt.portForwardCommand.Process != nil {
-		fvt.log.Info("Found existing port-forward process")
-		return nil
+	if fvt.grpcPortForward == nil {
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
 	}
-	// port forward localhost to the cluster's model-serving service
-	portMap := fmt.Sprintf("%d:%d", fvt.localPort, 8033)
-	fvt.portForwardCommand = exec.Command("kubectl", "port-forward", "--address",
-		"0.0.0.0", "service/"+fvt.serviceName, portMap, "-n", fvt.namespace)
-	// portForwardCommand.Stdout = ginkgo.GinkgoWriter
-	// portForwardCommand.Stderr = ginkgo.GinkgoWriter
-	fvt.log.Info("Running port-forward command in the background", "Command", strings.Join(fvt.portForwardCommand.Args, " "))
+	if fvt.restPortForward == nil {
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
+	}
 
-	fvt.portForwardDoneCh = make(chan struct{})
-	go func() {
-		var commandErr error
-		commandOutput, commandErr := fvt.portForwardCommand.CombinedOutput()
-		fvt.log.Info("Port-forward command exited", "Error", commandErr, "Command Output", string(commandOutput))
-		fvt.portForwardCommand = nil
-		if fvt.grpcConn != nil {
-			fvt.grpcConn.Close()
-			fvt.grpcConn = nil
-		}
-		// close the channel to signal that the command exited
-		close(fvt.portForwardDoneCh)
-	}()
+	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
+		return fmt.Errorf("Error with grpc port-forward, could not connect to model serving")
+	}
 
-	// check that the port forward process is still running after 2s
-	select {
-	case <-fvt.portForwardDoneCh:
-		return fmt.Errorf("Expected the port-forward process to still be running but it is not.")
-	case <-time.After(time.Second * 2):
-		break
+	if err := fvt.restPortForward.EnsureStarted(); err != nil {
+		return fmt.Errorf("Error with rest port-forward, could not connect to model serving")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -370,29 +486,15 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 	if connectionType == Insecure {
 		conn, connErr = grpc.DialContext(
 			ctx,
-			fmt.Sprintf("localhost:%d", fvt.localPort),
+			fmt.Sprintf("localhost:%d", fvt.grpcPort),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithBlock(),
 		)
 	} else {
-		// Create the credentials and return it
-		config := &tls.Config{
-			InsecureSkipVerify: true,
-		}
-
-		if connectionType == MutualTLS {
-			tlsCert, err := tls.LoadX509KeyPair("testdata/san-cert.pem", "testdata/san-key.pem")
-			if err != nil {
-				return fmt.Errorf("failed to load tls client key pair")
-			}
-
-			config.Certificates = []tls.Certificate{tlsCert}
-		}
-
 		conn, connErr = grpc.DialContext(
 			ctx,
-			"localhost:8033",
-			grpc.WithTransportCredentials(credentials.NewTLS(config)),
+			fmt.Sprintf("localhost:%d", fvt.grpcPort),
+			grpc.WithTransportCredentials(credentials.NewTLS(fvt.createTLSConfig(connectionType))),
 			grpc.WithBlock(),
 		)
 	}
@@ -402,23 +504,66 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 	}
 	fvt.grpcConn = conn
 
+	// create the HTTP transport for the REST proxy
+	httpTransport := http.Transport{
+		MaxIdleConns:        100,
+		MaxConnsPerHost:     100,
+		MaxIdleConnsPerHost: 100,
+	}
+	if connectionType != Insecure {
+		httpTransport.TLSClientConfig = fvt.createTLSConfig(connectionType)
+	}
+	fvt.restConn = &http.Client{
+		Transport: &httpTransport,
+		Timeout:   2 * time.Minute,
+	}
+
 	return nil
 }
 
+func (fvt *FVTClient) createTLSConfig(connectionType ModelServingConnectionType) *tls.Config {
+	// Create the credentials and return it
+	config := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	if connectionType == MutualTLS {
+		tlsCert, err := tls.X509KeyPair(fvt.certGenerator.PublicKeyPEM.Bytes(), fvt.certGenerator.PrivateKeyPEM.Bytes())
+		if err != nil {
+			panic("failed to load tls client key pair")
+		}
+
+		config.Certificates = []tls.Certificate{tlsCert}
+	}
+
+	return config
+}
+
 func (fvt *FVTClient) DisconnectFromModelServing() {
+	if fvt == nil {
+		return
+	}
 	if fvt.grpcConn != nil {
 		fvt.grpcConn.Close()
 		fvt.grpcConn = nil
 	}
-	if fvt.portForwardCommand != nil && fvt.portForwardCommand.Process != nil {
-		fvt.log.Info("Killing port-forward process")
-		if err := fvt.portForwardCommand.Process.Kill(); err != nil {
-			fvt.log.Error(err, "Failed to send kill signal to the port-forward process, but will attempt to continue")
-			return
-		}
-		// wait until the process exits
-		<-fvt.portForwardDoneCh
+	if fvt.grpcPortForward != nil {
+		fvt.grpcPortForward.EnsureStopped()
+		fvt.grpcPortForward = nil
 	}
+
+	if fvt.restConn != nil {
+		fvt.restConn.CloseIdleConnections()
+		fvt.restConn = nil
+	}
+	if fvt.restPortForward != nil {
+		fvt.restPortForward.EnsureStopped()
+		fvt.restPortForward = nil
+	}
+}
+
+func (fvt *FVTClient) SetDefaultUserConfigMap() {
+	fvt.ApplyUserConfigMap(DefaultConfig)
 }
 
 func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
@@ -432,7 +577,7 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 			"apiVersion": "v1",
 			"kind":       "ConfigMap",
 			"metadata": map[string]interface{}{
-				"name": "model-serving-config",
+				"name": UserConfigMapName,
 			},
 			"data": map[string]interface{}{
 				"config.yaml": string(configYaml),
@@ -449,70 +594,51 @@ func (fvt *FVTClient) ApplyUserConfigMap(config map[string]interface{}) {
 }
 
 func (fvt *FVTClient) CreateTLSSecrets() {
-	secretExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "basic-tls-secret", metav1.GetOptions{})
-	if secretExists == nil {
-		secretObj := DecodeResourceFromFile("testdata/basic-tls-secret.yaml")
-		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(obj).ToNot(BeNil())
-		Expect(obj.GetKind()).To(Equal(SecretKind))
-		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
+	err := fvt.certGenerator.generate()
+	Expect(err).ToNot(HaveOccurred())
+
+	var TLSSecret = corev1.Secret{
+		Type: corev1.SecretTypeTLS,
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       SecretKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TLSSecretName,
+		},
+		StringData: map[string]string{
+			"tls.crt": fvt.certGenerator.PublicKeyPEM.String(),
+			"tls.key": fvt.certGenerator.PrivateKeyPEM.String(),
+			"ca.crt":  fvt.certGenerator.CAPEM.String(),
+		},
 	}
 
-	secretExists, _ = fvt.Resource(gvrConfigMap).Namespace(fvt.namespace).Get(context.TODO(), "mutual-tls-secret", metav1.GetOptions{})
-	if secretExists == nil {
-		secretObj := DecodeResourceFromFile("testdata/mutual-tls-secret.yaml")
-		obj, err := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Create(context.TODO(), secretObj, metav1.CreateOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(obj).ToNot(BeNil())
-		Expect(obj.GetKind()).To(Equal(SecretKind))
-		fvt.log.Info(fmt.Sprintf("Secret '%s' created", obj.GetName()))
+	CreateSecret(&TLSSecret, fvt.controllerNamespace, fvt)
+	if fvt.namespace != fvt.controllerNamespace {
+		CreateSecret(&TLSSecret, fvt.namespace, fvt)
 	}
 }
 
-func (fvt *FVTClient) CreateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
-	configMapObj := DecodeResourceFromFile("testdata/user-configmap.yaml")
-	configMapContents := GetString(configMapObj, "data", "config.yaml")
-	replacer := strings.NewReplacer("REPLACE_TLS_SECRET", tlsSecretName, "REPLACE_TLS_CLIENT_AUTH", tlsClientAuth)
-	newConfigMapContents := replacer.Replace(configMapContents)
-	SetString(configMapObj, newConfigMapContents, "data", "config.yaml")
-
-	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Create(context.TODO(), configMapObj, metav1.CreateOptions{})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(obj).ToNot(BeNil())
-	Expect(obj.GetKind()).To(Equal(ConfigMapKind))
-	fvt.log.Info(fmt.Sprintf("ConfigMap '%s' created", obj.GetName()))
-
-	return obj
-}
-
-func (fvt *FVTClient) UpdateConfigMapTLS(tlsSecretName string, tlsClientAuth string) *unstructured.Unstructured {
-	configMapExists, _ := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Get(context.TODO(), userConfigMapName, metav1.GetOptions{})
-
-	if configMapExists == nil {
-		fvt.log.Info(fmt.Sprintf("Could not find configmap '%s', creating", userConfigMapName))
-		return fvt.CreateConfigMapTLS(tlsSecretName, tlsClientAuth)
+func (fvt *FVTClient) UpdateConfigMapTLS(tlsConfig map[string]interface{}) {
+	// Make a shallow copy of the default configmap so that we don't alter the reference to the DefaultConfig
+	mergedConfigs := make(map[string]interface{})
+	for k, v := range DefaultConfig {
+		mergedConfigs[k] = v
 	}
 
-	configMapObj := DecodeResourceFromFile("testdata/user-configmap.yaml")
-	configMapContents := GetString(configMapObj, "data", "config.yaml")
-	replacer := strings.NewReplacer("REPLACE_TLS_SECRET", tlsSecretName, "REPLACE_TLS_CLIENT_AUTH", tlsClientAuth)
-	newConfigMapContents := replacer.Replace(configMapContents)
-	SetString(configMapObj, newConfigMapContents, "data", "config.yaml")
+	// Add in the TLS configs
+	// assuming we only have 1 key in tlsConfig ("tls")
+	mergedConfigs["tls"] = tlsConfig["tls"]
 
-	obj, err := fvt.Resource(gvrConfigMap).Namespace(fvt.controllerNamespace).Update(context.TODO(), configMapObj, metav1.UpdateOptions{})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(obj).ToNot(BeNil())
-	Expect(obj.GetKind()).To(Equal(ConfigMapKind))
-	fvt.log.Info(fmt.Sprintf("Updated ConfigMap '%s'", obj.GetName()))
+	fvt.ApplyUserConfigMap(mergedConfigs) // CREATE or UPDATE configmap with the merged configs
 
-	return obj
+	fvt.log.Info(fmt.Sprintf("Updated ConfigMap '%s'", gvrConfigMap))
 }
 
 func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
 	listOptions := metav1.ListOptions{
 		LabelSelector:  "modelmesh-service",
-		TimeoutSeconds: &defaultTimeout,
+		TimeoutSeconds: &DefaultTimeout,
 	}
 	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
@@ -523,7 +649,7 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	var err error
 
 	// query for UnstructuredList using the dynamic client
-	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &defaultTimeout}
+	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &DefaultTimeout}
 	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -582,21 +708,24 @@ func (fvt *FVTClient) DeleteConfigMap(resourceName string) error {
 	return nil
 }
 
-func (fvt FVTClient) DeleteTLSSecrets() error {
-	err := fvt.DeleteSecret("basic-tls-secret")
-	if err != nil {
-		return err
+func (fvt FVTClient) DeleteTLSSecrets() {
+	if err := fvt.DeleteSecret(TLSSecretName, fvt.controllerNamespace); err != nil {
+		fvt.log.Error(err, "Unable to delete TLS secret")
 	}
 
-	return fvt.DeleteSecret("mutual-tls-secret")
+	if fvt.namespace != fvt.controllerNamespace {
+		if err := fvt.DeleteSecret(TLSSecretName, fvt.namespace); err != nil {
+			fvt.log.Error(err, "Unable to delete user namespaced TLS secret")
+		}
+	}
 }
 
-func (fvt *FVTClient) DeleteSecret(resourceName string) error {
-	secretExists, _ := fvt.Resource(gvrSecret).Namespace(fvt.namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
+func (fvt *FVTClient) DeleteSecret(resourceName string, namespace string) error {
+	secretExists, _ := fvt.Resource(gvrSecret).Namespace(namespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
 	if secretExists != nil {
 		fvt.log.Info(fmt.Sprintf("Found secret '%s'", resourceName))
 		fvt.log.Info(fmt.Sprintf("Deleting secret '%s' ...", resourceName))
-		return fvt.Resource(gvrSecret).Namespace(fvt.namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
+		return fvt.Resource(gvrSecret).Namespace(namespace).Delete(context.TODO(), resourceName, metav1.DeleteOptions{})
 	}
 	return nil
 }

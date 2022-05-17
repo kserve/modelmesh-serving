@@ -81,3 +81,6 @@ RUN microdnf install \
     mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
     && go mod init tmp && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
     && rm -rf /tmp/controller-gen-tmp
+
+RUN go install github.com/onsi/ginkgo/v2/ginkgo
+ENV PATH=/root/go/bin/:$PATH

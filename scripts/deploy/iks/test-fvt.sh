@@ -45,17 +45,19 @@ run_fvt() {
   wget https://go.dev/dl/go1.17.3.linux-amd64.tar.gz
   tar -C /usr/local -xzf go1.17.3.linux-amd64.tar.gz
 
+  go install github.com/onsi/ginkgo/v2/ginkgo
+  export PATH=/root/go/bin/:$PATH
+
   export NAMESPACE=${SERVING_NS}
-  go test -v ./fvt -ginkgo.v -ginkgo.progress -test.timeout 40m > fvt.out
+  ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
   cat fvt.out
   RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
 
-  if [[ "$RUN_STATUS" == "PASS" ]]; then
+  if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
     export NAMESPACE="modelmesh-user"
-    go test -v ./fvt -ginkgo.v -ginkgo.progress -test.timeout 40m > fvt.out
+    ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
     cat fvt.out
-    RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
-    if [[ "$RUN_STATUS" == "PASS" ]]; then
+    if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
       REV=0
     fi
   fi

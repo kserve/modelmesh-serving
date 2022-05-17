@@ -14,13 +14,28 @@
 package fvt
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 
-	. "github.com/onsi/gomega"
-
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	yamlserializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/types"
+
+	. "github.com/onsi/gomega"
 )
+
+//Utility function to return the testdata directory
+func TestDataPath(resourcePathWithinTestData string) string {
+	wd, err := os.Getwd()
+	Expect(err).ToNot(HaveOccurred())
+	parent := filepath.Dir(wd)
+	return parent + "/testdata/" + resourcePathWithinTestData
+}
 
 func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
 	content, err := ioutil.ReadFile(resourcePath)
@@ -38,7 +53,20 @@ func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
 	return obj
 }
 
-// Small functions to work with unstructred objects
+func CreateSecret(secret *corev1.Secret, namespace string, fvt *FVTClient) {
+	patchJson, err := json.Marshal(secret)
+	Expect(err).ToNot(HaveOccurred())
+
+	updatedSecret, err := fvt.Resource(gvrSecret).Namespace(namespace).
+		Patch(context.TODO(), secret.Name, types.ApplyPatchType, patchJson, applyPatchOptions)
+
+	Expect(err).ToNot(HaveOccurred())
+	Expect(updatedSecret).ToNot(BeNil())
+
+	fvt.log.Info(fmt.Sprintf("Secret '%s' created", updatedSecret.GetName()))
+}
+
+// Small functions to work with unstructured objects
 
 func GetInt64(obj *unstructured.Unstructured, fieldPath ...string) int64 {
 	value, _, err := unstructured.NestedInt64(obj.Object, fieldPath...)

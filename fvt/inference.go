@@ -16,6 +16,7 @@ package fvt
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"math"
 	"os"
 
@@ -52,7 +53,7 @@ func ExpectSuccessfulInference_onnxMnist(predictorName string) {
 		Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 	}
 
-	inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
@@ -84,7 +85,7 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 		},
 	}
 
-	inferResponse, err := fvtClient.RunTfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunTfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// NOTE: ModelSpec is not included in the response, so we can't assert on the name
@@ -119,7 +120,7 @@ func ExpectSuccessfulInference_pytorchCifar(predictorName string) {
 	}
 
 	// run the inference
-	inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
@@ -127,6 +128,58 @@ func ExpectSuccessfulInference_pytorchCifar(predictorName string) {
 	output, err := convertRawOutputContentsTo10Floats(inferResponse.GetRawOutputContents()[0])
 	Expect(err).ToNot(HaveOccurred())
 	Expect(math.Abs(float64(output[8]-7.343689441680908)) < EPSILON).To(BeTrue()) // the 9th class gets the highest activation for this net/image
+}
+
+func ExpectSuccessfulRESTInference_sklearnMnistSvm(predictorName string) {
+	// the example model for FVT is an MNIST model provided as an example in
+	// the MLServer repo:
+	// https://github.com/SeldonIO/MLServer/tree/8925ad5/examples/sklearn
+
+	// this example model takes 8x8 floating point images as input flattened
+	// to a 64 float array
+	image := []float32{0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0}
+
+	body := map[string]interface{}{
+		"inputs": []map[string]interface{}{
+			{
+				"name":     "predict",
+				"shape":    []int64{1, 64},
+				"datatype": "FP32",
+				"data":     image,
+			},
+		},
+	}
+
+	jsonBytes, err := json.Marshal(body)
+	Expect(err).ToNot(HaveOccurred())
+
+	inferResponse, err := FVTClientInstance.RunKfsRestInference(predictorName, jsonBytes, false)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
+	Expect(inferResponse).To(ContainSubstring(`"model_name":"` + predictorName))
+	Expect(inferResponse).To(ContainSubstring(`"data":[8]`))
+}
+
+func ExpectSuccessfulRESTInference_xgboostMushroom(predictorName string, tls bool) {
+	body := map[string]interface{}{
+		"inputs": []map[string]interface{}{
+			{
+				"name":     "predict",
+				"shape":    []int64{1, 126},
+				"datatype": "FP32",
+				"data":     mushroomInputData,
+			},
+		},
+	}
+
+	jsonBytes, err := json.Marshal(body)
+	Expect(err).ToNot(HaveOccurred())
+
+	inferResponse, err := FVTClientInstance.RunKfsRestInference(predictorName, jsonBytes, tls)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
+	Expect(inferResponse).To(ContainSubstring(`"model_name":"` + predictorName))
+	Expect(inferResponse).To(ContainSubstring(`"data":[0.0`))
 }
 
 // SKLearn MNIST SVM
@@ -152,7 +205,7 @@ func ExpectSuccessfulInference_sklearnMnistSvm(predictorName string) {
 	}
 
 	// run the inference
-	inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
@@ -179,7 +232,7 @@ func ExpectSuccessfulInference_tensorflowMnist(predictorName string) {
 	}
 
 	// First - run the inference
-	inferResponse, err := fvtClient.RunKfsInference(&inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(&inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
@@ -204,7 +257,7 @@ func ExpectSuccessfulInference_kerasMnist(predictorName string) {
 	}
 
 	// First - run the inference
-	inferResponse, err := fvtClient.RunKfsInference(&inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(&inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
@@ -226,7 +279,7 @@ func ExpectSuccessfulInference_lightgbmMushroom(predictorName string) {
 		Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 	}
 
-	inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// check that the model predicted a value close to 0
@@ -248,7 +301,7 @@ func ExpectSuccessfulInference_xgboostMushroom(predictorName string) {
 		Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 	}
 
-	inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// check that the model predicted a value close to 0
@@ -260,7 +313,7 @@ func ExpectSuccessfulInference_xgboostMushroom(predictorName string) {
 var mushroomInputData []float32 = []float32{1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0}
 
 func LoadMnistImage(index int) []float32 {
-	images, err := mnist.LoadImageFile("testdata/t10k-images-idx3-ubyte.gz")
+	images, err := mnist.LoadImageFile(TestDataPath("t10k-images-idx3-ubyte.gz"))
 	Expect(err).ToNot(HaveOccurred())
 
 	imageBytes := [mnist.Width * mnist.Height]byte(*images[index])
@@ -272,7 +325,7 @@ func LoadMnistImage(index int) []float32 {
 }
 
 func LoadCifarImage(index int) []float32 {
-	file, err := os.Open("testdata/cifar_test_images.bin")
+	file, err := os.Open(TestDataPath("cifar_test_images.bin"))
 	Expect(err).ToNot(HaveOccurred())
 	images, err := cifar.Decode10(file)
 	Expect(err).ToNot(HaveOccurred())

@@ -27,7 +27,7 @@ import (
 )
 
 func NewPredictorForFVT(filename string) *unstructured.Unstructured {
-	p := DecodeResourceFromFile(samplesPath + filename)
+	p := DecodeResourceFromFile(TestDataPath(SamplesPath + filename))
 	uniqueName := MakeUniquePredictorName(p.GetName())
 	p.SetName(uniqueName)
 
@@ -35,7 +35,7 @@ func NewPredictorForFVT(filename string) *unstructured.Unstructured {
 }
 
 func NewIsvcForFVT(filename string) *unstructured.Unstructured {
-	p := DecodeResourceFromFile(isvcSamplesPath + filename)
+	p := DecodeResourceFromFile(TestDataPath(IsvcSamplesPath + filename))
 	uniqueName := MakeUniquePredictorName(p.GetName())
 	p.SetName(uniqueName)
 
@@ -54,9 +54,9 @@ func CreatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstr
 	predictorName := predictorManifest.GetName()
 
 	By("Creating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 	defer watcher.Stop()
-	createdPredictor := fvtClient.CreatePredictorExpectSuccess(predictorManifest)
+	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
 	By("Waiting for predictor" + predictorName + " to be 'Loaded'")
@@ -69,9 +69,9 @@ func CreatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstr
 func CreateIsvcAndWaitAndExpectReady(isvcManifest *unstructured.Unstructured) *unstructured.Unstructured {
 	isvcName := isvcManifest.GetName()
 	By("Creating inference service " + isvcName)
-	watcher := fvtClient.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, DefaultTimeout)
 	defer watcher.Stop()
-	fvtClient.CreateIsvcExpectSuccess(isvcManifest)
+	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
 	By("Waiting for inference service" + isvcName + " to be 'Ready'")
 	// ISVC does not have the status field set initially.
 	resultingIsvc := WaitForIsvcReady(watcher)
@@ -82,9 +82,9 @@ func CreatePredictorAndWaitAndExpectFailed(predictorManifest *unstructured.Unstr
 	predictorName := predictorManifest.GetName()
 
 	By("Creating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 	defer watcher.Stop()
-	createdPredictor := fvtClient.CreatePredictorExpectSuccess(predictorManifest)
+	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
 	By("Waiting for predictor" + predictorName + " to be 'FailedToLoaded'")
@@ -98,9 +98,9 @@ func CreatePredictorAndWaitAndExpectInvalidSpec(predictorManifest *unstructured.
 	predictorName := predictorManifest.GetName()
 
 	By("Creating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 	defer watcher.Stop()
-	createdPredictor := fvtClient.CreatePredictorExpectSuccess(predictorManifest)
+	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
 	By("Waiting for predictor" + predictorName + " to have transitionStatus 'InvalidSpec'")
@@ -111,9 +111,9 @@ func UpdatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstr
 	predictorName := predictorManifest.GetName()
 
 	By("Updating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 	defer watcher.Stop()
-	fvtClient.ApplyPredictorExpectSuccess(predictorManifest)
+	FVTClientInstance.ApplyPredictorExpectSuccess(predictorManifest)
 
 	By("Waiting for the predictor " + predictorName + "'s target model state to move from Loaded (empty) to Loading")
 	loadingPredictor := WaitForLastStateInExpectedList("targetModelState", []string{"", "Loading"}, watcher)
@@ -129,9 +129,9 @@ func UpdatePredictorAndWaitAndExpectFailed(predictorManifest *unstructured.Unstr
 	predictorName := predictorManifest.GetName()
 
 	By("Updating predictor " + predictorName)
-	watcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+	watcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 	defer watcher.Stop()
-	fvtClient.ApplyPredictorExpectSuccess(predictorManifest)
+	FVTClientInstance.ApplyPredictorExpectSuccess(predictorManifest)
 
 	By("Waiting for the predictor " + predictorName + "'s target model state to move from Loaded (empty) to Loading")
 	loadingPredictor := WaitForLastStateInExpectedList("targetModelState", []string{"", "Loading"}, watcher)
@@ -265,7 +265,7 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 			}
 			obj, ok = event.Object.(*unstructured.Unstructured)
 			Expect(ok).To(BeTrue())
-			log.Info("Watcher got event with object", logPredictorStatus(obj)...)
+			Log.Info("Watcher got event with object", logPredictorStatus(obj)...)
 
 			lastState = GetString(obj, "status", statusAttribute)
 			predictorName = GetString(obj, "metadata", "name")
@@ -293,7 +293,7 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 }
 
 func WaitForStableActiveDeployState() {
-	watcher := fvtClient.StartWatchingDeploys()
+	watcher := FVTClientInstance.StartWatchingDeploys()
 	defer watcher.Stop()
 	WaitForDeployStatus(watcher, timeForStatusToStabilize)
 }
@@ -323,7 +323,7 @@ func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration)
 			updatedReplicas = GetInt64(obj, "status", "updatedReplicas")
 			deployName = GetString(obj, "metadata", "name")
 
-			log.Info("Watcher got event with object",
+			Log.Info("Watcher got event with object",
 				"name", deployName,
 				"status.replicas", replicas,
 				"status.availableReplicas", availableReplicas,
@@ -331,7 +331,7 @@ func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration)
 
 			if (updatedReplicas == replicas) && (availableReplicas == updatedReplicas) {
 				deployStatusesReady[deployName] = true
-				log.Info(fmt.Sprintf("deployStatusesReady: %v", deployStatusesReady))
+				Log.Info(fmt.Sprintf("deployStatusesReady: %v", deployStatusesReady))
 			} else {
 				deployStatusesReady[deployName] = false
 			}

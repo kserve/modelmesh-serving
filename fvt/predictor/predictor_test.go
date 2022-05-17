@@ -1,4 +1,4 @@
-// Copyright 2021 IBM Corporation
+// Copyright 2022 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,14 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package fvt
+package predictor
 
 import (
 	"fmt"
 	"time"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,6 +23,10 @@ import (
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
 	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+
+	. "github.com/kserve/modelmesh-serving/fvt"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Predictor struct - used to store data about the predictor that FVT suite can use
@@ -120,45 +121,16 @@ var _ = Describe("Predictor", func() {
 	// want to check the deployment state for each test since that would waste
 	// time. The sole purpose of the following test case is to ensure we are
 	// starting from the desired state.
-	Specify("Preparing the cluster for Predictor tests", func() {
-		// ensure configuration has scale-to-zero disabled
-		config := map[string]interface{}{
-			// disable scale-to-zero to prevent pods flapping as
-			// Predictors are created and deleted
-			"scaleToZero": map[string]interface{}{
-				"enabled": false,
-			},
-			// disable the model-mesh bootstrap failure check so
-			// that the expected failures for invalid predictor
-			// tests do not trigger it
-			"internalModelMeshEnvVars": []map[string]interface{}{
-				{
-					"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
-					"value": "0",
-				},
-			},
-			"podsPerRuntime": 1,
-		}
-		fvtClient.ApplyUserConfigMap(config)
-
-		// ensure that there are no predictors to start
-		fvtClient.DeleteAllPredictors()
-		// kill any existing port-forward to ensure that a new connection will be established
-		fvtClient.DisconnectFromModelServing()
-		// ensure a stable deploy state
-		WaitForStableActiveDeployState()
-	})
-
 	for _, p := range predictorsArray {
 		predictor := p
-		var _ = Describe("create "+predictor.predictorName+" predictor", func() {
+		var _ = Describe("create "+predictor.predictorName+" predictor", Ordered, func() {
 
 			It("should successfully load a model", func() {
 				predictorObject := NewPredictorForFVT(predictor.predictorFilename)
 				CreatePredictorAndWaitAndExpectLoaded(predictorObject)
 
 				// clean up
-				fvtClient.DeletePredictor(predictorObject.GetName())
+				FVTClientInstance.DeletePredictor(predictorObject.GetName())
 			})
 
 			It("should successfully load two models of different types", func() {
@@ -169,15 +141,15 @@ var _ = Describe("Predictor", func() {
 				differentPredictorName := differentPredictorObject.GetName()
 
 				By("Creating the " + predictor.predictorName + " predictor")
-				predictorWatcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, defaultTimeout)
+				predictorWatcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + predictorName}, DefaultTimeout)
 				defer predictorWatcher.Stop()
-				predictorObject = fvtClient.CreatePredictorExpectSuccess(predictorObject)
+				predictorObject = FVTClientInstance.CreatePredictorExpectSuccess(predictorObject)
 				ExpectPredictorState(predictorObject, false, "Pending", "", "UpToDate")
 
 				By("Creating the " + predictor.differentPredictorName + " predictor")
-				differentPredictorWatcher := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + differentPredictorName}, defaultTimeout)
+				differentPredictorWatcher := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + differentPredictorName}, DefaultTimeout)
 				defer differentPredictorWatcher.Stop()
-				differentPredictorObject = fvtClient.CreatePredictorExpectSuccess(differentPredictorObject)
+				differentPredictorObject = FVTClientInstance.CreatePredictorExpectSuccess(differentPredictorObject)
 				ExpectPredictorState(differentPredictorObject, false, "Pending", "", "UpToDate")
 
 				By("Waiting for the first predictor to be 'Loaded'")
@@ -188,29 +160,29 @@ var _ = Describe("Predictor", func() {
 				WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "FailedToLoad", "Loading", "Loaded"}, differentPredictorWatcher)
 
 				By("Verifying the predictors")
-				predictorObject = fvtClient.GetPredictor(predictorName)
+				predictorObject = FVTClientInstance.GetPredictor(predictorName)
 				ExpectPredictorState(predictorObject, true, "Loaded", "", "UpToDate")
-				differentPredictorObject = fvtClient.GetPredictor(differentPredictorName)
+				differentPredictorObject = FVTClientInstance.GetPredictor(differentPredictorName)
 				ExpectPredictorState(differentPredictorObject, true, "Loaded", "", "UpToDate")
 
 				// clean up
-				fvtClient.DeletePredictor(predictorName)
-				fvtClient.DeletePredictor(differentPredictorName)
+				FVTClientInstance.DeletePredictor(predictorName)
+				FVTClientInstance.DeletePredictor(differentPredictorName)
 			})
 
 			It("should successfully load two models of the same type", func() {
 				By("Creating the first " + predictor.predictorName + " predictor")
 				pred1 := NewPredictorForFVT(predictor.predictorFilename)
-				watcher1 := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + pred1.GetName()}, defaultTimeout)
+				watcher1 := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + pred1.GetName()}, DefaultTimeout)
 				defer watcher1.Stop()
-				obj1 := fvtClient.CreatePredictorExpectSuccess(pred1)
+				obj1 := FVTClientInstance.CreatePredictorExpectSuccess(pred1)
 				ExpectPredictorState(obj1, false, "Pending", "", "UpToDate")
 
 				By("Creating a second " + predictor.predictorName + " predictor")
 				pred2 := NewPredictorForFVT(predictor.predictorFilename)
-				watcher2 := fvtClient.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + pred2.GetName()}, defaultTimeout)
+				watcher2 := FVTClientInstance.StartWatchingPredictors(metav1.ListOptions{FieldSelector: "metadata.name=" + pred2.GetName()}, DefaultTimeout)
 				defer watcher2.Stop()
-				obj2 := fvtClient.CreatePredictorExpectSuccess(pred2)
+				obj2 := FVTClientInstance.CreatePredictorExpectSuccess(pred2)
 				ExpectPredictorState(obj2, false, "Pending", "", "UpToDate")
 
 				By("Waiting for the first predictor to be 'Loaded'")
@@ -221,19 +193,19 @@ var _ = Describe("Predictor", func() {
 				WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "FailedToLoad", "Loading", "Loaded"}, watcher2)
 
 				By("Verifying the predictors")
-				obj1 = fvtClient.GetPredictor(pred1.GetName())
+				obj1 = FVTClientInstance.GetPredictor(pred1.GetName())
 				ExpectPredictorState(obj1, true, "Loaded", "", "UpToDate")
-				obj2 = fvtClient.GetPredictor(pred2.GetName())
+				obj2 = FVTClientInstance.GetPredictor(pred2.GetName())
 				ExpectPredictorState(obj2, true, "Loaded", "", "UpToDate")
 
 				// clean up
-				fvtClient.DeletePredictor(pred1.GetName())
-				fvtClient.DeletePredictor(pred2.GetName())
+				FVTClientInstance.DeletePredictor(pred1.GetName())
+				FVTClientInstance.DeletePredictor(pred2.GetName())
 			})
 
 		})
 
-		var _ = Describe("update "+predictor.predictorName+" predictor", func() {
+		var _ = Describe("update "+predictor.predictorName+" predictor", Ordered, func() {
 			var predictorObject *unstructured.Unstructured
 			var predictorName string
 
@@ -246,12 +218,12 @@ var _ = Describe("Predictor", func() {
 			})
 
 			AfterEach(func() {
-				fvtClient.DeletePredictor(predictorName)
+				FVTClientInstance.DeletePredictor(predictorName)
 			})
 
 			It("should successfully update and reload the model", func() {
 				// verify starting model path
-				obj := fvtClient.GetPredictor(predictorName)
+				obj := FVTClientInstance.GetPredictor(predictorName)
 				Expect(GetString(obj, "spec", "path")).To(Equal(predictor.currentModelPath))
 
 				// modify the object with a new valid path
@@ -265,7 +237,7 @@ var _ = Describe("Predictor", func() {
 
 			It("should fail to load the target model with invalid path", func() {
 				// verify starting model path
-				obj := fvtClient.GetPredictor(predictorName)
+				obj := FVTClientInstance.GetPredictor(predictorName)
 				Expect(GetString(obj, "spec", "path")).To(Equal(predictor.currentModelPath))
 
 				// modify the object with a new valid path
@@ -281,7 +253,7 @@ var _ = Describe("Predictor", func() {
 
 	}
 
-	var _ = Describe("test transition of Predictor between models", func() {
+	var _ = Describe("test transition of Predictor between models", Ordered, func() {
 		var predictorObject *unstructured.Unstructured
 		var predictorName string
 
@@ -293,17 +265,17 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(predictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			fvtClient.DeletePredictor(predictorName)
+			FVTClientInstance.DeletePredictor(predictorName)
 		})
 
 		It("should successfully run an inference, update the model and run an inference again on the updated model", func() {
 			// verify starting model path
-			obj := fvtClient.GetPredictor(predictorName)
+			obj := FVTClientInstance.GetPredictor(predictorName)
 			Expect(GetString(obj, "spec", "path")).To(Equal("fvt/tensorflow/mnist.savedmodel"))
 
 			ExpectSuccessfulInference_tensorflowMnist(predictorName)
@@ -323,7 +295,7 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = Describe("Missing storage field", func() {
+	var _ = Describe("Missing storage field", Ordered, func() {
 		var predictorObject *unstructured.Unstructured
 
 		BeforeEach(func() {
@@ -332,7 +304,7 @@ var _ = Describe("Predictor", func() {
 		})
 
 		AfterEach(func() {
-			fvtClient.DeletePredictor(predictorObject.GetName())
+			FVTClientInstance.DeletePredictor(predictorObject.GetName())
 		})
 
 		It("predictor should fail to load with invalid storage path", func() {
@@ -343,23 +315,23 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = Describe("TensorFlow inference", func() {
+	var _ = Describe("TensorFlow inference", Ordered, func() {
 		var tfPredictorObject *unstructured.Unstructured
 		var tfPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			tfPredictorObject = NewPredictorForFVT("tf-predictor.yaml")
 			tfPredictorName = tfPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(tfPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(tfPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(tfPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -393,14 +365,14 @@ var _ = Describe("Predictor", func() {
 			}
 
 			// run the inference
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("model expects 'FP32'"))
 			Expect(inferResponse).To(BeNil())
 		})
 	})
 
-	var _ = Describe("Keras inference", func() {
+	var _ = Describe("Keras inference", Ordered, func() {
 		var kerasPredictorObject *unstructured.Unstructured
 		var kerasPredictorName string
 
@@ -411,12 +383,12 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(kerasPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			fvtClient.DeletePredictor(kerasPredictorName)
+			FVTClientInstance.DeletePredictor(kerasPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -448,30 +420,30 @@ var _ = Describe("Predictor", func() {
 				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 			}
 
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 		})
 	})
 
-	var _ = Describe("ONNX inference", func() {
+	var _ = Describe("ONNX inference", Ordered, func() {
 		var onnxPredictorObject *unstructured.Unstructured
 		var onnxPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			onnxPredictorObject = NewPredictorForFVT("onnx-predictor.yaml")
 			onnxPredictorName = onnxPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(onnxPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(onnxPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(onnxPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -493,30 +465,30 @@ var _ = Describe("Predictor", func() {
 				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 			}
 
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 		})
 	})
 
-	var _ = Describe("OVMS Inference", func() {
+	var _ = Describe("OVMS Inference", Ordered, func() {
 		var openvinoPredictorObject *unstructured.Unstructured
 		var openvinoPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			openvinoPredictorObject = NewPredictorForFVT("openvino-mnist-predictor.yaml")
 			openvinoPredictorName = openvinoPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(openvinoPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(openvinoPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(openvinoPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -524,13 +496,6 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should fail to run an inference with invalid shape", func() {
-			image := LoadMnistImage(0)
-
-			// build the grpc inference call
-			// convert the image array of floats to raw bytes
-			imageBytes, err := convertFloatArrayToRawContent(image)
-			Expect(err).ToNot(HaveOccurred())
-
 			inferRequest := &tfsapi.PredictRequest{
 				ModelSpec: &tfsapi.ModelSpec{
 					Name: openvinoPredictorName,
@@ -543,40 +508,44 @@ var _ = Describe("Predictor", func() {
 								{Size: 28}, {Size: 28},
 							},
 						},
-						TensorContent: imageBytes,
+						// invalid shape error occurs before the content is inspected
+						// TensorContent:
 					},
 				},
 			}
 
-			inferResponse, err := fvtClient.RunTfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunTfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: Invalid number of shape dimensions"))
 		})
 	})
 
-	var _ = Describe("MLServer inference", func() {
-
+	var _ = Describe("MLServer inference", Ordered, func() {
 		var mlsPredictorObject *unstructured.Unstructured
 		var mlsPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			mlsPredictorObject = NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
 			mlsPredictorName = mlsPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(mlsPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(mlsPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(mlsPredictorName)
 		})
 
-		It("should successfully run inference", func() {
+		It("should successfully run inference using GRPC", func() {
 			ExpectSuccessfulInference_sklearnMnistSvm(mlsPredictorName)
+		})
+
+		It("should successfully run inference using REST proxy", func() {
+			ExpectSuccessfulRESTInference_sklearnMnistSvm(mlsPredictorName)
 		})
 
 		It("should fail with an invalid input", func() {
@@ -594,30 +563,30 @@ var _ = Describe("Predictor", func() {
 			}
 
 			// run the inference
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("1 should be equal to 64"))
 		})
 	})
 
-	var _ = Describe("XGBoost inference", func() {
+	var _ = Describe("XGBoost inference", Ordered, func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
 			xgboostPredictorName = xgboostPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(xgboostPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -637,7 +606,7 @@ var _ = Describe("Predictor", func() {
 				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 			}
 
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
@@ -645,24 +614,23 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = Describe("Pytorch inference", func() {
-
+	var _ = Describe("Pytorch inference", Ordered, func() {
 		var ptPredictorObject *unstructured.Unstructured
 		var ptPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			ptPredictorObject = NewPredictorForFVT("pytorch-predictor.yaml")
 			ptPredictorName = ptPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(ptPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(ptPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(ptPredictorName)
 		})
 
 		It("should successfully run inference", func() {
@@ -684,9 +652,9 @@ var _ = Describe("Predictor", func() {
 			}
 
 			// run the inference
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
-			log.Info(err.Error())
+			Log.Info(err.Error())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 			Expect(inferResponse).To(BeNil())
 		})
@@ -695,24 +663,23 @@ var _ = Describe("Predictor", func() {
 	// This an inference testcase for pytorch that mandates schema in config.pbtxt
 	// However config.pbtxt (in COS) by default does not include schema section, instead
 	// schema passed in Predictor CR is updated (in config.pbtxt) after model downloaded.
-	var _ = Describe("Pytorch inference with schema", func() {
-
+	var _ = Describe("Pytorch inference with schema", Ordered, func() {
 		var ptPredictorObject *unstructured.Unstructured
 		var ptPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			ptPredictorObject = NewPredictorForFVT("pytorch-predictor-withschema.yaml")
 			ptPredictorName = ptPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(ptPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(ptPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(ptPredictorName)
 		})
 
 		It("should successfully run inference", func() {
@@ -734,31 +701,31 @@ var _ = Describe("Predictor", func() {
 			}
 
 			// run the inference
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
-			log.Info(err.Error())
+			Log.Info(err.Error())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 			Expect(inferResponse).To(BeNil())
 		})
 	})
 
-	var _ = Describe("LightGBM inference", func() {
+	var _ = Describe("LightGBM inference", Ordered, func() {
 		var lightGBMPredictorObject *unstructured.Unstructured
 		var lightGBMPredictorName string
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// load the test predictor object
 			lightGBMPredictorObject = NewPredictorForFVT("lightgbm-predictor.yaml")
 			lightGBMPredictorName = lightGBMPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(lightGBMPredictorObject)
 
-			err := fvtClient.ConnectToModelServing(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			fvtClient.DeletePredictor(lightGBMPredictorName)
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(lightGBMPredictorName)
 		})
 
 		It("should successfully run an inference", func() {
@@ -778,7 +745,7 @@ var _ = Describe("Predictor", func() {
 				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
 			}
 
-			inferResponse, err := fvtClient.RunKfsInference(inferRequest)
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
@@ -786,46 +753,41 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = Describe("TLS XGBoost inference", func() {
+	var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
 
-		BeforeEach(func() {
-			// load the test predictor object
-			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
-			xgboostPredictorName = xgboostPredictorObject.GetName()
-
-			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
-		})
-
-		AfterEach(func() {
-			fvtClient.DeletePredictor(xgboostPredictorName)
-			fvtClient.DeleteConfigMap(userConfigMapName)
-			time.Sleep(time.Second * 10)
+		AfterAll(func() {
+			FVTClientInstance.SetDefaultUserConfigMap()
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
-			fvtClient.UpdateConfigMapTLS("basic-tls-secret", "optional")
+			FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
 
+			// load the test predictor object
+			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+			xgboostPredictorName = xgboostPredictorObject.GetName()
+			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
 			By("Creating a new connection to ModelServing")
 			// ensure we are establishing a new connection after the TLS change
-			fvtClient.DisconnectFromModelServing()
+			FVTClientInstance.DisconnectFromModelServing()
 
 			var timeAsleep int
 			var mmeshErr error
 			for timeAsleep <= 30 {
-				mmeshErr = fvtClient.ConnectToModelServing(TLS)
+				mmeshErr = FVTClientInstance.ConnectToModelServing(TLS)
 
 				if mmeshErr == nil {
-					log.Info("Successfully connected to model mesh tls")
+					Log.Info("Successfully connected to model mesh tls")
 					break
 				}
 
-				log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
-				fvtClient.DisconnectFromModelServing()
+				Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
+				FVTClientInstance.DisconnectFromModelServing()
 				timeAsleep += 10
 				time.Sleep(time.Second * time.Duration(timeAsleep))
 			}
@@ -835,32 +797,43 @@ var _ = Describe("Predictor", func() {
 			By("Expect inference to succeed")
 			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
 
+			By("Expect inference to succeed via REST proxy")
+			ExpectSuccessfulRESTInference_xgboostMushroom(xgboostPredictorName, true)
+
+			// cleanup the predictor
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
+
 			// disconnect because TLS config will change
-			fvtClient.DisconnectFromModelServing()
+			FVTClientInstance.DisconnectFromModelServing()
 		})
 
 		It("should successfully run an inference with mutual TLS", func() {
-			fvtClient.UpdateConfigMapTLS("mutual-tls-secret", "require")
+			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
 
+			// load the test predictor object
+			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+			xgboostPredictorName = xgboostPredictorObject.GetName()
+			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
 			By("Creating a new connection to ModelServing")
 			// ensure we are establishing a new connection after the TLS change
-			fvtClient.DisconnectFromModelServing()
+			FVTClientInstance.DisconnectFromModelServing()
 
 			var timeAsleep int
 			var mmeshErr error
 			for timeAsleep <= 30 {
-				mmeshErr = fvtClient.ConnectToModelServing(MutualTLS)
+				mmeshErr = FVTClientInstance.ConnectToModelServing(MutualTLS)
 
 				if mmeshErr == nil {
-					log.Info("Successfully connected to model mesh tls")
+					Log.Info("Successfully connected to model mesh tls")
 					break
 				}
 
-				log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
-				fvtClient.DisconnectFromModelServing()
+				Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
+				FVTClientInstance.DisconnectFromModelServing()
 				timeAsleep += 10
 				time.Sleep(time.Second * time.Duration(timeAsleep))
 			}
@@ -869,22 +842,25 @@ var _ = Describe("Predictor", func() {
 			By("Expect inference to succeed")
 			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
 
+			// cleanup the predictor
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
+
 			// disconnect because TLS config will change
-			fvtClient.DisconnectFromModelServing()
+			FVTClientInstance.DisconnectFromModelServing()
 		})
 
 		It("should fail to run inference when the server has mutual TLS but the client does not present a certificate", func() {
-			fvtClient.UpdateConfigMapTLS("mutual-tls-secret", "require")
+			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
 			WaitForStableActiveDeployState()
 
 			By("Expect a new connection to fail")
 			// since the connection switches to TLS, ensure we are establishing a new connection
-			fvtClient.DisconnectFromModelServing()
+			FVTClientInstance.DisconnectFromModelServing()
 			// this test is expected to fail to connect due to the TLS cert, so we
 			// don't retry if it fails
-			mmeshErr := fvtClient.ConnectToModelServing(TLS)
+			mmeshErr := FVTClientInstance.ConnectToModelServing(TLS)
 			Expect(mmeshErr).To(HaveOccurred())
 		})
 	})
@@ -897,34 +873,10 @@ var _ = Describe("Predictor", func() {
 // separate block in part because a high frequency of failures can trigger Model
 // Mesh's "bootstrap failure" mechanism which prevents rollouts of new pods that
 // fail frequently by causing them to fail the readiness check.
-// At the end of this block, all runtime deployments are rolled out to remove
+// At the end of the suite, all runtime deployments are rolled out to remove
 // any that may have gone unready.
 var _ = Describe("Invalid Predictors", func() {
 	var predictorObject *unstructured.Unstructured
-
-	Specify("Preparing the cluster for Invalid Predictor tests", func() {
-		config := map[string]interface{}{
-			// disable scale-to-zero to prevent pods flapping as
-			// Predictors are created and deleted
-			"scaleToZero": map[string]interface{}{
-				"enabled": false,
-			},
-			// disable the model-mesh bootstrap failure check so
-			// that the expected failures for invalid predictor
-			// tests do not trigger it
-			"internalModelMeshEnvVars": []map[string]interface{}{
-				{
-					"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
-					"value": "0",
-				},
-			},
-			"podsPerRuntime": 1,
-		}
-		fvtClient.ApplyUserConfigMap(config)
-
-		// ensure a stable deploy state
-		WaitForStableActiveDeployState()
-	})
 
 	for _, p := range predictorsArray {
 		predictor := p
@@ -936,7 +888,7 @@ var _ = Describe("Invalid Predictors", func() {
 			})
 
 			AfterEach(func() {
-				fvtClient.DeletePredictor(predictorObject.GetName())
+				FVTClientInstance.DeletePredictor(predictorObject.GetName())
 			})
 
 			It("predictor should fail to load with invalid storage path", func() {
@@ -1008,14 +960,9 @@ var _ = Describe("Invalid Predictors", func() {
 			})
 		})
 	}
-
-	Specify("Restart pods to reset Bootstrap failure checks", func() {
-		fvtClient.RestartDeploys()
-	})
 })
 
 var _ = Describe("Non-ModelMesh ServingRuntime", func() {
-
 	runtimeFile := "non-mm-runtime.yaml"
 	runtimeName := "non-mm-runtime"
 
@@ -1023,39 +970,39 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		var err error
 
 		// Get a list of ServingRuntime deployments.
-		deploys := fvtClient.ListDeploys()
+		deploys := FVTClientInstance.ListDeploys()
 		numDeploys := len(deploys.Items)
 
 		// Create a non-modelmesh ServingRuntime.
-		err = fvtClient.RunKubectl("create", "-f", runtimeSamplesPath+runtimeFile)
+		err = FVTClientInstance.RunKubectl("create", "-f", TestDataPath(RuntimeSamplesPath+runtimeFile))
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for the deployments replicas to be ready")
 		WaitForStableActiveDeployState()
 
 		By("Checking that new ServingRuntime resource exists")
-		fvtClient.GetServingRuntime(runtimeName)
+		FVTClientInstance.GetServingRuntime(runtimeName)
 
 		By("Checking that no new deployments were created")
-		deploys = fvtClient.ListDeploys()
+		deploys = FVTClientInstance.ListDeploys()
 		Expect(deploys.Items).To(HaveLen(numDeploys))
 	})
 
 	AfterEach(func() {
-		err := fvtClient.RunKubectl("delete", "-f", runtimeSamplesPath+runtimeFile)
+		err := FVTClientInstance.RunKubectl("delete", "-f", TestDataPath(RuntimeSamplesPath+runtimeFile))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("predictor should remain pending with RuntimeUnhealthy", func() {
 		pred := NewPredictorForFVT("foo-predictor.yaml")
 
-		obj := fvtClient.CreatePredictorExpectSuccess(pred)
+		obj := FVTClientInstance.CreatePredictorExpectSuccess(pred)
 		ExpectPredictorState(obj, false, "Pending", "", "UpToDate")
 
 		// Give time to process
 		time.Sleep(time.Second * 5)
 
-		obj = fvtClient.GetPredictor(obj.GetName())
+		obj = FVTClientInstance.GetPredictor(obj.GetName())
 
 		By("Verifying the predictor has failure message")
 		failureInfo := GetMap(obj, "status", "lastFailureInfo")
@@ -1065,6 +1012,6 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		// Here, just check for one of the expected failure reasons.
 		Expect(failureInfo["reason"]).To(Or(Equal("RuntimeUnhealthy"), Equal("NoSupportingRuntime")))
 
-		fvtClient.DeletePredictor(obj.GetName())
+		FVTClientInstance.DeletePredictor(obj.GetName())
 	})
 })
