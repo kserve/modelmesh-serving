@@ -157,7 +157,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 }
 
 func (m *Deployment) Delete(ctx context.Context, client client.Client) error {
-	m.Log.Info("Deleting model mesh deployment ", "m", m)
+	m.Log.Info("Deleting modelmesh deployment ", "name", m.Name, "namespace", m.Namespace)
 	return config.Delete(client, m.Owner, "config/internal/base/deployment.yaml.tmpl", m)
 }
 
