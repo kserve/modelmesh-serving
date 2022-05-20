@@ -103,9 +103,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		return RequeueResult, err
 	}
-	var runtimes *kserveapi.ServingRuntimeList
+	runtimes := &kserveapi.ServingRuntimeList{}
 	if mmEnabled {
-		runtimes = &kserveapi.ServingRuntimeList{}
 		if err = r.Client.List(ctx, runtimes, client.InNamespace(req.Namespace)); err != nil {
 			return RequeueResult, err
 		}

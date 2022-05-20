@@ -118,12 +118,12 @@ func main() {
 		if podName != "" {
 			if matches := regexp.MustCompile("(.*)-.*-.*").FindStringSubmatch(podName); len(matches) == 2 {
 				deployment := matches[1]
-				setupLog.Info("Use controller deployment from POD_NAME", "Deployment", deployment)
+				setupLog.Info("Using controller deployment name from POD_NAME", "Deployment", deployment)
 				controllerDeploymentName = deployment
 			}
 		}
 		if controllerDeploymentName == "" {
-			setupLog.Info("Skip empty Controller deployment from Env Var, use default",
+			setupLog.Info("Controller deployment name env var not provided, using default",
 				"name", DefaultControllerName)
 			controllerDeploymentName = DefaultControllerName
 		}
