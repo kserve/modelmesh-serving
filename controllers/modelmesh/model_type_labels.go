@@ -67,8 +67,7 @@ func GetPredictorTypeLabel(p *api.Predictor) string {
 	if mt.Version != nil {
 		label = fmt.Sprintf("%s:%s", label, *mt.Version)
 	}
-	pv := p.Spec.ProtocolVersion
-	if pv != nil {
+	if pv := p.Spec.ProtocolVersion; pv != nil {
 		label = fmt.Sprintf("%s|pv:%s", label, *pv)
 	}
 	return label

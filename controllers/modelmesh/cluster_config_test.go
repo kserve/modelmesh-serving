@@ -22,7 +22,8 @@ import (
 )
 
 func TestCalculateConstraintData(t *testing.T) {
-	expected := `{"_default":{"required":["_no_runtime"]},"mt:tensorflow":{"required":["mt:tensorflow"]},` +
+	expected := `{"_default":{"required":["_no_runtime"]},` +
+		`"mt:tensorflow":{"required":["mt:tensorflow"]},` +
 		`"mt:tensorflow:1.10":{"required":["mt:tensorflow:1.10"]},` +
 		`"mt:tensorflow:1.10|pv:v1":{"required":["mt:tensorflow:1.10","pv:v1"]},` +
 		`"mt:tensorflow:1.10|pv:v2":{"required":["mt:tensorflow:1.10","pv:v2"]},` +
