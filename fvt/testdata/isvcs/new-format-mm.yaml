@@ -11,3 +11,4 @@ spec:
       modelFormat:
         name: sklearn
       storageUri: s3://modelmesh-example-models/sklearn/mnist-svm.joblib
+      protocolVersion: grpc-v2

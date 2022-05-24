@@ -334,7 +334,7 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 		AutoDeleteTargetModel: true,
 		LoadNow:               loadNow,
 		ModelInfo: &mmeshapi.ModelInfo{
-			Type: modelmesh.GetPredictorModelTypeLabel(predictor),
+			Type: modelmesh.GetPredictorTypeLabel(predictor),
 			Path: path,
 			Key:  string(keyJSONBytes),
 		},
@@ -412,7 +412,7 @@ func decodeModelState(status *mmeshapi.ModelStatusInfo) (common.ModelState, comm
 	if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
 		return common.FailedToLoad, common.RuntimeNotRecognized, "Specified runtime name not recognized"
 	}
-	return common.FailedToLoad, common.NoSupportingRuntime, "No ServingRuntime supports specified model type"
+	return common.FailedToLoad, common.NoSupportingRuntime, "No ServingRuntime supports specified model type and/or protocol"
 }
 
 // Returns true if any changes were made to the Status, false otherwise

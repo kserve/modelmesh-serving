@@ -20,6 +20,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/kserve/kserve/pkg/constants"
 	"k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -167,6 +168,11 @@ func (in *PredictorSpec) DeepCopyInto(out *PredictorSpec) {
 		in, out := &in.Runtime, &out.Runtime
 		*out = new(PredictorRuntime)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ProtocolVersion != nil {
+		in, out := &in.ProtocolVersion, &out.ProtocolVersion
+		*out = new(constants.InferenceServiceProtocol)
+		**out = **in
 	}
 }
 

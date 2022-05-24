@@ -74,6 +74,11 @@ spec:
                 path:
                   description: (DEPRECATED) The path to the model files within the storage
                   type: string
+                protocolVersion:
+                  description:
+                    Protocol version to be exposed by the predictor (i.e.
+                    v1 or v2 or grpc-v1 or grpc-v2)
+                  type: string
                 runtime:
                   description:
                     If omitted a compatible runtime is selected based on

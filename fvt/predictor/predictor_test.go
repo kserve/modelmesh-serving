@@ -945,7 +945,7 @@ var _ = Describe("Invalid Predictors", func() {
 
 				By("Verifying the predictor")
 				ExpectPredictorFailureInfo(obj, "NoSupportingRuntime", false, true,
-					"No ServingRuntime supports specified model type")
+					"No ServingRuntime supports specified model type and/or protocol")
 			})
 
 			It("predictor should fail to load with unrecognized runtime type", func() {

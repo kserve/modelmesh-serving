@@ -201,7 +201,7 @@ spec:
 ```
 
 In each entry of the `supportedModelFormats` list, `autoSelect: true` can optionally be specified to indicate that that the given `ServingRuntime` can be considered for automatic placement of `Predictors` or `InferenceServices` with the corresponding model type/format if no runtime is explicitly specified.
-For example, if a user applies a `Predictor` with `modelType.name: new-modeltype` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modeltype`. If `autoSelect` were `false` or unspecified, the `Predictor` would fail to load with the message "No ServingRuntime supports specified model type" unless the runtime `example-runtime` was specified directly in the YAML.
+For example, if a user applies a `Predictor` with `modelType.name: new-modeltype` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modeltype`. If `autoSelect` were `false` or unspecified, the `Predictor` would fail to load with the message "No ServingRuntime supports specified model type and/or protocol" unless the runtime `example-runtime` was specified directly in the YAML.
 
 ### Runtime container resource allocations
 
