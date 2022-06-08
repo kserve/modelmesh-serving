@@ -39,6 +39,10 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
             "idExtractionPath": [1],
             "vModelId": true
         },
+        "inference.GRPCInferenceService/ModelMetadata": {
+            "idExtractionPath": [1],
+            "vModelId": true
+        },
         "tensorflow.serving.PredictionService/Predict": {
             "idExtractionPath": [1, 1],
             "vModelId": true

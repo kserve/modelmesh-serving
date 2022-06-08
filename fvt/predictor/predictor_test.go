@@ -370,6 +370,24 @@ var _ = Describe("Predictor", func() {
 			Expect(err.Error()).To(ContainSubstring("model expects 'FP32'"))
 			Expect(inferResponse).To(BeNil())
 		})
+
+		It("should return model metadata", func() {
+			modelMetadataRequest := &inference.ModelMetadataRequest{
+				Name: tfPredictorName,
+			}
+			modelMetadataResponse, err := FVTClientInstance.RunKfsModelMetadata(modelMetadataRequest)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(modelMetadataResponse).ToNot(BeNil())
+
+			Expect(modelMetadataResponse.Name).To(HavePrefix(tfPredictorName))
+			Expect(modelMetadataResponse.Inputs).To(HaveLen(1))
+			Expect(modelMetadataResponse.Outputs).To(HaveLen(1))
+
+			Expect(modelMetadataResponse.Inputs[0].Name).To(Equal("inputs"))
+			Expect(modelMetadataResponse.Inputs[0].Shape).To(Equal([]int64{-1, 784}))
+			Expect(modelMetadataResponse.Inputs[0].Datatype).To(Equal("FP32"))
+		})
 	})
 
 	var _ = Describe("Keras inference", Ordered, func() {
@@ -425,6 +443,25 @@ var _ = Describe("Predictor", func() {
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 		})
+
+		It("should return model metadata", func() {
+			modelMetadataRequest := &inference.ModelMetadataRequest{
+				Name: kerasPredictorName,
+			}
+			modelMetadataResponse, err := FVTClientInstance.RunKfsModelMetadata(modelMetadataRequest)
+
+			fmt.Println(modelMetadataResponse)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(modelMetadataResponse).ToNot(BeNil())
+
+			Expect(modelMetadataResponse.Name).To(HavePrefix(kerasPredictorName))
+			Expect(modelMetadataResponse.Inputs).To(HaveLen(1))
+			Expect(modelMetadataResponse.Outputs).To(HaveLen(1))
+
+			Expect(modelMetadataResponse.Inputs[0].Name).To(Equal("conv2d_input"))
+			Expect(modelMetadataResponse.Inputs[0].Shape).To(Equal([]int64{-1, 28, 28, 1}))
+			Expect(modelMetadataResponse.Inputs[0].Datatype).To(Equal("FP32"))
+		})
 	})
 
 	var _ = Describe("ONNX inference", Ordered, func() {
@@ -469,6 +506,24 @@ var _ = Describe("Predictor", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
+		})
+
+		It("should return model metadata", func() {
+			modelMetadataRequest := &inference.ModelMetadataRequest{
+				Name: onnxPredictorName,
+			}
+			modelMetadataResponse, err := FVTClientInstance.RunKfsModelMetadata(modelMetadataRequest)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(modelMetadataResponse).ToNot(BeNil())
+			Expect(modelMetadataResponse.Name).To(HavePrefix(onnxPredictorName))
+
+			Expect(modelMetadataResponse.Inputs).To(HaveLen(1))
+			Expect(modelMetadataResponse.Outputs).To(HaveLen(1))
+
+			Expect(modelMetadataResponse.Inputs[0].Name).To(Equal("Input3"))
+			Expect(modelMetadataResponse.Inputs[0].Shape).To(Equal([]int64{1, 1, 28, 28}))
+			Expect(modelMetadataResponse.Inputs[0].Datatype).To(Equal("FP32"))
 		})
 	})
 
@@ -568,6 +623,18 @@ var _ = Describe("Predictor", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("1 should be equal to 64"))
 		})
+
+		It("should return model metadata", func() {
+			modelMetadataRequest := &inference.ModelMetadataRequest{
+				Name: mlsPredictorName,
+			}
+			modelMetadataResponse, err := FVTClientInstance.RunKfsModelMetadata(modelMetadataRequest)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(modelMetadataResponse).ToNot(BeNil())
+			// Only name is returned.
+			Expect(modelMetadataResponse.Name).To(HavePrefix(mlsPredictorName))
+		})
 	})
 
 	var _ = Describe("XGBoost inference", Ordered, func() {
@@ -658,6 +725,25 @@ var _ = Describe("Predictor", func() {
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
 			Expect(inferResponse).To(BeNil())
 		})
+
+		It("should return model metadata", func() {
+			modelMetadataRequest := &inference.ModelMetadataRequest{
+				Name: ptPredictorName,
+			}
+			modelMetadataResponse, err := FVTClientInstance.RunKfsModelMetadata(modelMetadataRequest)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(modelMetadataResponse).ToNot(BeNil())
+			Expect(modelMetadataResponse.Name).To(HavePrefix(ptPredictorName))
+
+			Expect(modelMetadataResponse.Inputs).To(HaveLen(1))
+			Expect(modelMetadataResponse.Outputs).To(HaveLen(1))
+
+			Expect(modelMetadataResponse.Inputs[0].Name).To(Equal("INPUT__0"))
+			Expect(modelMetadataResponse.Inputs[0].Shape).To(Equal([]int64{-1, 3, 32, 32}))
+			Expect(modelMetadataResponse.Inputs[0].Datatype).To(Equal("FP32"))
+		})
+
 	})
 
 	// This an inference testcase for pytorch that mandates schema in config.pbtxt

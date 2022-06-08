@@ -425,6 +425,18 @@ func (fvt *FVTClient) RunKfsInference(req *inference.ModelInferRequest) (*infere
 	return grpcClient.ModelInfer(ctx, req)
 }
 
+func (fvt *FVTClient) RunKfsModelMetadata(req *inference.ModelMetadataRequest) (*inference.ModelMetadataResponse, error) {
+	if fvt.grpcConn == nil {
+		return nil, errors.New("you must connect to model mesh before running a model metadata request")
+	}
+
+	grpcClient := inference.NewGRPCInferenceServiceClient(fvt.grpcConn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	return grpcClient.ModelMetadata(ctx, req)
+}
+
 func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, tls bool) (string, error) {
 	if fvt.restConn == nil {
 		return "", errors.New("you must connect to model mesh before running an inference")
