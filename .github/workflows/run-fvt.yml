@@ -56,7 +56,6 @@ jobs:
       - name: Install ModelMesh Serving
         run: |
           kubectl create ns modelmesh-serving
-          kubectl apply -f https://raw.githubusercontent.com/kserve/kserve/master/test/crds/serving.kserve.io_inferenceservices.yaml
           ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
       - name: Free up disk space
         run: |
