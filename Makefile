@@ -23,6 +23,8 @@ NAMESPACE ?= "model-serving"
 
 CONTROLLER_GEN_VERSION ?= "v0.7.0"
 
+CRD_OPTIONS ?= "crd:maxDescLen=0"
+
 # Model Mesh gRPC API Proto Generation
 PROTO_FILES = $(shell find proto/ -iname "*.proto")
 GENERATED_GO_FILES = $(shell find generated/ -iname "*.pb.go")
@@ -87,9 +89,14 @@ delete: oc-login
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
-        # HACK: ignore errors from generating the TrainedModel CRD from KServe, which is removed below
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1alpha1" output:crd:artifacts:config=config/crd/bases || true
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="./..." output:crd:artifacts:config=config/crd/bases
+		# NOTE: We're currently copying the CRD manifests from KServe rather than using this target to regenerate those
+		# that are common (all apart from predictors) because the formatting ends up different depending on the version
+		# of controller-gen and yq used. The KServe make manifests also includes a bunch of yaml post-processing which
+		# would need to be replicated here.
+		# HACK: ignore errors from generating the TrainedModel CRD from KServe, which is removed below
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1alpha1" output:crd:dir=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1beta1" output:crd:dir=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="./..." output:crd:dir=config/crd/bases
 	rm -f ./config/crd/bases/serving.kserve.io_trainedmodels.yaml
 	pre-commit run --all-files prettier > /dev/null || true
 
