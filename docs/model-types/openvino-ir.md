@@ -30,13 +30,13 @@ It is possible to adjust this behavior by adding an optional .json file named `m
 
 ```json
 {
-       "inputs":{
-          "tensor_name":"grpc_custom_input_name"
-       },
-       "outputs":{
-          "tensor_name1":"grpc_output_key_name1",
-          "tensor_name2":"grpc_output_key_name2"
-       }
+  "inputs": {
+    "tensor_name": "grpc_custom_input_name"
+  },
+  "outputs": {
+    "tensor_name1": "grpc_output_key_name1",
+    "tensor_name2": "grpc_output_key_name2"
+  }
 }
 ```
 
@@ -45,6 +45,7 @@ More details on model configuration can be found [here](https://docs.openvino.ai
 ## Storage Layout
 
 The OpenVINO models need to be placed and mounted in a particular directory structure:
+
 ```
 tree models/
 models/
@@ -66,6 +67,7 @@ models/
 ```
 
 and according to the following rules:
+
 - Each model should be stored in a dedicated directory, e.g. model1 and model2.
 - Each model directory should include a sub-folder for each of its versions (1,2, etc). The versions and their folder names should be positive integer values.
   **Note**: In execution, the versions are enabled according to a pre-defined version policy. If the client does not specify the version number in parameters, by default, the latest version is served.
