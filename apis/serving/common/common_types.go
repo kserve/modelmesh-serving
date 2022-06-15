@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:openapi-gen=true
 type StorageSpec struct {
 	// The path to the model object in the storage. It cannot co-exist
 	// with the storageURI.
@@ -41,6 +42,7 @@ type StorageSpec struct {
 
 // TransitionStatus enum
 // +kubebuilder:validation:Enum=UpToDate;InProgress;BlockedByFailedLoad;InvalidSpec
+// +k8s:openapi-gen=true
 type TransitionStatus string
 
 // TransitionStatus Enum values
@@ -57,6 +59,7 @@ const (
 
 // ModelState enum
 // +kubebuilder:validation:Enum="";Pending;Standby;Loading;Loaded;FailedToLoad
+// +k8s:openapi-gen=true
 type ModelState string
 
 // ModelState Enum values
@@ -75,6 +78,7 @@ const (
 
 // FailureReason enum
 // +kubebuilder:validation:Enum=ModelLoadFailed;RuntimeUnhealthy;NoSupportingRuntime;RuntimeNotRecognized;InvalidPredictorSpec
+// +k8s:openapi-gen=true
 type FailureReason string
 
 // FailureReason enum values
@@ -91,6 +95,7 @@ const (
 	InvalidPredictorSpec FailureReason = "InvalidPredictorSpec"
 )
 
+// +k8s:openapi-gen=true
 type FailureInfo struct {
 	// Name of component to which the failure relates (usually Pod name)
 	//+optional
@@ -110,6 +115,7 @@ type FailureInfo struct {
 }
 
 // PredictorStatus defines the observed state of Predictor
+// +k8s:openapi-gen=true
 type PredictorStatus struct {
 
 	//TODO Conditions/Phases TBD
