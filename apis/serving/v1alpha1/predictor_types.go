@@ -25,6 +25,7 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // see if this is possible
+// +k8s:openapi-gen=true
 type PredictorRuntime struct {
 	// one-of these must be present
 	*RuntimeRef `json:",inline"`
@@ -32,10 +33,12 @@ type PredictorRuntime struct {
 	//*ServingRuntimePodSpec `json:",inline"`
 }
 
+// +k8s:openapi-gen=true
 type RuntimeRef struct {
 	Name string `json:"name"`
 }
 
+// +k8s:openapi-gen=true
 type Storage struct {
 	// new way to specify the storage configuration
 	common.StorageSpec `json:",inline"`
@@ -50,6 +53,7 @@ type Storage struct {
 	S3 *S3StorageSource `json:"s3,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type S3StorageSource struct {
 	// +required
 	SecretKey string `json:"secretKey" validation:"required"`
@@ -57,6 +61,7 @@ type S3StorageSource struct {
 	Bucket *string `json:"bucket,omitempty" validation:"required"`
 }
 
+// +k8s:openapi-gen=true
 type ModelType struct {
 	// +required
 	Name string `json:"name"`
@@ -64,6 +69,7 @@ type ModelType struct {
 	Version *string `json:"version,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type Model struct {
 	// +required
 	Type ModelType `json:"modelType"`
@@ -82,6 +88,7 @@ type Model struct {
 
 // GpuRequest constant for specifying GPU requirement or preference
 // +kubebuilder:validation:Enum=required;preferred
+// +k8s:openapi-gen=true
 type GpuRequest string
 
 // GpuRequest Enum
@@ -93,6 +100,7 @@ const (
 )
 
 // PredictorSpec defines the desired state of Predictor
+// +k8s:openapi-gen=true
 type PredictorSpec struct {
 	// NOT YET SUPPORTED
 	// +optional
@@ -122,6 +130,7 @@ type PredictorSpec struct {
 // +kubebuilder:printcolumn:name="TargetModel",type="string",JSONPath=".status.targetModelState"
 // +kubebuilder:printcolumn:name="Transition",type="string",JSONPath=".status.transitionStatus"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +k8s:openapi-gen=true
 type Predictor struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -137,6 +146,7 @@ type Predictor struct {
 // +kubebuilder:object:root=true
 
 // PredictorList contains a list of Predictor
+// +k8s:openapi-gen=true
 type PredictorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
