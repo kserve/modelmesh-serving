@@ -21,6 +21,6 @@ By leveraging existing third-party model servers, we support a number of standar
 | sklearn     | scikit-learn     | MLServer (python)            |
 | tensorflow  | TensorFlow       | Triton (C++)                 |
 | xgboost     | XGBoost          | MLServer (python)            |
-| \*\*        | Custom           | [Custom](../runtimes) (any)  |
+| any         | Custom           | [Custom](../runtimes) (any)  |
 
 (\*)Many ML frameworks can have models converted to the OpenVINO IR format, such as Caffe, TensorFlow, MXNet, PaddlePaddle and ONNX, doc [here](https://docs.openvino.ai/latest/ovms_what_is_openvino_model_server.html).
