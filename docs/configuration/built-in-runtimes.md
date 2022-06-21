@@ -1,9 +1,10 @@
 # Customizing Built-In Runtime Pods
 
-ModelMesh Serving currently supports two built-in `ServingRuntime`s:
+ModelMesh Serving currently supports three built-in `ServingRuntime`s:
 
 - Nvidia Triton - onnx, pytorch, tensorflow (model types supported)
 - MLServer - lightgbm, sklearn, xgboost
+- OpenVINO Model Server OVMS - OpenVINO's Intermediate Representation (IR) format, and onnx models.
 
 When a `Predictor`s using one of these model types is deployed, Pods corresponding to the supporting `ServingRuntime` will be started if they aren't already running. Most of the built-in `ServingRuntime` fields should not be modified, but some can be changed to customize the details of the corresponding Pods:
 
@@ -20,6 +21,15 @@ When a `Predictor`s using one of these model types is deployed, Pods correspondi
         memory: 1Gi
       ```
     - MLServer:
+      ```yaml
+      limits:
+        cpu: "5"
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      ```
+    - OVMS:
       ```yaml
       limits:
         cpu: "5"
