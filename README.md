@@ -31,6 +31,7 @@ ModelMesh Serving provides out-of-the-box integration with the following model s
 
 - [triton-inference-server](https://github.com/triton-inference-server/server) - Nvidia's Triton Inference Server
 - [seldon-mlserver](https://github.com/SeldonIO/MLServer) - Seldon's Python MLServer
+- [openVINO-model-server](https://github.com/openvinotoolkit/model_server) - OpenVINO Model Server
 
 `ServingRuntime` custom resources can be used to add support for other existing or custom-built model servers, see the docs on [implementing a custom Serving Runtime](./docs/runtimes/custom_runtimes.md)
 
