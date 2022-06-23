@@ -38,6 +38,8 @@ const (
 	secretKeyAnnotation  = "serving.kserve.io/secretKey"
 	schemaPathAnnotation = "serving.kserve.io/schemaPath"
 	runtimeAnnotation    = "serving.kserve.io/servingRuntime"
+
+	azureBlobHostSuffix = "blob.core.windows.net"
 )
 
 var _ PredictorRegistry = (*InferenceServiceRegistry)(nil)
@@ -170,8 +172,22 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 			uriParameters["type"] = "gcs"
 			uriParameters["bucket"] = u.Host
 		case "http", "https":
-			uriParameters["type"] = "http"
-			uriParameters["url"] = *storageUri
+			if strings.HasSuffix(u.Host, azureBlobHostSuffix) {
+				uriParameters["type"] = "azure"
+
+				pathParts := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
+				if len(pathParts) < 1 {
+					err = fmt.Errorf("the InferenceService %v has an invalid URL path %v", nname, *storageUri)
+					return
+				}
+				hostParts := strings.Split(u.Host, ".")
+				uriParameters["container"] = pathParts[0]
+				uriParameters["account_name"] = hostParts[0]
+				modelPath = strings.Join(pathParts[1:], "/")
+			} else {
+				uriParameters["type"] = "http"
+				uriParameters["url"] = *storageUri
+			}
 		default:
 			err = fmt.Errorf("the InferenceService %v has an unsupported storageUri scheme %v", nname, u.Scheme)
 			return
