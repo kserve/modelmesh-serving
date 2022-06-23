@@ -1,4 +1,4 @@
-# Copied from https://github.com/kserve/kserve/blob/400078ed3e98362dc434e4ece0d0d82678dd9f0b/config/crd/serving.kserve.io_servingruntimes.yaml
+# Copied from https://github.com/kserve/kserve/blob/39ec2d19de1d856a9527b800fda8fb380bc9441f/config/crd/serving.kserve.io_servingruntimes.yaml
 #
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
