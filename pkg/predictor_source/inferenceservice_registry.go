@@ -25,7 +25,6 @@ import (
 
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	kserveConstants "github.com/kserve/kserve/pkg/constants"
-	"github.com/kserve/modelmesh-serving/apis/serving/common"
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"knative.dev/pkg/apis"
 
@@ -260,20 +259,20 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 		return nil, nil
 	}
 
-	p.Status = common.PredictorStatus{}
-	p.Status.TransitionStatus = common.TransitionStatus(inferenceService.Status.ModelStatus.TransitionStatus)
+	p.Status = v1alpha1.PredictorStatus{}
+	p.Status.TransitionStatus = v1alpha1.TransitionStatus(inferenceService.Status.ModelStatus.TransitionStatus)
 	if inferenceService.Status.ModelStatus.ModelCopies != nil {
 		p.Status.FailedCopies = inferenceService.Status.ModelStatus.ModelCopies.FailedCopies
 		p.Status.TotalCopies = inferenceService.Status.ModelStatus.ModelCopies.TotalCopies
 	}
 	if inferenceService.Status.ModelStatus.ModelRevisionStates != nil {
-		p.Status.ActiveModelState = common.ModelState(inferenceService.Status.ModelStatus.ModelRevisionStates.ActiveModelState)
-		p.Status.TargetModelState = common.ModelState(inferenceService.Status.ModelStatus.ModelRevisionStates.TargetModelState)
+		p.Status.ActiveModelState = v1alpha1.ModelState(inferenceService.Status.ModelStatus.ModelRevisionStates.ActiveModelState)
+		p.Status.TargetModelState = v1alpha1.ModelState(inferenceService.Status.ModelStatus.ModelRevisionStates.TargetModelState)
 	}
 	if inferenceService.Status.ModelStatus.LastFailureInfo != nil {
-		p.Status.LastFailureInfo = &common.FailureInfo{
+		p.Status.LastFailureInfo = &v1alpha1.FailureInfo{
 			Location: inferenceService.Status.ModelStatus.LastFailureInfo.Location,
-			Reason:   common.FailureReason(inferenceService.Status.ModelStatus.LastFailureInfo.Reason),
+			Reason:   v1alpha1.FailureReason(inferenceService.Status.ModelStatus.LastFailureInfo.Reason),
 			Message:  inferenceService.Status.ModelStatus.LastFailureInfo.Message,
 			ModelId:  inferenceService.Status.ModelStatus.LastFailureInfo.ModelRevisionName,
 			Time:     inferenceService.Status.ModelStatus.LastFailureInfo.Time,
@@ -290,7 +289,7 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	}
 
 	if p.Status.ActiveModelState == "" {
-		p.Status.ActiveModelState = common.Pending
+		p.Status.ActiveModelState = v1alpha1.Pending
 	}
 
 	secretKey, parameters, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
