@@ -23,22 +23,36 @@ The default configuration is for the cluster scope mode. Change RBAC permissions
 
 ## Deployed Components
 
-|            | Type             | Pod                        | Count | Default CPU request/limit per-pod | Default mem request/limit per-pod |
-| ---------- | ---------------- | -------------------------- | ----- | --------------------------------- | --------------------------------- |
-| 1          | Controller       | modelmesh controller pod   | 1     | 50m / 1                           | 96Mi / 512Mi                      |
-| 2          | Object Storage   | minio pod                  | 1     | 200m / 200m                       | 256Mi / 256Mi                     |
-| 3          | Metastore        | ETCD pods                  | 1     | 200m / 200m                       | 512Mi / 512Mi                     |
-| 4          | Built-in Runtime | Nvidia Triton runtime Pods | 2     | 850m / 10                         | 1568Mi / 1984Mi                   |
-| 5          | Built-in Runtime | The MLServer runtime Pods  | 2     | 850m / 10                         | 1568Mi / 1984Mi                   |
-| **totals** |                  |                            | 7     | 3850m / 41.4                      | 6.96Gi / 8.59Gi                   |
+|            | Type             | Pod                        | Count   | Default CPU request/limit per-pod | Default mem request/limit per-pod          |
+| ---------- | ---------------- | -------------------------- | ------- | --------------------------------- | ------------------------------------------ |
+| 1          | Controller       | modelmesh controller pod   | 1       | 50m / 1                           | 96Mi / 512Mi                               |
+| 2          | Object Storage   | MinIO pod (optional)       | 1       | 200m / 200m                       | 256Mi / 256Mi                              |
+| 3          | Metastore        | ETCD pod                   | 1       | 200m / 200m                       | 512Mi / 512Mi                              |
+| 4          | Built-in Runtime | Nvidia Triton runtime Pods | 0 \(\*) | 850m / 10 or 900m / 11 \(\*\*)    | 1568Mi / 1984Mi or 1664Mi / 2496Mi \(\*\*) |
+| 5          | Built-in Runtime | The MLServer runtime Pods  | 0 \(\*) | 850m / 10 or 900m / 11 \(\*\*)    | 1568Mi / 1984Mi or 1664Mi / 2496Mi \(\*\*) |
+| 6          | Built-in Runtime | The OVMS runtime Pods      | 0 \(\*) | 850m / 10 or 900m / 11 \(\*\*)    | 1568Mi / 1984Mi or 1664Mi / 2496Mi \(\*\*) |
+| **totals** |                  |                            | 3       | 450m / 1.4                        | 864Mi / 1.25Gi                             |
 
-When ModelMesh serving instance is installed with the `--quickstart` option, pods shown in 1 - 5 are created with a total CPU(request/limit) of 3850m / 41.4 and total memory(request/limit) of 6.96Gi / 8.59Gi.
+When a ModelMesh serving instance is installed with the `--quickstart` option, pods shown in 1 - 6 are created.
+However, do note that the quickstart-deployed etcd and MinIO pods are intended for development/experimentation and not for production.
 
 (\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until a Predictor is created that uses that runtime. Once a Predictor is assigned, the runtime pods will scale up to 2.
 
 When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no Predictors for that runtime. When `ScaletoZero` is enabled and first predictor CR is submitted, ModelMesh serving will spin up the corresponding built-in runtime pods.
 
-When `ScaletoZero` is **disabled**, pods shown in 4 to 5 are created, with a total CPU(request/limit) of 6/63.1 and total memory(request/limit) of 11.11Gi/14.652Gi.
+When `ScaletoZero` is **disabled**, pods shown in 4 to 6 are created (default two pods per runtime), which will greatly increase the total CPU(request/limit) and total memory(request/limit).
+
+(\*\*) When the REST inferencing is enabled via the `restProxy` config parameter, every model serving pod will include an additional container that consumes resources. The default allocation for this proxy container is:
+
+```yaml
+resources:
+  requests:
+    cpu: "50m"
+    memory: "96Mi"
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+```
 
 The deployed footprint can be significantly reduced in the following ways:
 
@@ -46,11 +60,12 @@ The deployed footprint can be significantly reduced in the following ways:
 
 - The number of Pods per runtime can be changed from the default of 2 (e.g. down to 1), via the `podsPerRuntime` global configuration parameter (see [configuration](../configuration)). It is recommended for this value to be a minimum of 2 for production deployments.
 
-- Memory and/or CPU resource allocations can be reduced (or increased) on the primary model server container in any of the built-in `ServingRuntime` resources (container name `triton` or `mlserver`). This has the effect of adjusting the total capacity available for holding served models in memory.
+- Memory and/or CPU resource allocations can be reduced (or increased) on the primary model server container in any of the built-in `ServingRuntime` resources (container name `triton`, `mlserver`, or `ovms`). This has the effect of adjusting the total capacity available for holding served models in memory.
 
 ```shell
 > kubectl edit servingruntime triton-2.x
 > kubectl edit servingruntime mlserver-0.x
+> kubectl edit servingruntime ovms-1.x
 ```
 
 Please be aware that:

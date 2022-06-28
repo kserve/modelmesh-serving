@@ -1,6 +1,6 @@
 # Send an inference request to your Predictor
 
-Currently, only gRPC requests are supported by ModelMesh. However, if the `restProxy` is `enabled` in the ModelMesh Serving [config](../configuration) (which it is by default), then REST inference requests are enabled via [KServe V2 REST proxies](https://github.com/kserve/rest-proxy). This allows sending requests using the KServe V2 REST Predict Protocol to ModelMesh models.
+Currently, only gRPC requests are supported by ModelMesh. However, if the `restProxy` is `enabled` in the ModelMesh Serving [config](../configuration) (which it is by default), then REST inference requests are enabled via [KServe V2 REST proxies](https://github.com/kserve/rest-proxy). This allows sending requests using the KServe V2 REST Predict Protocol to ModelMesh models. However, this proxy does not work in conjunction with custom serving runtimes that expose different gRPC protobuf APIs.
 
 1. [Inference using gRPC](#inference-using-grpc)
 2. [Inference using REST](#inference-using-rest)
@@ -162,7 +162,7 @@ grpcurl \
 
 ## Inference using REST
 
-> **Note**: The [REST proxy](https://github.com/kserve/rest-proxy) is currently in an alpha state and may still have issues with certain usage scenarios.
+> **Note**: The [REST proxy](https://github.com/kserve/rest-proxy) is currently in an alpha state and may still have issues with certain usage scenarios. When the use case is more performance or resource intensive, consider disabling the REST proxy (it is enabled by default), and using gRPC instead. With the REST proxy enabled, an extra container is deployed in each serving runtime pod which increases resource usage and inference request performance is reduced. See [Configuration](../configuration/README.md) for how to disable/enable the REST inferencing endpoint for ModelMesh ServingRuntimes.
 
 By default, REST requests will go through the `modelmesh-serving` service using port `8008`.
 
