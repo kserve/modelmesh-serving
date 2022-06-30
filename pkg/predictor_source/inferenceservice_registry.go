@@ -108,9 +108,9 @@ func BuildBasePredictorFromInferenceService(isvc *v1beta1.InferenceService) (*v1
 			},
 		}
 
-		protocolVersion := isvc.Spec.Predictor.GetImplementation().GetProtocol()
-		if protocolVersion != kserveConstants.ProtocolUnknown {
-			p.Spec.ProtocolVersion = &protocolVersion
+		protocolVersion := frameworkSpec.ProtocolVersion
+		if protocolVersion != nil && *protocolVersion != kserveConstants.ProtocolUnknown {
+			p.Spec.ProtocolVersion = protocolVersion
 		}
 
 		// If explicit ServingRuntime was passed in through an annotation
