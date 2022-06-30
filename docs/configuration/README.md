@@ -2,7 +2,7 @@
 
 System-wide configuration parameters can be set by creating a ConfigMap with name `model-serving-config`. It should contain a single key named `config.yaml`, whose value is a yaml doc containing the configuration. All parameters have defaults and are optional. If the ConfigMap does not exist, all parameters will take their defaults.
 
-The configuration can be updated at runtime and will take effect immediately. Be aware however that certain changes could cause temporary disruption to the service - in particular changing the service name, port, TLS configuration and/or headlessness.
+The configuration can be updated at runtime and will take effect immediately. Be aware however that certain changes could cause temporary disruption to the service - in particular changing the service name, port, TLS configuration, and/or headlessness, or enabling/disabling the REST inferencing port.
 
 Example:
 
@@ -18,6 +18,8 @@ data:
     inferenceServicePort: 8033
     podsPerRuntime: 2
     metrics:
+      enabled: true
+    restProxy:
       enabled: true
     runtimePodLabels:
       app: myApp
@@ -85,6 +87,12 @@ prometheus.io/port: 2112
 prometheus.io/scheme: https
 prometheus.io/scrape: true
 ```
+
+## Enabling REST inferencing endpoint
+
+REST inferencing support is enabled by default, but it requires slightly larger overall resource allocations due to the current proxy implementation. When enabled, the default port is 8008, and ModelMesh Serving will accept both REST and gRPC inferencing requests.
+
+See the [Deployed Components section](../install/README.md#deployed-components) for more information on the additional CPU and Memory footprint when REST inferencing is enabled.
 
 ## Exposing an external endpoint using an OpenShift route
 

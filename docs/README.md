@@ -15,7 +15,7 @@ ModelMesh Serving makes use of two core Kubernetes Custom Resource types:
 
 The Pods that correspond to a particular `ServingRuntime` are started only if/when there are one or more defined `Predictor`s that require them.
 
-We have standardized on the [KServe v2 data plane API](inference/ks-v2-grpc.md) for inferencing, this is supported for all of the built-in model types. Only the gRPC version of this API is supported in this version of ModelMesh Serving, REST support will be coming soon. Custom runtimes are free to use gRPC Service APIs for inferencing, including the KSv2 API.
+We have standardized on the [KServe v2 data plane API](inference/ks-v2-grpc.md) for inferencing, this is supported for all of the built-in model types. We now have support for both the gRPC and REST versions of this. REST is not supported for custom runtimes, but they are free to use any gRPC Service APIs for inferencing including the KSv2 API.
 
 System-wide configuration parameters can be set by [creating a ConfigMap](configuration/) with name `model-serving-config`.
 
