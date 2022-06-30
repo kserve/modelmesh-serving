@@ -35,7 +35,7 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `storageSecretName`                        | The secret containing entries for each storage backend from which models can be loaded (\* see below) | `storage-config`                           |
 | `podsPerRuntime`                           | Number of server Pods to run per enabled Serving Runtime (\*\* see below)                             | `2`                                        |
 | `tls.secretName`                           | Kubernetes TLS type secret to use for securing the Service; no TLS if empty (\*\*\* see below)        |                                            |
-| `tls.clientAuth`                           | Enables mutual TLS authentication. Supported values are `required` and `optional`, disabled if empty  |                                            |
+| `tls.clientAuth`                           | Enables mutual TLS authentication. Supported values are `require` and `optional`, disabled if empty   |                                            |
 | `headlessService`                          | Whether the Service should be headless (recommended)                                                  | `true`                                     |
 | `enableAccessLogging`                      | Enables logging of each request to the model server                                                   | `false`                                    |
 | `serviceAccountName`                       | The service account to use for runtime Pods                                                           | `modelmesh`                                |
@@ -61,6 +61,8 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 - `tls.key` - path to TLS secret key
 - `ca.crt` (optional) - single path or comma-separated list of paths to trusted certificates
 
+All certificates must be encoded in PEM PKCS8 format. See the [dedicated page](./tls.md) for more information on TLS configuration.
+
 (\*\*\*\*) The max gRPC request payload size depends on both this setting and adjusting the model serving runtimes' max message limit. See [inference docs](predictors/run-inference) for details.
 
 (\*\*\*\*\*) Default ServingRuntime Pod labels and annotations
@@ -83,6 +85,22 @@ prometheus.io/port: 2112
 prometheus.io/scheme: https
 prometheus.io/scrape: true
 ```
+
+## Exposing an external endpoint using an OpenShift route
+
+If using OpenShift, you can expose `modelmesh-service` using Openshift routes, which will enable clients to talk to it without using port-forwarding.
+
+1.  Enable HTTP/2 for the Cluster (since gRPC is based on HTTP/2)
+
+        oc annotate ingresses.config/cluster ingress.operator.openshift.io/default-enable-http2=true
+
+2.  Expose the ModelMesh Serving route for external access
+
+        oc create route passthrough modelmesh-serving --service=modelmesh-serving
+
+If using TLS, make sure to include the hostname from the route as described on the [TLS configuration page](./tls.md#creating-tls-certificates-using-certmanager)
+
+**Note**: HTTP/2 uses a fixed port 443, so any calls made to the route exposed above should be to `$HOSTNAME:443`
 
 ## Logging
 
