@@ -15,7 +15,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: controller-role
+  name: modelmesh-controller-role
 rules:
   - apiGroups:
       - ""
