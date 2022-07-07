@@ -15,7 +15,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: controller-leader-election-role
+  name: modelmesh-controller-leader-election-role
 rules:
   - apiGroups:
       - coordination.k8s.io
