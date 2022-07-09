@@ -185,7 +185,7 @@ Response:
 
 #### SKLearn
 
-This is a sample inference request to a TensorFlow model trained on a version of the [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
+This is a sample inference request to an SKLearn model trained on a version of the [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
 
 ```shell
 MODEL_NAME=example-sklearn-mnist-svm
