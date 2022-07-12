@@ -2,9 +2,9 @@
 
 If ModelMesh Serving was deployed using `--quickstart`, a set of example models are shared via a MinIO instance to use when getting started with ModelMesh Serving and experimenting with the provided runtimes.
 
-## Predictors
+## InferenceServices
 
-The `config/example-predictors` directory contains Predictor manifests for many of the example models. Assuming that the entry specified below is added to the storage configuration secret, the Predictors can be deployed and used for experimentation.
+The `config/example-isvc` directory contains InferenceService manifests for many of the example models. Assuming that the entry specified below is added to the storage configuration secret, the InferenceServices can be deployed and used for experimentation.
 
 ## Naming Conventions
 

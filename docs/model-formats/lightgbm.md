@@ -31,23 +31,26 @@ The storage path can point directly to a serialized model
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/
-└── lightgbm-models/example.bst
+s3://modelmesh-example-models/
+└── lightgbm/mushroom.bst
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+kind: InferenceService
 metadata:
   name: lightgbm-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: lightgbm
-  path: lightgbm-models/example.bst
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: lightgbm
+      storage:
+        key: localMinIO
+        path: lightgbm/mushroom.bst
+        parameters:
+          bucket: modelmesh-example-models
 ```

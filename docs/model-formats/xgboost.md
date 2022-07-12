@@ -32,23 +32,27 @@ The storage path can point directly to a serialized model
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/
-└── xgboost-models/example.json
+s3://modelmesh-example-models/
+└── xgboost/mushroom.json
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: xgboost-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: xgboost
-  path: xgboost-models/example.json
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: xgboost
+      storage:
+        key: localMinIO
+        path: xgboost/mushroom.json
+        parameters:
+          bucket: modelmesh-example-models
 ```

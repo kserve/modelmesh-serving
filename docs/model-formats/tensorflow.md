@@ -77,7 +77,7 @@ in a file called `model.graphdef` and the model schema file exists in the same s
 
 The schema file can be in the `storage-path` directory or in another location.
 
-## Example Predictor
+## Example
 
 The following example is using the `SavedModel` format with the simple
 repository layout.
@@ -85,24 +85,29 @@ repository layout.
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/tensorflow-model/
-├── variables/
-└── saved_model.pb
+s3://modelmesh-example-models/
+└──tensorflow/mnist.savedmodel/
+   ├── variables/
+   └── saved_model.pb
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion:serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: tensorflow-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: tensorflow
-  path: tensorflow-model
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: tensorflow
+      storage:
+        key: localMinIO
+        path: tensorflow/mnist.savedmodel
+        parameters:
+          bucket: modelmesh-example-models
 ```

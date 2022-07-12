@@ -45,8 +45,8 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `metrics.port`                             | Port on which to serve metrics via the `/metrics` endpoint                                            | `2112`                                     |
 | `metrics.scheme`                           | Scheme to use for the `/metrics` endpoint (`http` or `https`)                                         | `https`                                    |
 | `metrics.disablePrometheusOperatorSupport` | Disable the support of Prometheus operator for metrics only if `metrics.enabled` is true              | `false`                                    |
-| `scaleToZero.enabled`                      | Whether to scale down Serving Runtimes that have no Predictors                                        | `true`                                     |
-| `scaleToZero.gracePeriodSeconds`           | The number of seconds to wait after Predictors are deleted before scaling to zero                     | `60`                                       |
+| `scaleToZero.enabled`                      | Whether to scale down Serving Runtimes that have no InferenceServices                                 | `true`                                     |
+| `scaleToZero.gracePeriodSeconds`           | The number of seconds to wait after InferenceServices are deleted before scaling to zero              | `60`                                       |
 | `grpcMaxMessageSizeBytes`                  | The max number of bytes for the gRPC request payloads (\*\*\*\* see below)                            | `16777216` (16MiB)                         |
 | `restProxy.enabled`                        | Enables the provided REST proxy container being deployed in each ServingRuntime deployment            | `true`                                     |
 | `restProxy.port`                           | Port on which the REST proxy to serve REST requests                                                   | `8008`                                     |

@@ -75,4 +75,23 @@ Using MinIO the JSON contents look like:
 }
 ```
 
-Remember that after updating the storage config secret, there may be a delay of up to 2 minutes until the change is picked up. You should take this into account when creating/updating Predictors that use storage keys which have just been added or updated - they may fail to load otherwise.
+Example secret key contents for GCS and Azure Blob Storage are:
+
+```yaml
+gcsKey: |
+  {
+    "type": "gcs",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nAABBCC1122----END PRIVATE KEY-----\n",
+    "client_email": "storage-auth@secret-12345.gserviceaccount.com",
+    "token_uri": "https://oauth2.googleapis.com/token"
+  }
+azureKey: |
+  {
+    "type": "azure",
+    "account_name": "az-account",
+    "container": "az-container",
+    "connection_string": "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=Yabc983f11822334455;EndpointSuffix=core.windows.net"
+  }
+```
+
+Remember that after updating the storage config secret, there may be a delay of up to 2 minutes until the change is picked up. You should take this into account when creating/updating InferenceServices that use storage keys which have just been added or updated - they may fail to load otherwise.
