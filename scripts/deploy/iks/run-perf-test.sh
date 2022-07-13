@@ -12,7 +12,7 @@ retry() {
   local max=$1; shift
   local interval=$1; shift
 
-  until "$@"; do
+  until eval "$@"; do
     echo "trying.."
     max=$((max-1))
     if [[ "$max" -eq 0 ]]; then
@@ -29,6 +29,8 @@ retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 kubectl config set-context --current --namespace=${SERVING_NS}
 
 # Use the perofrmance test yaml in modelmesh-performance repo to ensure no performance degradation
+kubectl apply -f https://github.com/kserve/modelmesh-performance/raw/main/perf_test/k8s/example-mnist-predictor.yaml
+retry 10 6 "kubectl get predictor | grep example-mnist-predictor | grep Loaded"
 kubectl apply -f https://github.com/kserve/modelmesh-performance/raw/main/perf_test/k8s/howitzer_k6_test-k8s.yaml
 succeeded=0
 failed=0
