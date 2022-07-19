@@ -189,7 +189,7 @@ metadata:
   name: example-runtime
 spec:
   supportedModelFormats:
-    - name: new-modeltype
+    - name: new-modelformat
       version: "1"
       autoSelect: true
   containers:
@@ -201,7 +201,7 @@ spec:
 ```
 
 In each entry of the `supportedModelFormats` list, `autoSelect: true` can optionally be specified to indicate that that the given `ServingRuntime` can be considered for automatic placement of `InferenceServices` with the corresponding model type/format if no runtime is explicitly specified.
-For example, if a user applies an `InferenceService` with `predictor.model.modelFormat.name: new-modeltype` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modeltype`. If `autoSelect` were `false` or unspecified, the `InferenceService` would fail to load with the message "No ServingRuntime supports specified model type and/or protocol" unless the runtime `example-runtime` was specified directly in the YAML.
+For example, if a user applies an `InferenceService` with `predictor.model.modelFormat.name: new-modelformat` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modelformat`. If `autoSelect` were `false` or unspecified, the `InferenceService` would fail to load with the message "No ServingRuntime supports specified model type and/or protocol" unless the runtime `example-runtime` was specified directly in the YAML.
 
 ### Runtime container resource allocations
 
@@ -268,7 +268,7 @@ metadata:
   name: example-runtime
 spec:
   supportedModelFormats:
-    - name: my_model_type # name of the model
+    - name: my_model_format # name of the model
       version: "1"
       autoSelect: true
   containers:
@@ -335,7 +335,7 @@ spec:
   predictor:
     model:
       modelFormat:
-        name: my_model_type
+        name: my_model_format
         version: "1"
       storage:
         key: my_storage
@@ -349,7 +349,7 @@ If the storage helper is enabled, the model serving container will receive the b
 ```json
 {
   "modelId": "my-mnist-isvc-<suffix>",
-  "modelType": "my_model_type",
+  "modelType": "my_model_format",
   "modelPath": "/models/my-mnist-isvc-<suffix>/",
   "modelKey": "<serialized metadata as JSON, see below>"
 }
@@ -362,7 +362,7 @@ The following metadata for the `InferenceService` predictor is serialized to a s
   "bucket": "my_bucket",
   "disk_size_bytes": 2415,
   "model_type": {
-    "name": "my_model_type",
+    "name": "my_model_format",
     "version": "1"
   },
   "storage_key": "my_storage"
@@ -374,7 +374,7 @@ If the storage helper is disabled, the model serving container will receive the 
 ```json
 {
   "modelId": "my-mnist-isvc-<suffix>",
-  "modelType": "my_model_type",
+  "modelType": "my_model_format",
   "modelPath": "my_models/mnist-model",
   "modelKey": "<serialized metadata as JSON, see below>"
 }
@@ -386,7 +386,7 @@ The following metadata for the `InferenceService` predictor is serialized to a s
 {
   "bucket": "my_bucket",
   "model_type": {
-    "name": "my_model_type",
+    "name": "my_model_format",
     "version": "1"
   },
   "storage_key": "my_storage"

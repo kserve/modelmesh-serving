@@ -1,6 +1,6 @@
 # Using ModelMesh Serving
 
-Trained models are deployed in ModelMesh Serving via `InferenceServices`s. The `predictor` component of `InferenceService` represent a stable service endpoint behind which the underlying model can change.
+Trained models are deployed in ModelMesh Serving via `InferenceServices`s. The `predictor` component of an `InferenceService` represents a stable service endpoint behind which the underlying model can change.
 
 Models must reside on shared storage. Currently, S3, GCS, and Azure Blob Storage are supported with limited supported for HTTP(S). Note that model data residing at a particular path within a given storage instance is **assumed to be immutable**. Different versions of the same logical model are treated at the base level as independent models and must reside at different paths. In particular, where a given model server/runtime natively supports the notion of versioning (such as Nvidia Triton, TensorFlow Serving, etc), the provided path should not point to the top of a (pseudo-)directory structure containing multiple versions. Instead, point to the subdirectory which corresponds to a specific version.
 

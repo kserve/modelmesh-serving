@@ -80,7 +80,7 @@ kubectl apply -f - <<EOF
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
-  name: example-sklearn-mnist-svm
+  name: example-sklearn-isvc
   annotations:
     serving.kserve.io/deploymentMode: ModelMesh
 spec:
@@ -146,9 +146,9 @@ example-sklearn-isvc    grpc://modelmesh-serving.modelmesh-serving:8033   True  
 You can describe the `InferenceService` to get more status information:
 
 ```shell
-kubectl describe example-sklearn-isvc
+kubectl describe isvc example-sklearn-isvc
 
-Name:         example-mnist-isvc
+Name:         example-sklearn-isvc
 ...
 Status:
   Components:

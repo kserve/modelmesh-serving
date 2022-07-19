@@ -1,6 +1,6 @@
 # Predictor Spec
 
-> **:exclamation: Important** > **Please use the [InferenceService CR](./inferenceservice-cr.md) for deploying on ModelMesh.**
+> **:exclamation: Important** Please use the [InferenceService CR](./inferenceservice-cr.md) for deploying on ModelMesh.
 
 Here is a complete example of a `Predictor` spec:
 

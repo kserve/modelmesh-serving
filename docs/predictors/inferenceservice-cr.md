@@ -80,7 +80,7 @@ The Status section of the `InferenceService` custom resource reflects details ab
 `conditions` - Various condition entries. Pertinent entries are:
 
 - `PredictorReady`: predictor readiness condition. Status is `true` when the predictor's endpoints are ready to serve inferencing requests. Note that this does not _necessarily_ mean requests will respond immediately, the corresponding model may or may not be loaded in memory. In the case that it isn't there may be some delay before the response comes back.
-  - `Ready`: aggregated condition of all conditions.
+- `Ready`: aggregated condition of all conditions.
 
 `modelStatus` - Model related statuses.
 
@@ -106,7 +106,7 @@ The Status section of the `InferenceService` custom resource reflects details ab
 - `modelCopies` - Model copy information of the predictor's model.
 
   - `failedCopies` - The number of copies of the active or target model that failed to load recently (there will be at most one of each per pod).
-  - `totalCopies` - The total number copies of this predictor's models that are currently loaded.
+  - `totalCopies` - The total number of copies of this predictor's models that are currently loaded.
 
 - `lastFailureInfo` - Details about the most recent error associated with this predictor. Not all of the contained fields will necessarily have a value.
 
@@ -121,6 +121,6 @@ The Status section of the `InferenceService` custom resource reflects details ab
   - `modelId` - The internal id of the model in question. This includes a hash of the InferenceService's predictor spec.
   - `time` - The time at which the failure occurred, if applicable.
 
-Upon creation, InferenceService the model status will always transition to `Loaded` state (unless the loading fails), but later if unused it is possible that they end up in a `Standby` state which means they are still available to serve requests but the first request could incur a loading delay. Whether this happens is a function of the available capacity and usage pattern of other models. It's possible that models will transition from `Standby` back to `Loaded` "by themselves" if more capacity becomes available.
+Upon creation, the active model status of an InferenceService will always transition to `Loaded` state (unless the loading fails), but later if unused, it is possible that the active model status ends up in a `Standby` state which means the model is still available to serve requests but the first request could incur a loading delay. Whether this happens is a function of the available capacity and usage pattern of other models. It's possible that models will transition from `Standby` back to `Loaded` "by themselves" if more capacity becomes available.
 
 Model loading will be retried immediately in other pods if it fails, after which it will be re-attempted periodically (every ten minutes or so).
