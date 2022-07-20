@@ -1,6 +1,6 @@
 # Supported Model Formats
 
-By leveraging existing third-party model servers, we support a number of standard ML model formats out-of-the box, with more to follow. Currently supported model types:
+By leveraging existing third-party model servers, we support a number of standard ML model formats out-of-the box, with more to follow. Currently supported model formats:
 
 - [Keras](keras.md)
 - [LightGBM](lightgbm.md)

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-The central component of ModelMesh Serving is a Kubernetes controller responsible for reconciling the `ServingRuntime` and `Predictor` custom resource types.
+The central component of ModelMesh Serving is a Kubernetes controller responsible for reconciling the `ServingRuntime` and `InferenceService` custom resource types.
 
 ### Serving Runtime Deployments
 
@@ -16,11 +16,11 @@ A single Kubernetes `Service` points to all Pods across all Deployments. Externa
 
 ![ModelMeshServing high-level architecture](../images/0.2.0-highlevel.png)
 
-### Predictors
+### InferenceService
 
-For each defined `Predictor`, the controller registers a "VModel" (virtual model) in model-mesh of the same name, as well as a concrete model whose name incorporates a hash of the Predictor's current Spec. The VModel represents a stable endpoint which will resolve to the most recent successfully loaded concrete model. Logical CRUD operations on these model-mesh entities are performed via its gRPC-based model-management interface during `Predictor` reconciliation.
+For each defined `InferenceService` predictor, the controller registers a "VModel" (virtual model) in model-mesh of the same name, as well as a concrete model whose name incorporates a hash of the InferenceService's current predictor Spec. The VModel represents a stable endpoint which will resolve to the most recent successfully loaded concrete model. Logical CRUD operations on these model-mesh entities are performed via its gRPC-based model-management interface during `InferenceService` reconciliation.
 
-A central etcd is used "internally" by the model-mesh cluster to keep track of active Pods, registered models/vmodels, and which models currently reside on which runtimes. Model-mesh does not currently provide a way of listening events when the state of its managed models/vmodels change, and so in a small violation of encapsulation the controller also watches model-mesh's internal datastructures in etcd directly, but in a read-only manner and just for the purpose of reacting to state change events. The status information subsequently returned by model-mesh's model management gRPC API requests is used by the controller to update `Predictor`s' Statuses.
+A central etcd is used "internally" by the model-mesh cluster to keep track of active Pods, registered models/vmodels, and which models currently reside on which runtimes. Model-mesh does not currently provide a way of listening events when the state of its managed models/vmodels change, and so in a small violation of encapsulation the controller also watches model-mesh's internal datastructures in etcd directly, but in a read-only manner and just for the purpose of reacting to state change events. The status information subsequently returned by model-mesh's model management gRPC API requests is used by the controller to update `InferenceService`s' Statuses.
 
 ### Model Server Integration Options
 

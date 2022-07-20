@@ -1,4 +1,4 @@
-# Send an inference request to your Predictor
+# Send an inference request to your InferenceService
 
 Currently, only gRPC requests are supported by ModelMesh. However, if the `restProxy` is `enabled` in the ModelMesh Serving [config](../configuration) (which it is by default), then REST inference requests are enabled via [KServe V2 REST proxies](https://github.com/kserve/rest-proxy). This allows sending requests using the KServe V2 REST Predict Protocol to ModelMesh models. However, this proxy does not work in conjunction with custom serving runtimes that expose different gRPC protobuf APIs.
 
@@ -9,7 +9,7 @@ Currently, only gRPC requests are supported by ModelMesh. However, if the `restP
 
 ### Configure gRPC client
 
-Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the Predictor as the `model_name` field in the `ModelInferRequest` message.
+Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the InferenceService as the `model_name` field in the `ModelInferRequest` message.
 
 Configure the gRPC clients which talk to your service to explicitly use:
 
@@ -118,12 +118,12 @@ inference.GRPCInferenceService
 $ grpcurl \
   -plaintext \
   -proto fvt/proto/kfs_inference_v2.proto \
-  -d '{ "model_name": "example-mnist-predictor", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
+  -d '{ "model_name": "example-mnist-isvc", "inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "contents": { "fp32_contents": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0] }}]}' \
   localhost:8033 \
   inference.GRPCInferenceService.ModelInfer
 
 {
-  "modelName": "example-mnist-predictor-725d74f061",
+  "modelName": "example-mnist-isvc-725d74f061",
   "outputs": [
     {
       "name": "predict",
@@ -141,9 +141,9 @@ $ grpcurl \
 }
 ```
 
-Note that you have to provide the `model_name` in the data load, which is the name of the Predictor deployed.
+Note that you have to provide the `model_name` in the data load, which is the name of the InferenceService deployed.
 
-If a custom serving runtime which doesn't use the KFS V2 API is being used, the `mm-vmodel-id` header must be set to the Predictor name.
+If a custom serving runtime which doesn't use the KFS V2 API is being used, the `mm-vmodel-id` header must be set to the InferenceService name.
 
 If you are sure the requests from your client are being routed in such a way that balances evenly across the cluster (as described [above](#configure-grpc-client)), you should include an additional metadata parameter `mm-balanced = true`. This allows some internal performance optimizations but should not be included if the source if the requests is not properly balanced.
 
@@ -178,14 +178,14 @@ REST inference requests can then be sent using the [KServe V2 REST Predict Proto
 For example, with `curl`, a request can be sent to a model like the following:
 
 ```shell
-curl -X POST -k http://localhost:8008/v2/models/example-mnist-predictor/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
+curl -X POST -k http://localhost:8008/v2/models/example-mnist-isvc/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
 ```
 
 This would give a response similar to the following:
 
 ```json
 {
-  "model_name": "example-mnist-predictor__ksp-7702c1b55a",
+  "model_name": "example-mnist-isvc__ksp-7702c1b55a",
   "outputs": [
     {
       "name": "predict",
@@ -220,5 +220,5 @@ spec:
 Then a sample inference might look like:
 
 ```shell
-curl -X POST -k http://<external-ip>:8008/v2/models/example-mnist-predictor/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
+curl -X POST -k http://<external-ip>:8008/v2/models/example-mnist-isvc/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
 ```
