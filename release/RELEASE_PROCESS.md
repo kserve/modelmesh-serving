@@ -31,9 +31,10 @@ It's generally a good idea to search the repo or control-f for strings of the ol
    - Edit the `config/dependencies/quickstart.yaml` file, changing the `kserve/modelmesh-minio-examples` image tag to use the pinned version.
    - Edit the `docs/component-versions.md` file with the version and component versions.
    - Edit the `docs/install/install-script.md` file, updating the `RELEASE` variable in the `Installation` section to the new release branch name.
+   - Edit the `docs/quickstart.md` file, updating the `RELEASE` variable in the `Get the latest release` section to the new release branch name.
    - Edit the `scripts/setup_user_namespaces.sh` file, changing the `modelmesh_release` version.
 1. Submit your PR to the release branch and wait for it to merge.
-1. Update `docs/component-versions.md` and `scripts/setup_user_namespaces.sh` in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
+1. Update `docs/component-versions.md`, `docs/quickstart.md`, `docs/install/install-script.md`, and `scripts/setup_user_namespaces.sh` files in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
 1. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
    - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
