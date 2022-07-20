@@ -48,20 +48,24 @@ s3://modelmesh-serving-examples/
     └── schema.json
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: pytorch-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: pytorch
-  path: pytorch-model
-  schemaPath: pytorch-model/schema.json
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: pytorch
+      storage:
+        key: modelStorage
+        path: pytorch-model
+        schemaPath: pytorch-model/schema.json
+        parameters:
+          bucket: modelmesh-serving-examples
 ```

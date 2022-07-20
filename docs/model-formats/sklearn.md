@@ -47,7 +47,7 @@ The file does not need to be called `model.joblib`, it can have any name.
 **Explicit Configuration**
 
 If the `model-settings.json` configuration file is provided, it must be in
-the directory pointed to by the `Predictor`'s path. The model files must also
+the directory pointed to by the `InferenceService`'s storage path. The model files must also
 be contained under this path.
 
 ```
@@ -61,22 +61,27 @@ be contained under this path.
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/sklearn-model/model.joblib
+s3://modelmesh-example-models/
+└── sklearn/mnist-svm.joblib
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: sklearn-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: sklearn
-  path: sklearn-model/model.joblib
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: sklearn
+      storage:
+        key: localMinIO
+        path: sklearn/mnist-svm.joblib
+        parameters:
+          bucket: modelmesh-example-models
 ```

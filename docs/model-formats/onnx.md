@@ -31,28 +31,32 @@ ONNX models may consist of a single file or a directory, both are supported.
 <storage-path/model-name>
 ```
 
-## Example Predictor
+## Example
 
 **Storage Layout**
 
 ```
-s3://modelmesh-serving-examples/
-  onnx-models/example.onnx
+s3://modelmesh-example-models/
+└── onnx/mnist.onnx
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: onnx-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: onnx
-  path: onnx-models/example.onnx
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: onnx
+      storage:
+        key: localMinIO
+        path: onnx/mnist.onnx
+        parameters:
+          bucket: modelmesh-example-models
 ```

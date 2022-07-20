@@ -11,6 +11,6 @@ Increasing the number of runtime replicas has two important effects:
 
 ### Scale to Zero
 
-If a given `ServingRuntime` has no `Predictors` that it supports, the `Deployment` for that runtime can safely be scaled to 0 replicas to save on resources. By enabling `ScaleToZero` in the configuration, ModelMesh Serving will perform this scaling automatically. If a `Predictor` is later added that requires the runtime, it will be scaled back up.
+If a given `ServingRuntime` has no `InferenceServices` that it supports, the `Deployment` for that runtime can safely be scaled to 0 replicas to save on resources. By enabling `ScaleToZero` in the configuration, ModelMesh Serving will perform this scaling automatically. If an `InferenceService` is later added that requires the runtime, it will be scaled back up.
 
-To prevent unnecessary churn, the `ScaleToZero` behavior has a grace period that delays scaling down after the last `Predictor` required by the runtime is deleted. If a new `Predictor` is created in that window there will be no change to the scale.
+To prevent unnecessary churn, the `ScaleToZero` behavior has a grace period that delays scaling down after the last `InferenceService` required by the runtime is deleted. If a new `InferenceService` is created in that window there will be no change to the scale.

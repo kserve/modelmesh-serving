@@ -48,7 +48,7 @@ including dynamic and sequence batching
 (refer to [Triton's model configuration documentation](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#scheduling-and-batching) for details).
 Use of these batching algorithms requires inclusion of a `config.pbtxt`, but there
 are some caveats when using both the schema and `config.pbtxt` to configure the
-`Predictor`.
+`InferenceService` predictor.
 
 In Triton, batching support is indicated with the
 [`max_batch_size` model configuration parameter](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#maximum-batch-size).
