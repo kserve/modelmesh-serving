@@ -36,9 +36,9 @@ The default configuration is for the cluster scope mode. Change RBAC permissions
 When a ModelMesh serving instance is installed with the `--quickstart` option, pods shown in 1 - 6 are created.
 However, do note that the quickstart-deployed etcd and MinIO pods are intended for development/experimentation and not for production.
 
-(\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until a Predictor is created that uses that runtime. Once a Predictor is assigned, the runtime pods will scale up to 2.
+(\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until an InferenceService is created that uses that runtime. Once an InferenceService is assigned, the runtime pods will scale up to 2.
 
-When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no Predictors for that runtime. When `ScaletoZero` is enabled and first predictor CR is submitted, ModelMesh serving will spin up the corresponding built-in runtime pods.
+When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no InferenceServices for that runtime. When `ScaletoZero` is enabled and first InferenceService CR is submitted, ModelMesh serving will spin up the corresponding built-in runtime pods.
 
 When `ScaletoZero` is **disabled**, pods shown in 4 to 6 are created (default two pods per runtime), which will greatly increase the total CPU(request/limit) and total memory(request/limit).
 
@@ -86,4 +86,4 @@ The following resources will be created in the namespaces:
 
 - See [the configuration page](../configuration) for details of how to configure system-wide settings via a ConfigMap, either before or after installation.
 
-- See this [example walkthrough](../predictors) of deploying a TensorFlow model as a `Predictor`.
+- See this [example walkthrough](../predictors) of deploying a TensorFlow model as an `InferenceService`.

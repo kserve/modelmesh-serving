@@ -73,7 +73,7 @@ and according to the following rules:
   **Note**: In execution, the versions are enabled according to a pre-defined version policy. If the client does not specify the version number in parameters, by default, the latest version is served.
 - Every version folder must include model files, that is, .bin and .xml. The file name can be arbitrary.
 
-## Example Predictor
+## Example
 
 **Storage Layout**
 
@@ -82,19 +82,23 @@ s3://modelmesh-serving-examples/
   openvino/mnist
 ```
 
-**Predictor**
+**InferenceService**
 
 ```yaml
-apiVersion: serving.kserve.io/v1alpha1
-kind: Predictor
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
   name: openvino-ir-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
 spec:
-  modelType:
-    name: openvino_ir
-  path: openvino/mnist
-  storage:
-    s3:
-      secretKey: modelStorage
-      bucket: modelmesh-serving-examples
+  predictor:
+    model:
+      modelFormat:
+        name: openvino_ir
+      storage:
+        key: modelStorage
+        path: openvino/mnist
+        parameters:
+          bucket: modelmesh-serving-examples
 ```
