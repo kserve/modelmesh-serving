@@ -42,7 +42,7 @@ A secret named `model-serving-etcd` will be created and passed to the controller
 Install the latest release of [modelmesh-serving](https://github.com/kserve/modelmesh-serving) by first cloning the corresponding release branch:
 
 ```shell
-RELEASE=release-0.8
+RELEASE=release-0.9
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
