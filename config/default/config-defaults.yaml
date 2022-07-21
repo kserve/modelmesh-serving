@@ -16,7 +16,7 @@ podsPerRuntime: 2
 headlessService: true
 modelMeshImage:
   name: kserve/modelmesh
-  tag: v0.9.0-rc0
+  tag: v0.9.0
 modelMeshResources:
   requests:
     cpu: "300m"
@@ -39,7 +39,7 @@ restProxy:
       memory: "512Mi"
 storageHelperImage:
   name: kserve/modelmesh-runtime-adapter
-  tag: v0.9.0-rc0
+  tag: v0.9.0
   command: ["/opt/app/puller"]
 storageHelperResources:
   requests:
