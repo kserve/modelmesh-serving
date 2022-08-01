@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,38 +26,43 @@ option java_multiple_files = true;
 // colocated model runtime container
 service ModelRuntime {
 
-  // Load a model, return when model is fully loaded.
-  // Include size of loaded model in response if no additional cost.
-  // A gRPC error code of PRECONDITION_FAILED or INVALID_ARGUMENT
-  // should be returned if no attempt to load the model was made
-  // (so can be sure that no space remains used).
-  // Note that the RPC may be cancelled by model-mesh prior to completion,
-  // after which an unloadModel call will immediately be sent for the same model.
-  // To avoid state inconsistency and "leaking" memory, implementors should
-  // ensure that this case is properly handled, i.e. that the model doesn't
-  // remain loaded after returning successfully from this unloadModel call.
-  rpc loadModel (LoadModelRequest) returns (LoadModelResponse) {}
+    // Load a model, return when model is fully loaded.
+    // Include size of loaded model in response if no additional cost.
+    // A gRPC error code of PRECONDITION_FAILED or INVALID_ARGUMENT
+    // should be returned if no attempt to load the model was made
+    // (so can be sure that no space remains used).
+    // Note that the RPC may be cancelled by model-mesh prior to completion,
+    // after which an unloadModel call will immediately be sent for the same model.
+    // To avoid state inconsistency and "leaking" memory, implementors should
+    // ensure that this case is properly handled, i.e. that the model doesn't
+    // remain loaded after returning successfully from this unloadModel call.
+    rpc loadModel (LoadModelRequest) returns (LoadModelResponse) {}
 
-  // Unload a previously loaded (or failed) model. Return when model
-  // is fully unloaded, or immediately if not found/loaded.
-  rpc unloadModel (UnloadModelRequest) returns (UnloadModelResponse) {}
+    // Unload a previously loaded (or failed) model. Return when model
+    // is fully unloaded, or immediately if not found/loaded.
+    rpc unloadModel (UnloadModelRequest) returns (UnloadModelResponse) {}
 
-  // Predict size of not-yet-loaded model - must return almost immediately.
-  // Should not perform expensive computation or remote lookups.
-  // Should be a conservative estimate.
-  rpc predictModelSize (PredictModelSizeRequest) returns (PredictModelSizeResponse) {}
+    // Predict size of not-yet-loaded model - must return almost immediately.
+    // Should not perform expensive computation or remote lookups.
+    // Should be a conservative estimate.
+    // NOTE: Implementation of this RPC is optional.
+    rpc predictModelSize (PredictModelSizeRequest) returns (PredictModelSizeResponse) {}
 
-  // Calculate size (memory consumption) of currently-loaded model
-  rpc modelSize (ModelSizeRequest) returns (ModelSizeResponse) {}
+    // Calculate size (memory consumption) of currently-loaded model.
+    // NOTE: Implementation of this RPC is only required if models' size
+    // is not returned in the response to loadModel. If the size computation
+    // takes a nontrivial amount of time, it's better to return from loadModel
+    // immediately and implement this to perform the sizing separately.
+    rpc modelSize (ModelSizeRequest) returns (ModelSizeResponse) {}
 
-  // Provide basic runtime status and parameters; called only during startup.
-  // Before returning a READY status, implementations should check for and
-  // purge any/all currently-loaded models. Since this is only called during
-  // startup, there should very rarely be any, but if there are it implies
-  // the model-mesh container restarted unexpectedly and such a purge must
-  // be done to ensure continued consistency of state and avoid over-committing
-  // resources.
-  rpc runtimeStatus (RuntimeStatusRequest) returns (RuntimeStatusResponse) {}
+    // Provide basic runtime status and parameters; called only during startup.
+    // Before returning a READY status, implementations should check for and
+    // purge any/all currently-loaded models. Since this is only called during
+    // startup, there should very rarely be any, but if there are it implies
+    // the model-mesh container restarted unexpectedly and such a purge must
+    // be done to ensure continued consistency of state and avoid over-committing
+    // resources.
+    rpc runtimeStatus (RuntimeStatusRequest) returns (RuntimeStatusResponse) {}
 }
 
 
@@ -133,11 +138,24 @@ message RuntimeStatusResponse {
     uint64 numericRuntimeVersion = 7;
 
     message MethodInfo {
-        // optional
+        // Optional path of protobuf field numbers, pointing to a
+        // string field within the RPC's request message
+        // that should be replaced with the model id for
+        // which the request applies to.
+        // All but the last field in the list must be of
+        // "embedded message" type, the last one must be of string type.
         repeated uint32 idInjectionPath = 1;
     }
 
-    // optional, EXPERIMENTAL and subject to change
+    // Map containing information about specific inferencing
+    // gRPC methods exposed by this runtime, such as a path
+    // within the protobuf message indicating where the model id
+    // should be injected.
+    // If non-empty, and allowAnyMethod is not set to true,
+    // only RPCs of inference methods contained in this map will
+    // be forwarded to the runtime (acts as an allow-list).
+    // The method name keys in the map must be fully qualified,
+    // including the service name, i.e. "package.ServiceName/MethodName"
     map<string,MethodInfo> methodInfos = 8;
 
     // EXPERIMENTAL - Set to true to enable the mode where
@@ -149,4 +167,11 @@ message RuntimeStatusResponse {
     // the models, which attempts to minimize request
     // queueing time and requires no other configuration/tuning.
     bool limitModelConcurrency = 9;
+
+    // If true, any/all RPCs will be forwarded to the runtime
+    // irrespective of the service/method name. Otherwise,
+    // only those present in the methodInfos map will be permitted.
+    // NOTE that this will default to being effectively true if
+    // the methodInfos map is empty.
+    bool allowAnyMethod = 10;
 }
