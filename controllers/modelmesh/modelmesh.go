@@ -124,6 +124,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 				m.configureMMDeploymentForTLSSecret,
 				m.configureRuntimePodSpecAnnotations,
 				m.configureRuntimePodSpecLabels,
+				m.ensureMMContainerIsLast,
 			); tErr != nil {
 				return tErr
 			}
@@ -153,6 +154,24 @@ func (m *Deployment) Apply(ctx context.Context) error {
 		return err
 	}
 
+	return nil
+}
+
+// Kubernetes starts containers sequentially in order, which can mean the start of later
+// containers is held up if their images have to be pulled. For large model server images
+// this can cause a problem because model-mesh waits for a limited amount of time at
+// startup for the runtime to become ready before returning ready from its own probe.
+// Making the mm container last in the list ensures that no image pulling time will be
+// included in this startup polling time and avoids unnecessary timeouts.
+func (m *Deployment) ensureMMContainerIsLast(deployment *appsv1.Deployment) error {
+	if i, _ := findContainer(ModelMeshContainerName, deployment); i >= 0 {
+		last := len(deployment.Spec.Template.Spec.Containers) - 1
+		if i != last {
+			c := deployment.Spec.Template.Spec.Containers[last]
+			deployment.Spec.Template.Spec.Containers[last] = deployment.Spec.Template.Spec.Containers[i]
+			deployment.Spec.Template.Spec.Containers[i] = c
+		}
+	}
 	return nil
 }
 
