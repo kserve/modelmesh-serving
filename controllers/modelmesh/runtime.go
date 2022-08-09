@@ -104,9 +104,8 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 	// first prepare the common variables needed for both adapter and other containers
 	lifecycle := &corev1.Lifecycle{
 		PreStop: &corev1.Handler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path: "/prestop",
-				Port: intstr.FromInt(8090),
+			Exec: &corev1.ExecAction{
+				Command: []string{"curl", "http://localhost:8090"},
 			},
 		},
 	}
