@@ -10,7 +10,7 @@
 
 - **S3-compatible object storage** - Before models can be deployed, a remote S3-compatible datastore is needed from which to pull the model data. This could be for example an [IBM Cloud Object Storage](https://www.ibm.com/cloud/object-storage) instance, or a locally running [MinIO](https://github.com/minio/minio) deployment. Note that this is not required to be in place prior to the initial installation.
 
-We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
+We provide an install script `--quickstart` option to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
 ## Cluster Scope or Namespace Scope
 
@@ -19,7 +19,7 @@ ModelMesh Serving can be used in either cluster scope or namespace mode.
 - **Cluster scope mode** - Its components can exist in multiple user namespaces which are controlled by one instance of ModelMesh Serving Controller in the control plane namespace. Only one ModelMesh Serving instance can be installed within a Kubernetes cluster. A namespace label `modelmesh-enabled` needs to be "true" to enable a user namespace for ModelMesh Serving.
 - **Namespace scope mode** - All of its components must exist within a single namespace and only one instance of ModelMesh Serving can be installed per namespace. Multiple ModelMesh Serving instances can be installed in separate namespaces within the cluster.
 
-The default configuration is for the cluster scope mode. Change RBAC permissions, cluster role to role, and cluster role binding to role binding, to deploy ModelMesh Serving in the namespace scope mode.
+The default configuration is for the cluster scope mode. Use the `--namespace-scope-mode` option of the install script for namespace scope.
 
 ## Deployed Components
 
