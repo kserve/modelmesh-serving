@@ -121,7 +121,7 @@ fi
 # Determine whether a modelmesh-controller-rolebinding clusterrolebinding exists and is
 # associated with the service account in this namespace. If not, don't delete the cluster level RBAC.
 set +e
-crb_ns=$(oc get clusterrolebinding modelmesh-controller-rolebinding -o json | jq -r .subjects[0].namespace)
+crb_ns=$(kubectl get clusterrolebinding modelmesh-controller-rolebinding -o json | jq -r .subjects[0].namespace)
 set -e
 if [[ "$crb_ns" == "$namespace" ]]; then
   echo "deleting cluster scope RBAC"
