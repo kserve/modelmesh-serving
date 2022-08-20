@@ -82,9 +82,12 @@ if [[ -n $namespace ]]; then
 fi
 
 # Ensure the namespace is overridden for all the resources
-cd default
+pushd default
 kustomize edit set namespace "$namespace"
-cd ..
+popd
+pushd rbac/namespace-scope
+kustomize edit set namespace "$namespace"
+popd
 
 # Older versions of kustomize have different load restrictor flag formats.
 # Can be removed once Kubeflow installation stops requiring v3.2.
@@ -115,7 +118,17 @@ if [[ ! -z $user_ns_array ]]; then
   rm runtimes.yaml
 fi
 
+# Determine whether a modelmesh-controller-rolebinding clusterrolebinding exists and is
+# associated with the service account in this namespace. If not, don't delete the cluster level RBAC.
+set +e
+crb_ns=$(kubectl get clusterrolebinding modelmesh-controller-rolebinding -o json | jq -r .subjects[0].namespace)
+set -e
+if [[ "$crb_ns" == "$namespace" ]]; then
+  echo "deleting cluster scope RBAC"
+  kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
+fi
 kustomize build default | kubectl delete -f - --ignore-not-found=true
+kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
 kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true

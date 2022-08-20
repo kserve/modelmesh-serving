@@ -171,7 +171,6 @@ func main() {
 	var leaseDuration time.Duration
 	var leaseRenewDeadline time.Duration
 	var leaseRetryPeriod time.Duration
-	var clusterScopeMode bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -187,41 +186,40 @@ func main() {
 		"Duration the Leader elector clients should wait between tries of actions.")
 	flag.Parse()
 
-	mgrNamespace := ""
-	trueString := "true"
-
 	// Controller can be in namespace or cluster scope mode depending on an env variable
-	clusterScopeMode = os.Getenv(NamespaceScopeEnvVar) != trueString
+	clusterScopeMode := os.Getenv(NamespaceScopeEnvVar) != "true"
 
 	// Here we check whether RBAC is set for cluster scope
 	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
+	hasClusterPermissions := err == nil || errors.IsNotFound(err)
 
-	if err == nil || errors.IsNotFound(err) {
-		// Controller has cluster permissions
-		if clusterScopeMode {
-			setupLog.Info("Controller operating in cluster scope mode, will attempt to watch all namespaces")
-		} else {
-			// Config mismatch, namespace mode with cluster permissions, will continue with a log
-			setupLog.Info("In namespace scope mode but controller has cluster scope permissions, continue")
-		}
-	} else {
-		// Controller has namespace permissions
-		if clusterScopeMode {
+	if clusterScopeMode {
+		if !hasClusterPermissions {
 			// Config mismatch, cluster mode without cluster permissions, exit
-			setupLog.Error(fmt.Errorf("Insufficient permission for controller"), "In cluster scope mode but controller has namespace scope permissions, exit")
+			setupLog.Error(nil, "In cluster scope mode but controller does not have cluster scope permissions, exiting")
 			os.Exit(1)
-		} else {
-			mgrNamespace = ControllerNamespace
-			setupLog.Info("Controller operating in own-namespace only mode")
+		}
+		setupLog.Info("Controller operating in cluster scope mode, will attempt to watch/manage all namespaces")
+	} else {
+		// Namespace-scope mode configured
+		setupLog.Info("Controller operating in namespace scope (own-namespace only) mode",
+			"namespace", ControllerNamespace)
+
+		if hasClusterPermissions {
+			setupLog.Error(nil, "Warning: In namespace scope mode but controller has permission to access cluster namespace resources")
 		}
 	}
 
 	mgrOpts := ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
-		Namespace:              mgrNamespace,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
+	}
+
+	if !clusterScopeMode {
+		// Set manager to operate scoped to our namespace
+		mgrOpts.Namespace = ControllerNamespace
 	}
 
 	if enableLeaderElection {
@@ -317,7 +315,7 @@ func main() {
 				registryMap[registryKey] = registryValue
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
 				return true
-			} else if envVarVal == trueString {
+			} else if envVarVal == "true" {
 				// If env var is explicitly true, require that specified CRD is present
 				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
 				os.Exit(1)

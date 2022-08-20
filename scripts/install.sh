@@ -44,7 +44,7 @@ function showHelp() {
   echo "Kubernetes namespaces."
   echo
   echo "Expects cluster-admin authority and Kube cluster access to be configured prior to running."
-  echo "Also requires Etcd secret 'model-serving-etcd' to be created in namespace already."
+  echo "Also requires etcd secret 'model-serving-etcd' to be created in namespace already."
 }
 
 die() {
@@ -220,9 +220,15 @@ else
 fi
 
 # Ensure the namespace is overridden for all the resources
-cd default
+pushd default
 kustomize edit set namespace "$namespace"
-cd ..
+popd
+pushd rbac/namespace-scope
+kustomize edit set namespace "$namespace"
+popd
+pushd rbac/cluster-scope
+kustomize edit set namespace "$namespace"
+popd
 
 # Clean up previous instances but do not fail if they do not exist
 cp dependencies/quickstart.yaml .
@@ -233,6 +239,10 @@ if [[ $delete == "true" ]]; then
   info "Deleting any previous ModelMesh Serving instances and older CRD with serving.kserve.io api group name"
   kubectl delete crd/predictors.serving.kserve.io --ignore-not-found=true
   kubectl delete crd/servingruntimes.serving.kserve.io --ignore-not-found=true
+  kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
+  if [[ $namespace_scope_mode != "true" ]]; then
+    kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
+  fi
   kustomize build default | kubectl delete -f - --ignore-not-found=true
   kubectl delete -f quickstart.yaml --ignore-not-found=true
   kubectl delete -f fvt.yaml --ignore-not-found=true
@@ -259,7 +269,7 @@ if [[ $fvt == "true" ]]; then
 fi
 
 if ! kubectl get secret model-serving-etcd >/dev/null; then
-  die "Could not find Etcd kube secret 'model-serving-etcd'. This is a prerequisite for running ModelMesh Serving install."
+  die "Could not find etcd kube secret 'model-serving-etcd'. This is a prerequisite for running ModelMesh Serving install."
 else
   echo "model-serving-etcd secret found"
 fi
@@ -268,7 +278,14 @@ info "Creating storage-config secret if it does not exist"
 kubectl create -f default/storage-secret.yaml 2>/dev/null || :
 kubectl get secret storage-config
 
-info "Installing ModelMesh Serving CRDs, RBACs, and controller"
+info "Installing ModelMesh Serving RBACs (namespace_scope_mode=$namespace_scope_mode)"
+if [[ $namespace_scope_mode == "true" ]]; then
+  kustomize build rbac/namespace-scope | kubectl apply -f -
+else
+  kustomize build rbac/cluster-scope | kubectl apply -f -
+fi
+
+info "Installing ModelMesh Serving CRDs and controller"
 kustomize build default | kubectl apply -f -
 
 if [[ $dev_mode_logging == "true" ]]; then
