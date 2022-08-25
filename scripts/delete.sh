@@ -72,14 +72,18 @@ if [[ -n $path_to_configs ]]; then
   cd "$path_to_configs"
 fi
 
-if [[ -n $namespace ]]; then
-  old_namespace=$(kubectl config  get-contexts $(kubectl config current-context) |tail -1|awk '{ print $5 }')
-  if [[ ! -n $old_namespace ]]; then
-    old_namespace="default"
-  fi
-  echo "current namespace: $old_namespace"
-  kubectl config set-context --current --namespace="$namespace"
+old_namespace=$(kubectl config  get-contexts $(kubectl config current-context) |tail -1|awk '{ print $5 }')
+if [[ ! -n $old_namespace ]]; then
+  old_namespace="default"
 fi
+echo "current namespace: $old_namespace"
+if [[ -n $namespace ]]; then
+  kubectl config set-context --current --namespace="$namespace"
+else
+  namespace=$old_namespace
+fi
+
+echo "deleting in namespace: $namespace"
 
 # Ensure the namespace is overridden for all the resources
 pushd default
@@ -134,6 +138,6 @@ kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 
 # Roll back to previous status
-if [[ -n $namespace ]]; then
+if [[ "$namespace" != "$old_namespace" ]]; then
   kubectl config set-context --current --namespace=${old_namespace}
 fi
