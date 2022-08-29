@@ -51,3 +51,7 @@ storageHelperResources:
 serviceAccountName: ""
 metrics:
   enabled: true
+builtInServerTypes:
+  - triton
+  - mlserver
+  - ovms
