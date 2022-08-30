@@ -62,7 +62,7 @@ spec:
       name: model-mesh
   repos:
     - name: manifests
-      uri: https://api.github.com/repos/opendatahub-io/odh-manifests/tarball/master
+      uri: https://api.github.com/repos/opendatahub-io/modelmesh-serving/tarball/master/manifests/opendatahub
   version: master
 
 ```
