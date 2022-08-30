@@ -1,0 +1,48 @@
+# Copyright 2021 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: modelmesh-runtimes
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: modelmesh-controller
+    matchExpressions:
+      - key: modelmesh-service
+        operator: Exists
+  ingress:
+    # internal model-mesh communication
+    - from:
+        - podSelector:
+            # matches controller and runtime pods
+            matchLabels:
+              app.kubernetes.io/managed-by: modelmesh-controller
+      ports:
+        - port: 8033
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+    # exposed for inference, may be restricted further by application
+    - ports:
+        - port: 8033
+          protocol: TCP
+        - port: 8008
+          protocol: TCP
+    # exposed for prometheus metrics
+    - ports:
+        - port: 2112
+          protocol: TCP
+  policyTypes:
+    - Ingress
