@@ -1,0 +1,59 @@
+# Copyright 2022 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: ovms-1.x
+  labels:
+    name: modelmesh-serving-ovms-1.x-SR
+spec:
+  supportedModelFormats:
+    - name: openvino_ir
+      version: opset1
+      autoSelect: true
+    - name: onnx
+      version: "1"
+
+  protocolVersions:
+    - grpc-v1
+  multiModel: true
+
+  grpcEndpoint: "port:8085"
+  grpcDataEndpoint: "port:8001"
+
+  containers:
+    - name: ovms
+      image: ovms-1:replace
+      args:
+        - --port=8001
+        - --rest_port=8888
+        # must match the default value in the ovms adapter server
+        - --config_path=/models/model_config_list.json
+        # the adapter will call `/v1/config/reload` to trigger reloads
+        - --file_system_poll_wait_seconds=0
+        # bind to localhost only to constrain requests to containers in the pod
+        - --grpc_bind_address=127.0.0.1
+        - --rest_bind_address=127.0.0.1
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 5
+          memory: 1Gi
+  builtInAdapter:
+    serverType: ovms
+    runtimeManagementPort: 8888
+    memBufferBytes: 134217728
+    modelLoadingTimeoutMillis: 90000
