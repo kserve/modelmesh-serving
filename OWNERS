@@ -1,12 +1,7 @@
 approvers:
-  - animeshsingh
-  - njhill
-  - pvaneck
+  - anishasthana
+  - crobby
 reviewers:
-  - animeshsingh
-  - njhill
-  - pvaneck
-  - tedhtchang
-  - Tomcli
-  - chinhuang007
-  - ckadner
+  - anishasthana
+  - crobby
+  - DharmitD
