@@ -1,0 +1,35 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: custom-runtime-pullerless
+spec:
+  containers:
+    - env:
+        - name: MODEL_DIRECTORY_PATH
+          value: /models
+        - name: MODEL_SERVER_MEM_REQ_BYTES
+          valueFrom:
+            resourceFieldRef:
+              containerName: modelserver
+              resource: requests.memory
+      image: seldonio/mlserver:0.3.2
+      name: modelserver
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: "5"
+          memory: 1Gi
+  multiModel: true
+  grpcDataEndpoint: port:8001
+  grpcEndpoint: port:8001
+
+  # Disabled storage helper
+  storageHelper:
+    disabled: true
+
+  supportedModelFormats:
+    - name: ml-type1
+      version: "1"
+      autoSelect: true

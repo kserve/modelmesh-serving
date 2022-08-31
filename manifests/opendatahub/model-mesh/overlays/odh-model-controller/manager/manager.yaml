@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: odh-model-controller
+  name: system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odh-model-controller
+  namespace: system
+  labels:
+    control-plane: odh-model-controller
+    app: odh-model-controller
+spec:
+  selector:
+    matchLabels:
+      control-plane: odh-model-controller
+  replicas: 3
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: odh-model-controller
+        app: odh-model-controller
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - command:
+        - /manager
+        args:
+        - --leader-elect
+        image: controller:latest
+        name: manager
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # TODO(user): Configure the resources accordingly based on the project requirements.
+        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+      serviceAccountName: odh-model-controller
+      terminationGracePeriodSeconds: 10
