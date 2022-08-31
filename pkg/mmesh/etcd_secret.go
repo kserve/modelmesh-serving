@@ -17,6 +17,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -68,6 +70,22 @@ func (es EtcdSecret) Apply(ctx context.Context, cl client.Client) error {
 
 // Add data to the provided secret
 func (es EtcdSecret) addData(s *corev1.Secret) error {
+	etcdEndpoints := strings.Split(es.EtcdConfig.Endpoints, ",")
+	newEtcdEndpoints := ""
+
+	// For each endpoint, insert controller namespace if not there
+	for i := range etcdEndpoints {
+		re := regexp.MustCompile(`(?:https?://)?([^\\s.:]+)(:\\d+)?`)
+		if se := re.FindStringSubmatchIndex(etcdEndpoints[i]); se != nil {
+			etcdEndpoints[i] = fmt.Sprintf("%s.%s%s", etcdEndpoints[i][:se[3]], es.ControllerNamespace, etcdEndpoints[i][se[3]:])
+		}
+		if i != 0 {
+			newEtcdEndpoints += ","
+		}
+		newEtcdEndpoints += etcdEndpoints[i]
+	}
+
+	es.EtcdConfig.Endpoints = newEtcdEndpoints
 	es.EtcdConfig.RootPrefix = fmt.Sprintf("%s/mm_ns/%s", es.EtcdConfig.RootPrefix, es.Namespace)
 
 	b, err := json.Marshal(es.EtcdConfig)
