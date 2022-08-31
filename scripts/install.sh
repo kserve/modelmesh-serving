@@ -231,10 +231,6 @@ kustomize edit set namespace "$namespace"
 popd
 
 # Clean up previous instances but do not fail if they do not exist
-cp dependencies/quickstart.yaml .
-sed -i.bak "s/etcd:2379/etcd.${namespace}:2379/g" quickstart.yaml
-cp dependencies/fvt.yaml .
-sed -i.bak "s/etcd:2379/etcd.${namespace}:2379/g" fvt.yaml
 if [[ $delete == "true" ]]; then
   info "Deleting any previous ModelMesh Serving instances and older CRD with serving.kserve.io api group name"
   kubectl delete crd/predictors.serving.kserve.io --ignore-not-found=true
@@ -244,14 +240,14 @@ if [[ $delete == "true" ]]; then
     kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
   fi
   kustomize build default | kubectl delete -f - --ignore-not-found=true
-  kubectl delete -f quickstart.yaml --ignore-not-found=true
-  kubectl delete -f fvt.yaml --ignore-not-found=true
+  kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
+  kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 fi
 
 # Quickstart resources
 if [[ $quickstart == "true" ]]; then
   info "Deploying quickstart resources for etcd and minio"
-  kubectl apply -f quickstart.yaml
+  kubectl apply -f dependencies/quickstart.yaml
 
   info "Waiting for dependent pods to be up..."
   wait_for_pods_ready "-l app=etcd"
@@ -261,7 +257,7 @@ fi
 # FVT resources
 if [[ $fvt == "true" ]]; then
   info "Deploying fvt resources for etcd and minio"
-  kubectl apply -f fvt.yaml
+  kubectl apply -f dependencies/fvt.yaml
 
   info "Waiting for dependent pods to be up..."
   wait_for_pods_ready "-l app=etcd"
@@ -334,6 +330,5 @@ if [[ ! -z $user_ns_array ]]; then
   rm minio-storage-secret.yaml.bak
   rm runtimes.yaml
 fi
-rm quickstart.yaml quickstart.yaml.bak fvt.yaml fvt.yaml.bak
 
 success "Successfully installed ModelMesh Serving!"
