@@ -15,6 +15,7 @@ package modelmesh
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -187,14 +188,37 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			ReadOnly:  true,
 		})
 
+		var rtDataEndpoint string
+		if rt.Spec.GrpcDataEndpoint != nil {
+			rtDataEndpoint = *rt.Spec.GrpcDataEndpoint
+			if err := addDomainSocketMount(rt, &builtInAdapterContainer); err != nil {
+				return err
+			}
+		} else {
+			rtDataEndpoint = fmt.Sprintf("port:%d", rt.Spec.BuiltInAdapter.RuntimeManagementPort)
+		}
+
+		adapterPort := "8085"
+		if rt.Spec.GrpcMultiModelManagementEndpoint != nil {
+			ep := *rt.Spec.GrpcMultiModelManagementEndpoint
+			if match, _ := regexp.MatchString("^port:[0-9]+$", ep); !match {
+				return fmt.Errorf("Built-in adapter grpcEndpoint must be of the form \"port:N\": %s", ep)
+			}
+			adapterPort = strings.TrimPrefix(ep, "port:")
+		}
+
 		builtInAdapterContainer.Env = []corev1.EnvVar{
 			{
 				Name:  "ADAPTER_PORT",
-				Value: "8085",
+				Value: adapterPort,
 			},
 			{
 				Name:  "RUNTIME_PORT",
 				Value: strconv.Itoa(rt.Spec.BuiltInAdapter.RuntimeManagementPort),
+			},
+			{
+				Name:  "RUNTIME_DATA_ENDPOINT",
+				Value: rtDataEndpoint,
 			},
 			{
 				Name: "CONTAINER_MEM_REQ_BYTES",
