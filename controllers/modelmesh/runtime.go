@@ -246,7 +246,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 				Value: runtimeVersion,
 			},
 			{}, {}, {}, {}, // allocate larger array to avoid reallocation
-		}[:7]
+		}[:8]
 
 		if mlc, ok := rt.Annotations["maxLoadingConcurrency"]; ok {
 			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
