@@ -110,7 +110,7 @@ func (g *CertGenerator) generate() error {
 	}
 
 	if err = pem.Encode(g.PrivateKeyPEM, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: privBytes,
 	}); err != nil {
 		return err

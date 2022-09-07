@@ -85,10 +85,6 @@ type runtimeInfo struct {
 	TimeTransitionedToNoPredictors *time.Time
 }
 
-var builtInServerTypes = map[kserveapi.ServerType]interface{}{
-	kserveapi.MLServer: nil, kserveapi.Triton: nil, kserveapi.OVMS: nil,
-}
-
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes;servingruntimes/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=servingruntimes/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments;deployments/finalizers,verbs=get;list;watch;create;update;patch;delete
@@ -188,7 +184,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Check that ServerType is provided in rt.Spec and that this value matches that of the specified container
-	if err = validateServingRuntimeSpec(rt); err != nil {
+	if err = validateServingRuntimeSpec(rt, cfg); err != nil {
 		return ctrl.Result{}, fmt.Errorf("Invalid ServingRuntime Spec: %w", err)
 	}
 

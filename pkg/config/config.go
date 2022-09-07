@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
+
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -72,6 +74,7 @@ type Config struct {
 	PodsPerRuntime         uint16
 	StorageSecretName      string
 	EnableAccessLogging    bool
+	BuiltInServerTypes     []string
 
 	ServiceAccountName string
 
@@ -335,6 +338,9 @@ func defaults(v *viper.Viper) {
 	v.SetDefault(concatStringsWithDelimiter([]string{"ScaleToZero", "GracePeriodSeconds"}), 60)
 	// default size 16MiB in bytes
 	v.SetDefault("GrpcMaxMessageSizeBytes", 16777216)
+	v.SetDefault("BuiltInServerTypes", []string{
+		string(kserveapi.MLServer), string(kserveapi.Triton), string(kserveapi.OVMS),
+	})
 }
 
 func concatStringsWithDelimiter(elems []string) string {
