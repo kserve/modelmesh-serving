@@ -190,7 +190,7 @@ since a normal Service has issues load balancing gRPC requests. See more info
 To test out **gRPC** inference requests, you can port-forward the headless service _in a separate terminal window_:
 
 ```shell
-kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
+kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8033 -n modelmesh-serving
 ```
 
 Then a gRPC client generated from the KServe [grpc_predict_v2.proto](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)

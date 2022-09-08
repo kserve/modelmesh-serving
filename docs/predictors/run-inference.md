@@ -77,7 +77,7 @@ However, the max number of bytes for the GRPC request payloads depends on both t
 Using [`kubectl port-forward`](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/):
 
 ```shell
-kubectl port-forward modelmesh-serving 8033:8033
+kubectl port-forward service/modelmesh-serving 8033:8033
 ```
 
 This assumes you are using port 8033, change the source and/or destination ports as appropriate.
@@ -169,7 +169,7 @@ By default, REST requests will go through the `modelmesh-serving` service using 
 Since the service is also headless by default, you can access this service by using [`kubectl port-forward`](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/):
 
 ```shell
-kubectl port-forward modelmesh-serving 8008:8008
+kubectl port-forward service/modelmesh-serving 8008:8008
 ```
 
 This assumes you are using port 8008 for REST. Change the source and/or destination ports as appropriate.
