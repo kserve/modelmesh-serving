@@ -50,6 +50,8 @@ spec:
           value: "8085"
         - name: RUNTIME_PORT
           value: "8001"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:8001
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
@@ -362,6 +364,8 @@ spec:
           value: "8085"
         - name: RUNTIME_PORT
           value: "8001"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:8001
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
@@ -566,6 +570,8 @@ spec:
           value: "8085"
         - name: RUNTIME_PORT
           value: "8001"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:8001
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
@@ -810,6 +816,8 @@ spec:
           value: "8085"
         - name: RUNTIME_PORT
           value: "8888"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:8001
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
@@ -1046,6 +1054,8 @@ spec:
           value: "8085"
         - name: RUNTIME_PORT
           value: "8001"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:8001
         - name: CONTAINER_MEM_REQ_BYTES
           valueFrom:
             resourceFieldRef:
