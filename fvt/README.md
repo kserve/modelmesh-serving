@@ -20,7 +20,7 @@ Functional Verification Test (FVT) suite for ModelMesh Serving using [Ginkgo](ht
   - Cluster-administrative privileges
   - 12 vCPUs (3-nodes a 4 vCPU, or, 2-nodes a 8 vCPU)
   - 16 GB memory
-  
+
 For more details on cluster sizing, please see [here](/docs/install/README.md#deployed-components)
 
 ### Install ModelMesh Serving
