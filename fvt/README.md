@@ -10,6 +10,19 @@ Functional Verification Test (FVT) suite for ModelMesh Serving using [Ginkgo](ht
 
 ## How to run the FVT suite
 
+### Prerequisites
+
+- CLIs:
+  - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+  - [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
+- A Kubernetes or OpenShift cluster:
+  - Kubernetes version 1.16+
+  - Cluster-administrative privileges
+  - 12 vCPUs (3-nodes a 4 vCPU, or, 2-nodes a 8 vCPU)
+  - 16 GB memory
+
+For more details on cluster sizing, please see [here](/docs/install/README.md#deployed-components)
+
 ### Install ModelMesh Serving
 
 The FVTs rely on a set of models existing in a configured `localMinIO` storage. The easiest way to get these models is to use a quick-start install with an instance of MinIO running the `kserve/modelmesh-minio-dev-examples` image.
@@ -23,7 +36,7 @@ If starting with a fresh namespace, install ModelMesh Serving configured for the
 To re-configure an existing quick-start instance for FVTs, run:
 
 ```
-kubectl apply -f dependencies/fvt.yaml
+kubectl apply -f config/dependencies/fvt.yaml
 ```
 
 ### Development Environment
