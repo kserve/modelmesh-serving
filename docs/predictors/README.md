@@ -110,7 +110,7 @@ grpc://modelmesh-serving.modelmesh-serving:8033
 The active model state should reflect immediate availability, but may take some seconds to move from `Loading` to `Loaded`.
 Inferencing requests for this InferenceService received prior to loading completion will block until it completes.
 
-See the [InferenceService Status](inferenceservice-cr.md.md#predictor-status) section for details of how to interpret the different states.
+See the [InferenceService Status](inferenceservice-cr.md#predictor-status) section for details of how to interpret the different states.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ### PyTorch, TensorFlow and ONNX
 
-Refer to Triton documentation on [Data types Mapping](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#datatypes)
+Refer to Triton documentation on [Data types Mapping](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_configuration.md#datatypes)
 
 ### LightGBM, Sklearn and XGBoost
 

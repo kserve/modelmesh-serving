@@ -65,7 +65,7 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 
 All certificates must be encoded in PEM PKCS8 format. See the [dedicated page](./tls.md) for more information on TLS configuration.
 
-(\*\*\*\*) The max gRPC request payload size depends on both this setting and adjusting the model serving runtimes' max message limit. See [inference docs](predictors/run-inference) for details.
+(\*\*\*\*) The max gRPC request payload size depends on both this setting and adjusting the model serving runtimes' max message limit. See [inference docs](/docs/predictors/run-inference.md) for details.
 
 (\*\*\*\*\*) Default ServingRuntime Pod labels and annotations
 
