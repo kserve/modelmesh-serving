@@ -156,7 +156,7 @@ mmesh-codegen:
 
 # Check markdown files for invalid links
 check-doc-links:
-	python3 scripts/verify_doc_links.py && echo "$@: OK"
+	@python3 scripts/verify_doc_links.py && echo "$@: OK"
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
