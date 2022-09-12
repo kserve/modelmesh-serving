@@ -44,7 +44,11 @@ spec:
         app.kubernetes.io/name: modelmesh-controller
         name: {{.ServiceName}}-{{.Name}}
     spec:
-      serviceAccountName: {{.ServiceAccountName}}
+      serviceAccountName: modelmesh-serving-sa
+      volumes:
+        - name: proxy-tls
+          secret:
+            secretName: model-serving-proxy-tls
       containers:
         - name: mm
           image: {{.ModelMeshImage}}
@@ -120,6 +124,52 @@ spec:
             capabilities:
               drop:
                 - ALL
+        - name: oauth-proxy
+          args:
+            - --https-address=:8443
+            - --provider=openshift
+            - --openshift-service-account=modelmesh-serving-sa
+            - --upstream=http://localhost:8008
+            - --tls-cert=/etc/tls/private/tls.crt
+            - --tls-key=/etc/tls/private/tls.key
+            - --cookie-secret=SECRET
+            - '--openshift-delegate-urls={"/": {"namespace": "{{.AuthNamespace}}", "resource": "services", "verb": "get"}}'
+            - '--openshift-sar={"namespace": "{{.AuthNamespace}}", "resource": "services", "verb": "get"}'
+            - --skip-auth-regex='(^/metrics|^/apis/v1beta1/healthz)'
+          image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.8
+          ports:
+            - containerPort: 8443
+              name: https
+          livenessProbe:
+            httpGet:
+              path: /oauth/healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /oauth/healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /etc/tls/private
+              name: proxy-tls
 
       # Model runtime containers are added here
 

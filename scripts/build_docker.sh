@@ -102,5 +102,5 @@ if [[ $DOCKER_TARGET == 'runtime' ]]; then
   docker_args+=("--build-arg=IMAGE_VERSION=${DOCKER_TAG}")
 fi
 
-docker build . \
+podman build . \
   "${docker_args[@]}"
