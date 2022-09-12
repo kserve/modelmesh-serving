@@ -243,7 +243,7 @@ Available attributes in the `ServingRuntime` spec:
 | `nodeSelector`                     | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)                                       |
 | `affinity`                         | Influence Kubernetes scheduling to [assign pods to nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)            |
 | `tolerations`                      | Allow pods to be scheduled onto nodes [with matching taints](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                |
-| `replicas`                         | The number of replicas of the runtime to create. This overrides the `podsPerRuntime` [configuration](configuration)                                                       |
+| `replicas`                         | The number of replicas of the runtime to create. This overrides the `podsPerRuntime` [configuration](/docs/configuration/README.md)                                       |
 
 ### Endpoint formats
 
