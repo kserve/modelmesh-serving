@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const logYaml = false
+const logYaml = true
 
 const ModelMeshEtcdPrefix = "mm"
 
@@ -54,6 +54,7 @@ type Deployment struct {
 	RESTProxyResources *corev1.ResourceRequirements
 	RESTProxyPort      uint16
 	// internal fields used when templating
+	AuthNamespace              string
 	ModelMeshLimitCPU          string
 	ModelMeshRequestsCPU       string
 	ModelMeshLimitMemory       string
@@ -87,6 +88,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 	m.ModelMeshLimitMemory = m.ModelMeshResources.Limits.Memory().String()
 	m.ModelMeshRequestsCPU = m.ModelMeshResources.Requests.Cpu().String()
 	m.ModelMeshRequestsMemory = m.ModelMeshResources.Requests.Memory().String()
+	m.AuthNamespace = m.Namespace
 
 	manifest, err := config.Manifest(clientParam, "config/internal/base/deployment.yaml.tmpl", m)
 	if err != nil {
@@ -147,8 +149,10 @@ func (m *Deployment) Apply(ctx context.Context) error {
 	}
 
 	if logYaml {
+		m.Log.Info("----------------------------------------------------------------")
 		b, _ := yaml.Marshal(manifest.Resources())
 		m.Log.Info(string(b))
+		m.Log.Info("---------------------------------------------------------------")
 	}
 
 	if err = manifest.Apply(); err != nil {

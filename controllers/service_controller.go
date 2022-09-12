@@ -259,13 +259,18 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 		"app.kubernetes.io/name":       commonLabelValue,
 	}
 
+	annotationsMap := map[string]string{
+		"service.alpha.openshift.io/serving-cert-secret-name": "model-serving-proxy-tls",
+	}
+
 	if s == nil {
 		mms.Disconnect()
 		s = &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      serviceName,
-				Namespace: namespace,
-				Labels:    labelMap,
+				Name:        serviceName,
+				Namespace:   namespace,
+				Labels:      labelMap,
+				Annotations: annotationsMap,
 			},
 			Spec: *target,
 		}

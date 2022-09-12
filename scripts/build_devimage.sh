@@ -27,18 +27,18 @@ DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | ${SHASUM} | head -c 16)
 
 FULL_IMAGE_NAME="${IMAGE_NAME}:${DEV_IMG_TAG}"
 echo "Pulling dev image ${FULL_IMAGE_NAME}..."
-if docker pull -q ${FULL_IMAGE_NAME}; then
+if podman pull -q ${FULL_IMAGE_NAME}; then
     echo "Successfully pulled dev image ${FULL_IMAGE_NAME}"
 else
   mkdir -p $CONTEXT_DIR
   cp ${DEV_DEPS} ${CONTEXT_DIR}
   echo "Building dev image ${FULL_IMAGE_NAME}"
-  docker build -f ${CONTEXT_DIR}/Dockerfile.develop -t ${FULL_IMAGE_NAME} ${CONTEXT_DIR}
+  podman build -f ${CONTEXT_DIR}/Dockerfile.develop -t ${FULL_IMAGE_NAME} ${CONTEXT_DIR}
 fi
 echo -n "${FULL_IMAGE_NAME}" > .develop_image_name
 
-NUM_LAYERS=$(docker images -q "${FULL_IMAGE_NAME}" | xargs docker history | egrep -v "^IMAGE" | wc -l | tr -d ' ')
+NUM_LAYERS=$(podman images -q "${FULL_IMAGE_NAME}" | xargs podman history | egrep -v "^IMAGE" | wc -l | tr -d ' ')
 echo "Image ${FULL_IMAGE_NAME} has ${NUM_LAYERS} layers"
 
 echo "Tagging dev image ${FULL_IMAGE_NAME} as latest"
-docker tag ${FULL_IMAGE_NAME} "${IMAGE_NAME}:latest"
+podman tag ${FULL_IMAGE_NAME} "${IMAGE_NAME}:latest"

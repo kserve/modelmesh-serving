@@ -81,7 +81,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 		volumes = append(volumes, storageVolume)
 	}
 
-	deployment.Spec.Template.Spec.Volumes = volumes
+	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volumes...)
 
 	return nil
 }

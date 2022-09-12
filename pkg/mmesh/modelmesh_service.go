@@ -144,6 +144,11 @@ func (mms *MMService) UpdateConfig(cp *config.ConfigProvider) (*config.Config, b
 				Port:       int32(restPort),
 				TargetPort: intstr.FromString("http"),
 			})
+			spec.Ports = append(spec.Ports, v1.ServicePort{
+				Name:       "https",
+				Port:       int32(8443),
+				TargetPort: intstr.FromString("https"),
+			})
 		}
 		if mms.headless {
 			spec.ClusterIP = "None"
