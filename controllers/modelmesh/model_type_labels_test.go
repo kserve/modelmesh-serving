@@ -22,6 +22,7 @@ import (
 	"github.com/kserve/kserve/pkg/constants"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestGetServingRuntimeLabelSets(t *testing.T) {
@@ -77,7 +78,7 @@ func TestGetServingRuntimeLabelSets(t *testing.T) {
 
 	expectedRtLabel := "rt:runtimename"
 
-	mtLabelSet, pvLabelSet, rtLabel := GetServingRuntimeLabelSets(&rt, false)
+	mtLabelSet, pvLabelSet, rtLabel := GetServingRuntimeLabelSets(&rt.Spec, false, types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace})
 	if expectedRtLabel != rtLabel {
 		t.Errorf("Missing expected entry [%s] in set: %v", expectedRtLabel, rtLabel)
 	}

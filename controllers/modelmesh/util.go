@@ -54,11 +54,11 @@ func setEnvironmentVar(container string, variable string, value string, deployme
 
 // Determines if any unix domain sockets are present and returns
 // the unix:/// path and mount directory
-func unixDomainSockets(rt *kserveapi.ServingRuntime) (bool, []string, []string) {
+func unixDomainSockets(rts *kserveapi.ServingRuntimeSpec) (bool, []string, []string) {
 	endpoints := []*string{
-		rt.Spec.GrpcDataEndpoint,
+		rts.GrpcDataEndpoint,
 		//rt.Spec.HTTPDataEndpoint,
-		rt.Spec.GrpcMultiModelManagementEndpoint,
+		rts.GrpcMultiModelManagementEndpoint,
 	}
 
 	var _endpoints, _fspaths []string
@@ -81,8 +81,8 @@ func unixDomainSockets(rt *kserveapi.ServingRuntime) (bool, []string, []string) 
 
 // useStorageHelper returns true if the model puller needs to be injected into the runtime deployment
 // either built-in adapter is not specified or storage helper is enabled
-func useStorageHelper(rt *kserveapi.ServingRuntime) bool {
-	return rt.Spec.BuiltInAdapter == nil && (rt.Spec.StorageHelper == nil || !rt.Spec.StorageHelper.Disabled)
+func useStorageHelper(rts *kserveapi.ServingRuntimeSpec) bool {
+	return rts.BuiltInAdapter == nil && (rts.StorageHelper == nil || !rts.StorageHelper.Disabled)
 }
 
 var (
@@ -100,7 +100,7 @@ func toYaml(resources []unstructured.Unstructured) string {
 }
 
 // Finds the common mount point for required unix domain sockets
-func mountPoint(rt *kserveapi.ServingRuntime) (bool, string, error) {
+func mountPoint(rts *kserveapi.ServingRuntimeSpec) (bool, string, error) {
 	findParentPath := func(str string) (bool, string, error) {
 		e, err := ParseEndpoint(str)
 		if err != nil {
@@ -119,12 +119,12 @@ func mountPoint(rt *kserveapi.ServingRuntime) (bool, string, error) {
 	//	isUnix, path, err := findParentPath(*rt.Spec.HTTPDataEndpoint)
 	//	return isUnix, path, err
 	//}
-	if rt.Spec.GrpcDataEndpoint != nil {
-		isUnix, path, err := findParentPath(*rt.Spec.GrpcDataEndpoint)
+	if rts.GrpcDataEndpoint != nil {
+		isUnix, path, err := findParentPath(*rts.GrpcDataEndpoint)
 		return isUnix, path, err
 	}
-	if rt.Spec.GrpcMultiModelManagementEndpoint != nil {
-		isUnix, path, err := findParentPath(*rt.Spec.GrpcMultiModelManagementEndpoint)
+	if rts.GrpcMultiModelManagementEndpoint != nil {
+		isUnix, path, err := findParentPath(*rts.GrpcMultiModelManagementEndpoint)
 		return isUnix, path, err
 	}
 

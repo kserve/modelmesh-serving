@@ -25,14 +25,14 @@ import (
 
 var StorageSecretName string
 
-func addPullerTransform(rt *kserveapi.ServingRuntime, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) func(*unstructured.Unstructured) error {
+func addPullerTransform(rts *kserveapi.ServingRuntimeSpec, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) func(*unstructured.Unstructured) error {
 	return func(resource *unstructured.Unstructured) error {
 		var deployment = &appsv1.Deployment{}
 		if err := scheme.Scheme.Convert(resource, deployment, nil); err != nil {
 			return err
 		}
 
-		err := addPullerSidecar(rt, deployment, pullerImage, pullerImageCommand, pullerResources)
+		err := addPullerSidecar(rts, deployment, pullerImage, pullerImageCommand, pullerResources)
 		if err != nil {
 			return err
 		}
@@ -41,8 +41,8 @@ func addPullerTransform(rt *kserveapi.ServingRuntime, pullerImage string, puller
 	}
 }
 
-func addPullerSidecar(rt *kserveapi.ServingRuntime, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) error {
-	endpoint, err := ValidateEndpoint(*rt.Spec.GrpcMultiModelManagementEndpoint)
+func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) error {
+	endpoint, err := ValidateEndpoint(*rts.GrpcMultiModelManagementEndpoint)
 	if err != nil {
 		return err
 	}

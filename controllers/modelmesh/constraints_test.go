@@ -18,6 +18,7 @@ import (
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestCalculateLabel(t *testing.T) {
@@ -50,7 +51,7 @@ func TestCalculateLabel(t *testing.T) {
 				},
 			}
 
-			labelString := generateLabelsEnvVar(rt, false)
+			labelString := generateLabelsEnvVar(&rt.Spec, false, types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace})
 			if labelString != tt.expected {
 				t.Fatalf("Expected label %v but found %v", tt.expected, labelString)
 			}

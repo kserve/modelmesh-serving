@@ -41,6 +41,7 @@ type Deployment struct {
 	Name               string
 	Namespace          string
 	Owner              *kserveapi.ServingRuntime
+	SRSpec             *kserveapi.ServingRuntimeSpec
 	DefaultVModelOwner string
 	Log                logr.Logger
 	Metrics            bool
@@ -102,43 +103,75 @@ func (m *Deployment) Apply(ctx context.Context) error {
 		return configMapErr
 	}
 
-	manifest, err = manifest.Transform(
-		mf.InjectOwner(m.Owner),
-		mf.InjectNamespace(m.Namespace),
-		func(resource *unstructured.Unstructured) error {
-			var deployment = &appsv1.Deployment{}
-			if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
-				return tErr
-			}
+	if m.Owner != nil {
+		manifest, err = manifest.Transform(
+			mf.InjectOwner(m.Owner),
+			mf.InjectNamespace(m.Namespace),
+			func(resource *unstructured.Unstructured) error {
+				var deployment = &appsv1.Deployment{}
+				if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
+					return tErr
+				}
 
-			if tErr := m.transform(deployment,
-				m.addVolumesToDeployment,
-				m.addMMDomainSocketMount,
-				m.addPassThroughPodFieldsToDeployment,
-				m.addRuntimeToDeployment,
-				m.syncGracePeriod,
-				m.addMMEnvVars,
-				m.addModelTypeConstraints,
-				m.configureMMDeploymentForEtcdSecret,
-				m.addRESTProxyToDeployment,
-				m.configureMMDeploymentForTLSSecret,
-				m.configureRuntimePodSpecAnnotations,
-				m.configureRuntimePodSpecLabels,
-				m.ensureMMContainerIsLast,
-			); tErr != nil {
-				return tErr
-			}
+				if tErr := m.transform(deployment,
+					m.addVolumesToDeployment,
+					m.addMMDomainSocketMount,
+					m.addPassThroughPodFieldsToDeployment,
+					m.addRuntimeToDeployment,
+					m.syncGracePeriod,
+					m.addMMEnvVars,
+					m.addModelTypeConstraints,
+					m.configureMMDeploymentForEtcdSecret,
+					m.addRESTProxyToDeployment,
+					m.configureMMDeploymentForTLSSecret,
+					m.configureRuntimePodSpecAnnotations,
+					m.configureRuntimePodSpecLabels,
+					m.ensureMMContainerIsLast,
+				); tErr != nil {
+					return tErr
+				}
 
-			return scheme.Scheme.Convert(deployment, resource, nil)
-		},
-	)
+				return scheme.Scheme.Convert(deployment, resource, nil)
+			},
+		)
+	} else {
+		manifest, err = manifest.Transform(
+			mf.InjectNamespace(m.Namespace),
+			func(resource *unstructured.Unstructured) error {
+				var deployment = &appsv1.Deployment{}
+				if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
+					return tErr
+				}
+
+				if tErr := m.transform(deployment,
+					m.addVolumesToDeployment,
+					m.addMMDomainSocketMount,
+					m.addPassThroughPodFieldsToDeployment,
+					m.addRuntimeToDeployment,
+					m.syncGracePeriod,
+					m.addMMEnvVars,
+					m.addModelTypeConstraints,
+					m.configureMMDeploymentForEtcdSecret,
+					m.addRESTProxyToDeployment,
+					m.configureMMDeploymentForTLSSecret,
+					m.configureRuntimePodSpecAnnotations,
+					m.configureRuntimePodSpecLabels,
+					m.ensureMMContainerIsLast,
+				); tErr != nil {
+					return tErr
+				}
+
+				return scheme.Scheme.Convert(deployment, resource, nil)
+			},
+		)
+	}
 	if err != nil {
 		return fmt.Errorf("Error transforming: %w", err)
 	}
 
-	if useStorageHelper(m.Owner) {
+	if useStorageHelper(m.SRSpec) {
 		manifest, err = manifest.Transform(
-			addPullerTransform(m.Owner, m.PullerImage, m.PullerImageCommand, m.PullerResources),
+			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources),
 		)
 		if err != nil {
 			return fmt.Errorf("Error transforming: %w", err)
@@ -196,7 +229,7 @@ func (m *Deployment) addMMDomainSocketMount(deployment *appsv1.Deployment) error
 		return fmt.Errorf("Could not find the model mesh container %v", ModelMeshContainerName)
 	}
 
-	if hasUnix, mountPoint, err := mountPoint(m.Owner); err != nil {
+	if hasUnix, mountPoint, err := mountPoint(m.SRSpec); err != nil {
 		return err
 	} else if hasUnix {
 		c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
@@ -217,9 +250,9 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		}
 	}
 
-	rt := m.Owner
-	if rt.Spec.GrpcDataEndpoint != nil {
-		e, err := ParseEndpoint(*rt.Spec.GrpcDataEndpoint)
+	rts := m.SRSpec
+	if rts.GrpcDataEndpoint != nil {
+		e, err := ParseEndpoint(*rts.GrpcDataEndpoint)
 		if err != nil {
 			return err
 		}
@@ -234,12 +267,12 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		}
 	}
 
-	if useStorageHelper(rt) {
+	if useStorageHelper(m.SRSpec) {
 		if err := setEnvironmentVar(ModelMeshContainerName, GrpcPortEnvVar, strconv.Itoa(PullerPortNumber), deployment); err != nil {
 			return err
 		}
 	} else {
-		e, err := ParseEndpoint(*rt.Spec.GrpcMultiModelManagementEndpoint)
+		e, err := ParseEndpoint(*rts.GrpcMultiModelManagementEndpoint)
 		if err != nil {
 			return err
 		}
@@ -281,6 +314,9 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 }
 
 func (m *Deployment) setConfigMap() error {
+	if m.Owner == nil {
+		return nil
+	}
 	// get configmap name from servingRuntime
 	rt := m.Owner
 	configMap := rt.ObjectMeta.Annotations["productConfig"]

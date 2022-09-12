@@ -20,6 +20,7 @@ import (
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -28,13 +29,13 @@ const (
 )
 
 func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) error {
-	rt := m.Owner
+	rts := m.SRSpec
 	var container *corev1.Container
 	if _, container = findContainer(ModelMeshContainerName, deployment); container == nil {
 		return errors.New("unable to find the model mesh container")
 	}
 
-	labelString := generateLabelsEnvVar(rt, m.RESTProxyEnabled)
+	labelString := generateLabelsEnvVar(rts, m.RESTProxyEnabled, types.NamespacedName{Name: m.Name, Namespace: m.Namespace})
 	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "MM_LABELS",
 		Value: labelString,
@@ -66,6 +67,6 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 	return nil
 }
 
-func generateLabelsEnvVar(rt *kserveapi.ServingRuntime, restProxyEnabled bool) string {
-	return strings.Join(GetServingRuntimeLabelSet(rt, restProxyEnabled).List(), ",")
+func generateLabelsEnvVar(rts *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName types.NamespacedName) string {
+	return strings.Join(GetServingRuntimeLabelSet(rts, restProxyEnabled, types.NamespacedName{Name: rtName.Name, Namespace: rtName.Namespace}).List(), ",")
 }

@@ -71,7 +71,7 @@ func TestIsUnix(t *testing.T) {
 					GrpcMultiModelManagementEndpoint: tt.MultiModelManagementGrpcEndpoint,
 				},
 			}
-			result, endpoints, paths := unixDomainSockets(rt)
+			result, endpoints, paths := unixDomainSockets(&rt.Spec)
 
 			if result != tt.expected {
 				t.Fatalf("Expected %v but result was %v", tt.expected, result)

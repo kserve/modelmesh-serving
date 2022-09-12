@@ -120,7 +120,7 @@ func calculateConstraintData(rts []kserveapi.ServingRuntime, restProxyEnabled bo
 	m := make(map[string]interface{})
 	for _, rt := range rts {
 		if !rt.Spec.IsDisabled() && rt.Spec.IsMultiModelRuntime() {
-			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&rt, restProxyEnabled)
+			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&rt.Spec, restProxyEnabled, types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace})
 			m[rtLabel] = map[string]interface{}{"required": []string{rtLabel}}
 			// treat each combo of model-type label and proto version label as a separate model type
 			for l := range mtLabels {

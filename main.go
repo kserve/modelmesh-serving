@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	config2 "github.com/kserve/modelmesh-serving/pkg/config"
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
@@ -76,6 +77,7 @@ const (
 	LeaderLockName                 = "modelmesh-controller-leader-lock"
 	LeaderForLifeLockName          = "modelmesh-controller-leader-for-life-lock"
 	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
+	EnableClusterSrvngRntmEnvVar   = "ENABLE_CSR_WATCH"
 	NamespaceScopeEnvVar           = "NAMESPACE_SCOPE"
 )
 
@@ -89,6 +91,7 @@ func init() {
 	_ = batchv1.AddToScheme(scheme)
 	_ = servingv1alpha1.AddToScheme(scheme)
 	_ = v1beta1.AddToScheme(scheme)
+	_ = v1alpha1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -331,6 +334,29 @@ func main() {
 	enableIsvcWatch := checkEnvVar(EnableInferenceServiceEnvVar, "InferenceService", &v1beta1.InferenceService{},
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
+	checkCSRVar := func(envVar string, resourceName string, resourceObject client.Object) bool {
+
+		envVarVal, _ := os.LookupEnv(envVar)
+		if envVarVal != "false" {
+			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
+			if err == nil || errors.IsNotFound(err) {
+				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
+				return true
+			} else if envVarVal == "true" {
+				// If env var is explicitly true, require that specified CRD is present
+				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
+				os.Exit(1)
+			} else if meta.IsNoMatchError(err) {
+				setupLog.Info(fmt.Sprintf("%s CRD not found, will not reconcile", resourceName))
+			} else {
+				setupLog.Error(err, fmt.Sprintf("%s CRD not accessible, will not reconcile", resourceName))
+			}
+		}
+		return false
+	}
+	enableCSRWatch := checkCSRVar(EnableClusterSrvngRntmEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
+	setupLog.Info(fmt.Sprintf("==== ChinDebug === enableCSRWatch is %v", enableCSRWatch))
+
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
 		predictorControllerEvents = make(chan event.GenericEvent, 256)
@@ -394,7 +420,7 @@ func main() {
 		ControllerName:      controllerDeploymentName,
 		HasNamespaceAccess:  clusterScopeMode,
 		RegistryMap:         registryMap,
-	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
+	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents, enableCSRWatch); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)
 	}
