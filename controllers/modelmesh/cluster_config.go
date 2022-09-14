@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,15 +64,24 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	m := &corev1.ConfigMap{}
 	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: namespace}, m)
 	notfound := errors.IsNotFound(err)
+
+	logger := ctrl.Log.WithName("ClusterConfig")
+	logger.Info("=======ChinDebug======", "notfound", notfound)
+
 	if err != nil && !notfound {
 		return err
 	}
+	logger.Info("=======ChinDebug=====", "runtimes", cc.Runtimes)
+	logger.Info("=======ChinDebug=====", "configmap", m)
 	if cc.Runtimes == nil || len(cc.Runtimes.Items) == 0 {
 		if !notfound {
+			logger.Info("=======ChinDebug===== delete configmap")
 			return cl.Delete(ctx, m)
 		}
+		logger.Info("=======ChinDebug===== return nil")
 		return nil
 	}
+	logger.Info("=======ChinDebug===== continue")
 
 	commonLabelValue := "modelmesh-controller"
 	m.ObjectMeta = metav1.ObjectMeta{
@@ -85,8 +96,10 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	cc.addConstraints(cc.Runtimes, m, cfg.RESTProxy.Enabled)
 
 	if notfound {
+		logger.Info("=======ChinDebug===== create configmap", "configmap", m)
 		return cl.Create(ctx, m)
 	} else {
+		logger.Info("=======ChinDebug===== update configmap", "configmap", m)
 		return cl.Update(ctx, m)
 	}
 }
@@ -120,7 +133,7 @@ func calculateConstraintData(rts []kserveapi.ServingRuntime, restProxyEnabled bo
 	m := make(map[string]interface{})
 	for _, rt := range rts {
 		if !rt.Spec.IsDisabled() && rt.Spec.IsMultiModelRuntime() {
-			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&rt.Spec, restProxyEnabled, types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace})
+			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&rt.Spec, restProxyEnabled, rt.Name)
 			m[rtLabel] = map[string]interface{}{"required": []string{rtLabel}}
 			// treat each combo of model-type label and proto version label as a separate model type
 			for l := range mtLabels {

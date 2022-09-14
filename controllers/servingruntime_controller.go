@@ -184,6 +184,17 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err = r.Client.Get(ctx, req.NamespacedName, rt); errors.IsNotFound(err) {
 		log.Info("Runtime is not found in namespace")
 
+		if !r.HasNamespaceAccess {
+			// remove runtime from info map
+			r.runtimeInfoMapMutex.Lock()
+			defer r.runtimeInfoMapMutex.Unlock()
+
+			if r.runtimeInfoMap != nil {
+				// this is safe even if the entry doesn't exist
+				delete(r.runtimeInfoMap, req.NamespacedName)
+			}
+			return ctrl.Result{}, nil
+		}
 		// try to find the runtime in cluster ServingRuntimes
 		if err = r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, crt); errors.IsNotFound(err) {
 			log.Info("Runtime is not found in cluster")
@@ -197,6 +208,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				delete(r.runtimeInfoMap, req.NamespacedName)
 			}
 			return ctrl.Result{}, nil
+		} else if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error retrieving ClusterServingRuntime %s: %w", req.Name, err)
 		}
 	} else if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error retrieving ServingRuntime %s: %w", req.NamespacedName, err)
@@ -205,12 +218,14 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.Info("==== ChinDebug sr reconcile 2.5 ====", "crt", crt)
 	rtName := req.NamespacedName
 	spec := &rt.Spec
+	annotations := rt.ObjectMeta.Annotations
 	if rt.Name != "" {
 		// SR is found
 		rt2 = rt
 	} else {
 		// CSR is found
 		spec = &crt.Spec
+		annotations = crt.ObjectMeta.Annotations
 		rt2 = nil
 		rtName = types.NamespacedName{Name: req.Name}
 	}
@@ -232,6 +247,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Namespace:                  req.Namespace,
 		Owner:                      rt2,
 		SRSpec:                     spec,
+		SRAnnotations:              annotations,
 		DefaultVModelOwner:         PredictorCRSourceId,
 		Log:                        log,
 		Metrics:                    cfg.Metrics.Enabled,
@@ -377,7 +393,7 @@ func (r *ServingRuntimeReconciler) determineReplicas(rt *kserveapi.ServingRuntim
 func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt *kserveapi.ServingRuntimeSpec, rtName types.NamespacedName) (bool, error) {
 	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
 	f := func(p *api.Predictor) bool {
-		return runtimeSupportsPredictor(rt, p, restProxyEnabled, rtName)
+		return runtimeSupportsPredictor(rt, p, restProxyEnabled, rtName.Name)
 	}
 
 	for _, pr := range r.RegistryMap {
@@ -389,7 +405,7 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 	return false, nil
 }
 
-func runtimeSupportsPredictor(rt *kserveapi.ServingRuntimeSpec, p *api.Predictor, restProxyEnabled bool, rtName types.NamespacedName) bool {
+func runtimeSupportsPredictor(rt *kserveapi.ServingRuntimeSpec, p *api.Predictor, restProxyEnabled bool, rtName string) bool {
 	// assignment to a runtime depends on the model type labels
 	runtimeLabelSet := modelmesh.GetServingRuntimeLabelSet(rt, restProxyEnabled, rtName)
 	predictorTypeString := modelmesh.GetPredictorTypeLabel(p)
@@ -414,15 +430,17 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 
 	// list all cluster serving runtimes
 	csrs := &kserveapi.ClusterServingRuntimeList{}
-	if err := r.Client.List(ctx, csrs); err != nil {
-		return nil, err
+	if r.HasNamespaceAccess {
+		if err := r.Client.List(ctx, csrs); err != nil {
+			return nil, err
+		}
 	}
 
 	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
 	srnns := make([]types.NamespacedName, 0, len(runtimes.Items))
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&rt.Spec, p, restProxyEnabled, types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace}) {
+		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&rt.Spec, p, restProxyEnabled, rt.Name) {
 			srnns = append(srnns, types.NamespacedName{
 				Name:      rt.GetName(),
 				Namespace: p.Namespace,
@@ -434,7 +452,7 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 		crt := &csrs.Items[i]
 		// Check whether a ServingRuntime exists with same name
 		if crt.Spec.IsMultiModelRuntime() && !r.runtimeExists(runtimes, crt.Name) &&
-			runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, types.NamespacedName{Name: crt.Name}) {
+			runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, crt.Name) {
 			csrnns = append(csrnns, types.NamespacedName{
 				Name:      crt.GetName(),
 				Namespace: p.Namespace,

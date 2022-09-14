@@ -45,10 +45,11 @@ func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 }
 
 func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error {
-	modelsDirSize := calculateModelDirSize(m.SRSpec)
+	rts := m.SRSpec
+	modelsDirSize := calculateModelDirSize(rts)
 
 	// start from the volumes specified in the runtime spec
-	volumes := m.SRSpec.Volumes
+	volumes := rts.Volumes
 
 	volumes = append(volumes, corev1.Volume{
 		Name: ModelsDirVolume,
@@ -57,7 +58,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 		},
 	})
 
-	if hasUnixSockets, _, _ := unixDomainSockets(m.SRSpec); hasUnixSockets {
+	if hasUnixSockets, _, _ := unixDomainSockets(rts); hasUnixSockets {
 		volumes = append(volumes, corev1.Volume{
 			Name: SocketVolume,
 			VolumeSource: corev1.VolumeSource{
@@ -67,7 +68,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	}
 
 	// need to mount storage config for built-in adapters and the scenarios where StorageHelper is not disabled
-	if m.SRSpec.BuiltInAdapter != nil || useStorageHelper(m.SRSpec) {
+	if m.SRSpec.BuiltInAdapter != nil || useStorageHelper(rts) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,
 			VolumeSource: corev1.VolumeSource{
@@ -99,7 +100,8 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 
 //Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
-	rt := m.Owner
+	rta := m.SRAnnotations
+	//rt := m.Owner
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers
@@ -248,15 +250,15 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			{}, {}, {}, {}, // allocate larger array to avoid reallocation
 		}[:8]
 
-		if rt != nil {
-			if mlc, ok := rt.Annotations["maxLoadingConcurrency"]; ok {
+		if rta != nil {
+			if mlc, ok := rta["maxLoadingConcurrency"]; ok {
 				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
 					Name:  "LOADING_CONCURRENCY",
 					Value: mlc,
 				})
 			}
 
-			if pmcl, ok := rt.Annotations["perModelConcurrencyLimit"]; ok {
+			if pmcl, ok := rta["perModelConcurrencyLimit"]; ok {
 				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
 					Name:  "LIMIT_PER_MODEL_CONCURRENCY",
 					Value: pmcl,
@@ -284,7 +286,7 @@ func addDomainSocketMount(rts *kserveapi.ServingRuntimeSpec, c *corev1.Container
 	var domainSocketMountPoint string
 	endpoints := []*string{
 		rts.GrpcDataEndpoint,
-		//		rt.Spec.HTTPDataEndpoint,
+		//		rts.HTTPDataEndpoint,
 		rts.GrpcMultiModelManagementEndpoint,
 	}
 	for _, endpointStr := range endpoints {

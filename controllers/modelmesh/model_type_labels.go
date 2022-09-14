@@ -19,11 +19,10 @@ import (
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/constants"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName types.NamespacedName) (
+func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) (
 	mtLabels sets.String, pvLabels sets.String, rtLabel string) {
 
 	// model type labels
@@ -46,10 +45,10 @@ func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntimeSpec, restProxyEnabl
 		}
 	}
 	// runtime label
-	return mtSet, pvSet, fmt.Sprintf("rt:%s", rtName.Name)
+	return mtSet, pvSet, fmt.Sprintf("rt:%s", rtName)
 }
 
-func GetServingRuntimeLabelSet(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName types.NamespacedName) sets.String {
+func GetServingRuntimeLabelSet(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) sets.String {
 	s1, s2, l := GetServingRuntimeLabelSets(rt, restProxyEnabled, rtName)
 	s1 = s1.Union(s2)
 	s1.Insert(l)

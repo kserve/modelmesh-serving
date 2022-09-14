@@ -36,12 +36,15 @@ const ModelMeshEtcdPrefix = "mm"
 
 //Models a deployment
 type Deployment struct {
-	ServiceName        string
-	ServicePort        uint16
-	Name               string
-	Namespace          string
+	ServiceName string
+	ServicePort uint16
+	Name        string
+	Namespace   string
+	// The Owner field can be nil in the CSR case
+	//Owner              mf.Owner
 	Owner              *kserveapi.ServingRuntime
 	SRSpec             *kserveapi.ServingRuntimeSpec
+	SRAnnotations      map[string]string
 	DefaultVModelOwner string
 	Log                logr.Logger
 	Metrics            bool
@@ -103,67 +106,37 @@ func (m *Deployment) Apply(ctx context.Context) error {
 		return configMapErr
 	}
 
+	manifest, err = manifest.Transform(
+		mf.InjectNamespace(m.Namespace),
+		func(resource *unstructured.Unstructured) error {
+			var deployment = &appsv1.Deployment{}
+			if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
+				return tErr
+			}
+
+			if tErr := m.transform(deployment,
+				m.addVolumesToDeployment,
+				m.addMMDomainSocketMount,
+				m.addPassThroughPodFieldsToDeployment,
+				m.addRuntimeToDeployment,
+				m.syncGracePeriod,
+				m.addMMEnvVars,
+				m.addModelTypeConstraints,
+				m.configureMMDeploymentForEtcdSecret,
+				m.addRESTProxyToDeployment,
+				m.configureMMDeploymentForTLSSecret,
+				m.configureRuntimePodSpecAnnotations,
+				m.configureRuntimePodSpecLabels,
+				m.ensureMMContainerIsLast,
+			); tErr != nil {
+				return tErr
+			}
+
+			return scheme.Scheme.Convert(deployment, resource, nil)
+		},
+	)
 	if m.Owner != nil {
-		manifest, err = manifest.Transform(
-			mf.InjectOwner(m.Owner),
-			mf.InjectNamespace(m.Namespace),
-			func(resource *unstructured.Unstructured) error {
-				var deployment = &appsv1.Deployment{}
-				if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
-					return tErr
-				}
-
-				if tErr := m.transform(deployment,
-					m.addVolumesToDeployment,
-					m.addMMDomainSocketMount,
-					m.addPassThroughPodFieldsToDeployment,
-					m.addRuntimeToDeployment,
-					m.syncGracePeriod,
-					m.addMMEnvVars,
-					m.addModelTypeConstraints,
-					m.configureMMDeploymentForEtcdSecret,
-					m.addRESTProxyToDeployment,
-					m.configureMMDeploymentForTLSSecret,
-					m.configureRuntimePodSpecAnnotations,
-					m.configureRuntimePodSpecLabels,
-					m.ensureMMContainerIsLast,
-				); tErr != nil {
-					return tErr
-				}
-
-				return scheme.Scheme.Convert(deployment, resource, nil)
-			},
-		)
-	} else {
-		manifest, err = manifest.Transform(
-			mf.InjectNamespace(m.Namespace),
-			func(resource *unstructured.Unstructured) error {
-				var deployment = &appsv1.Deployment{}
-				if tErr := scheme.Scheme.Convert(resource, deployment, nil); tErr != nil {
-					return tErr
-				}
-
-				if tErr := m.transform(deployment,
-					m.addVolumesToDeployment,
-					m.addMMDomainSocketMount,
-					m.addPassThroughPodFieldsToDeployment,
-					m.addRuntimeToDeployment,
-					m.syncGracePeriod,
-					m.addMMEnvVars,
-					m.addModelTypeConstraints,
-					m.configureMMDeploymentForEtcdSecret,
-					m.addRESTProxyToDeployment,
-					m.configureMMDeploymentForTLSSecret,
-					m.configureRuntimePodSpecAnnotations,
-					m.configureRuntimePodSpecLabels,
-					m.ensureMMContainerIsLast,
-				); tErr != nil {
-					return tErr
-				}
-
-				return scheme.Scheme.Convert(deployment, resource, nil)
-			},
-		)
+		manifest, err = manifest.Transform(mf.InjectOwner(m.Owner))
 	}
 	if err != nil {
 		return fmt.Errorf("Error transforming: %w", err)
@@ -267,7 +240,7 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		}
 	}
 
-	if useStorageHelper(m.SRSpec) {
+	if useStorageHelper(rts) {
 		if err := setEnvironmentVar(ModelMeshContainerName, GrpcPortEnvVar, strconv.Itoa(PullerPortNumber), deployment); err != nil {
 			return err
 		}
@@ -320,6 +293,8 @@ func (m *Deployment) setConfigMap() error {
 	// get configmap name from servingRuntime
 	rt := m.Owner
 	configMap := rt.ObjectMeta.Annotations["productConfig"]
+	m.Log.Info("=====ChinDebug1========", "configMap", configMap)
+	m.Log.Info("=====ChinDebug1========", "m.SRAnnotations", m.SRAnnotations)
 	if configMap == "" {
 		return nil
 	}
