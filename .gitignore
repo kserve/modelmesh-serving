@@ -33,3 +33,4 @@ bin
 devbuild
 .develop_image_name
 .bash_history
+.kube

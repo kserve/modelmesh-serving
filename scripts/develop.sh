@@ -57,9 +57,14 @@ cd "${DIR}/.."
 # Make sure .bash_history exists and is a file
 touch .bash_history
 
+# create local copy of a kube-config file
+mkdir -p .kube/
+kubectl config view --minify --flatten 2> /dev/null > .kube/config
+
 declare -a docker_run_args=(
   -v "${PWD}:/workspace"
   -v "${PWD}/.bash_history:/root/.bash_history"
+  -v "${PWD}/.kube/config:/root/.kube/config"
   -v "/var/run/docker.sock:/var/run/docker.sock"
 )
 

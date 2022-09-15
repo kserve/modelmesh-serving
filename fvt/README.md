@@ -29,33 +29,47 @@ The FVTs rely on a set of models existing in a configured `localMinIO` storage. 
 
 If starting with a fresh namespace, install ModelMesh Serving configured for the FVTs with:
 
-```
+```Shell
 ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 ```
 
 To re-configure an existing quick-start instance for FVTs, run:
 
-```
+```Shell
 kubectl apply -f config/dependencies/fvt.yaml
 ```
 
 ### Development Environment
 
-The FVTs run using the `ginkgo` CLI tool and need `kubectl` configuration to the cluster. It is recommended to use the containerized development environment to run the FVTs. First build the environment with:
+The FVTs run using the `ginkgo` CLI tool and need `kubectl` configured to communicate
+to a Kubernetes cluster. It is recommended to use the containerized development environment
+to run the FVTs.
 
-```
-make develop
+First, verify that you have access to your Kubernetes cluster:
+
+```Shell
+kubectl config current-context
 ```
 
-This will drop you in a shell in the container. The next step is to configure this environment to communicate to the Kubernetes cluster. If using an OpenShift cluster, you can run:
+If you are using an OpenShift cluster, you can run:
 
-```
+```Shell
 oc login --token=${YOUR_TOKEN} --server=https://${YOUR_ADDRESS}
 ```
 
-Another method is to can export a functioning `kubectl` configuration and copy it into the container at `/root/.kube/config`.
+Then build and start the development environment with:
 
+```Shell
+make develop
 ```
+
+This will drop you in a shell in the development container where the `./kube/config` is mounted to `root` so
+that you should be able to communicate to your Kubernetes cluster from inside the container.
+If not, you can manually export a functioning `kubectl` configuration and copy it into the container
+at `/root/.kube/config` or, for OpenShift, run the `oc login ...` command inside the development
+container.
+
+```Shell
 # in shell that is has `kubectl` configured with the desired cluster as the
 # current context, the following command will print a portable kubeconfig file
 kubectl config view --minify --flatten
@@ -63,15 +77,20 @@ kubectl config view --minify --flatten
 
 ### Run the FVTs
 
-With a suitable development environment and ModelMesh Serving installation as described above, FVTs can be executed with a `make` target:
+With a suitable development environment and ModelMesh Serving installation as described above,
+the FVTs can be executed with a `make` target:
 
-```
+```Shell
 make fvt
-# use the command below if you installed to a namespace other than modelmesh-serving
-# NAMESPACE=your-namespace make fvt`
 ```
 
-## Running or not running specific tests
+Set the `NAMESPACE` environment variable, if you installed to a **namespace** other than `modelmesh-serving`
+
+```Shell
+NAMESPACE="<your-namespace>" make fvt
+```
+
+## Enabling or disabling specific tests
 
 Thanks to the Ginkgo framework, we have the ability to run or not run specific tests. See [this doc](https://onsi.github.io/ginkgo/#filtering-specs) for details.
 This is useful when you'd like to skip failing tests or want to debug specific test(s).
