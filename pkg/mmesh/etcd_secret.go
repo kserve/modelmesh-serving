@@ -29,6 +29,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	managedByKey   = "app.kubernetes.io/managed-by"
+	managedByValue = "modelmesh-controller"
+)
+
 // An EtcdSecret represents the etcd configuation for a user namespace
 type EtcdSecret struct {
 	Log                 logr.Logger
@@ -46,13 +51,12 @@ func (es EtcdSecret) Apply(ctx context.Context, cl client.Client) error {
 	if err != nil && !notfound {
 		return err
 	}
-	commonLabelValue := "modelmesh-controller"
 
 	s.ObjectMeta = metav1.ObjectMeta{
 		Name:      es.Name,
 		Namespace: es.Namespace,
 		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": commonLabelValue,
+			managedByKey: managedByValue,
 		},
 	}
 	if err = es.addData(s); err != nil {
@@ -62,7 +66,7 @@ func (es EtcdSecret) Apply(ctx context.Context, cl client.Client) error {
 	if notfound {
 		return cl.Create(ctx, s)
 	} else {
-		return cl.Update(ctx, s)
+		return cl.Update(ctx, s) //TODO check if precondition is needed here or is automatic
 	}
 }
 
@@ -80,4 +84,22 @@ func (es EtcdSecret) addData(s *corev1.Secret) error {
 	}
 	s.Data[modelmesh.EtcdSecretKey] = b
 	return nil
+}
+
+func DeleteManagedSecret(ctx context.Context, name, namespace string, cl client.Client) error {
+	if name == "" {
+		return nil
+	}
+	s := &corev1.Secret{}
+	err := cl.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, s)
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	if err == nil && s.Annotations[managedByKey] == managedByValue {
+		err = cl.Delete(ctx, s, &client.DeleteOptions{
+			//TODO check if precondition is needed here or is automatic
+			Preconditions: &metav1.Preconditions{ResourceVersion: &s.ResourceVersion},
+		})
+	}
+	return err
 }

@@ -40,7 +40,7 @@ func Test_GetEtcdClientConfig_ErrFileDoesNotExist(t *testing.T) {
 		CertificateFile: "path/to/certificate"}
 	expectedError := "referenced TLS certificate secret key not found: path/to/certificate"
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 	assert.Empty(t, etcdClientConfig)
 	assert.EqualError(t, err, expectedError)
 }
@@ -51,7 +51,7 @@ func Test_GetEtcdClientConfig_ErrOnlyKeyProvided(t *testing.T) {
 		ClientKey: "myClientKey"}
 	expectedError := fmt.Errorf("need to set both client_key/client_key_file and client_certificate/client_certificate_file")
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 
 	assert.Empty(t, etcdClientConfig)
 	assert.Equal(t, expectedError, err)
@@ -65,7 +65,7 @@ func Test_GetEtcdClientConfig_ErrKeyAndCert(t *testing.T) {
 	expectedError := fmt.Errorf("could not load client key pair: %w",
 		fmt.Errorf("tls: failed to find any PEM data in certificate input"))
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 
 	assert.Equal(t, expectedError, err)
 	assert.Empty(t, etcdClientConfig)
@@ -82,7 +82,7 @@ func Test_GetEtcdClientConfig_SuccessWithCertOverwrite(t *testing.T) {
 	certData, _ := ioutil.ReadFile(certificateFile)
 	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{
 		certificateFile: certData,
-	}, logger)
+	}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &clientv3.Config{}, etcdClientConfig)
@@ -108,7 +108,7 @@ func Test_GetEtcdClientConfig_SuccessWithKeyAndCert(t *testing.T) {
 	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{
 		keyFile:         certData1,
 		certificateFile: certData2,
-	}, logger)
+	}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &clientv3.Config{}, etcdClientConfig)
@@ -119,7 +119,7 @@ func Test_GetEtcdClientConfig_SuccessWithKeyAndCert(t *testing.T) {
 func Test_GetEtcdClientConfig_SuccessWithNoCert(t *testing.T) {
 	etcdConfig := EtcdConfig{Endpoints: etcdEndpoint}
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &clientv3.Config{}, etcdClientConfig)
@@ -130,7 +130,7 @@ func Test_GetEtcdClientConfig_SuccessWithNoCert(t *testing.T) {
 func Test_GetEtcdClientConfig_SuccessWithNoCertHttp(t *testing.T) {
 	etcdConfig := EtcdConfig{Endpoints: "http://0.0.0.0:2379"}
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &clientv3.Config{}, etcdClientConfig)
@@ -144,7 +144,7 @@ func Test_GetEtcdClientConfig_OverrideAuth(t *testing.T) {
 		OverrideAuthority: "my-override",
 	}
 
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, logger)
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.IsType(t, &clientv3.Config{}, etcdClientConfig)
@@ -163,7 +163,7 @@ func Test_CreateEtcdClient_Success(t *testing.T) {
 	etcdClient, err := CreateEtcdClient(etcdConfig, map[string][]byte{
 		keyFile:         certData1,
 		certificateFile: certData2,
-	}, logger)
+	}, nil, logger)
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, etcdClient)
@@ -178,7 +178,7 @@ func Test_CreateEtcdClient_Fail(t *testing.T) {
 	expectedError := "failed to create etcd client config: " +
 		"could not load client key pair: tls: failed to find any PEM data in certificate input"
 
-	etcdClient, err := CreateEtcdClient(etcdConfig, map[string][]byte{}, logger)
+	etcdClient, err := CreateEtcdClient(etcdConfig, map[string][]byte{}, nil, logger)
 	assert.Equal(t, expectedError, err.Error())
 	assert.Empty(t, etcdClient)
 }

@@ -137,22 +137,15 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Delete etcd secret when there is no ServingRuntimes in a namespace
-	etcdSecretName := cfg.GetEtcdSecretName()
+	etcdSecretName, etcdCertSecretName := cfg.GetEtcdSecretNames()
 	if len(srSpecs) == 0 {
 		// We don't delete the etcd secret in the controller namespace
 		if req.Namespace != r.ControllerNamespace {
-			s := &corev1.Secret{}
-			err = r.Client.Get(ctx, types.NamespacedName{
-				Name:      etcdSecretName,
-				Namespace: req.Namespace,
-			}, s)
-
-			if err == nil {
-				err = r.Delete(ctx, s)
-			} else if errors.IsNotFound(err) {
-				err = nil
+			//TODO consider how equivalent cleanup should work for secret name changes
+			if err = mmesh.DeleteManagedSecret(ctx, etcdSecretName, req.Namespace, r.Client); err != nil {
+				return RequeueResult, err
 			}
-			if err != nil {
+			if err = mmesh.DeleteManagedSecret(ctx, etcdCertSecretName, req.Namespace, r.Client); err != nil {
 				return RequeueResult, err
 			}
 		}
@@ -165,7 +158,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			Name:      etcdSecretName,
 			Namespace: r.ControllerNamespace,
 		}, s); err != nil {
-			return RequeueResult, fmt.Errorf("Could not get the controller etcd secret: %w", err)
+			return RequeueResult, fmt.Errorf("Could not get the controller etcd secret %s: %w",
+				etcdSecretName, err)
 		}
 
 		data := s.Data[modelmesh.EtcdSecretKey]
@@ -181,6 +175,26 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			ControllerNamespace: r.ControllerNamespace,
 			EtcdConfig:          &etcdConfig,
 			Scheme:              r.Scheme,
+		}
+
+		if etcdCertSecretName != "" {
+			// Copy the etcd cert secret from the controller namespace to target namespace as-is
+			cs := &corev1.Secret{}
+			if err = r.Client.Get(ctx, types.NamespacedName{
+				Name:      etcdCertSecretName,
+				Namespace: r.ControllerNamespace,
+			}, cs); err != nil {
+				return RequeueResult, fmt.Errorf("Could not get the controller etcd cert secret %s: %w",
+					etcdCertSecretName, err)
+			}
+			// We rely on the fact that kubebuilder client will return a unique copy here
+			cs.Namespace = req.Namespace
+			if cs.Annotations == nil {
+				cs.Annotations = map[string]string{"managedby": "modelmesh-controller"} //TODO constants etc
+			} else {
+				cs.Annotations["managedby"] = "modelmesh-controller"
+			}
+			// TODO .. get/create/update here ... generalize this within etcd_secret.go
 		}
 
 		if err = es.Apply(ctx, r.Client); err != nil {
@@ -252,7 +266,8 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// Replicas is set below
 		TLSSecretName:       cfg.TLS.SecretName,
 		TLSClientAuth:       cfg.TLS.ClientAuth,
-		EtcdSecretName:      cfg.GetEtcdSecretName(),
+		EtcdSecretName:      etcdSecretName,
+		EtcdCertSecretName:  etcdCertSecretName,
 		ServiceAccountName:  cfg.ServiceAccountName,
 		EnableAccessLogging: cfg.EnableAccessLogging,
 		Client:              r.Client,

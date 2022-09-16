@@ -96,7 +96,7 @@ func NewModelEventStream(logger logr.Logger, k8sClient k8sClient.Client,
 
 // UpdateWatchedService is called from service reconciler
 func (mes *ModelMeshEventStream) UpdateWatchedService(ctx context.Context,
-	etcdSecretName, serviceName, namespace string) error {
+	etcdSecretName, etcdCertSecretName, serviceName, namespace string) error {
 
 	if serviceName == "" {
 		return fmt.Errorf("serviceName must not be an empty string")
@@ -114,7 +114,7 @@ func (mes *ModelMeshEventStream) UpdateWatchedService(ctx context.Context,
 	if etcdSecretName != mes.secretName {
 		// etcd config secret changed
 		mes.logger.V(1).Info("Etcd config secret changed. Creating a new etcd client and restarting watchers.",
-			"oldSecretName", mes.secretName, "newSecretName", etcdSecretName)
+			"oldSecretName", mes.secretName, "newSecretName", etcdSecretName, "certSecretName", etcdCertSecretName)
 		for _, w := range mes.watchedServices {
 			w.cancelWatch()
 		}
@@ -123,7 +123,7 @@ func (mes *ModelMeshEventStream) UpdateWatchedService(ctx context.Context,
 				mes.logger.Error(err, "Could not close existing etcd client")
 			}
 		}
-		if err := mes.connectToEtcd(ctx, etcdSecretName); err != nil {
+		if err := mes.connectToEtcd(ctx, etcdSecretName, etcdCertSecretName); err != nil {
 			return fmt.Errorf("Could not create etcd client: %w", err)
 		}
 		mes.secretName = etcdSecretName
@@ -227,7 +227,7 @@ func ownerIDFromVModelRecord(data []byte) (string, error) {
 	return vmr.O, nil
 }
 
-func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName string) error {
+func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName, certSecretName string) error {
 	var err error
 	etcdSecret := v12.Secret{}
 	if err = mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: secretName, Namespace: mes.controllerNamespace}, &etcdSecret); err != nil {
@@ -240,10 +240,18 @@ func (mes *ModelMeshEventStream) connectToEtcd(ctx context.Context, secretName s
 
 	var etcdConfig EtcdConfig
 	if err = json.Unmarshal(etcdSecretJsonData, &etcdConfig); err != nil {
-		return fmt.Errorf("failed to parse etcd config json: %w", err)
+		return fmt.Errorf("Failed to parse etcd config json: %w", err)
 	}
 
-	mes.etcdClient, err = CreateEtcdClient(etcdConfig, etcdSecret.Data, mes.logger)
+	var certSecretData map[string][]byte
+	if certSecretName != "" {
+		certSecret := v12.Secret{}
+		if err = mes.k8sClient.Get(ctx, k8sClient.ObjectKey{Name: certSecretName, Namespace: mes.controllerNamespace}, &certSecret); err != nil {
+			return fmt.Errorf("Unable to access etcd cert secret with name '%s': %w", certSecretName, err)
+		}
+		certSecretData = certSecret.Data
+	}
+	mes.etcdClient, err = CreateEtcdClient(etcdConfig, etcdSecret.Data, certSecretData, mes.logger)
 	if err != nil {
 		return fmt.Errorf("Failed to connect to Etcd: %w", err)
 	}

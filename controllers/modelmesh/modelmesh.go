@@ -68,6 +68,7 @@ type Deployment struct {
 	TLSSecretName       string
 	TLSClientAuth       string
 	EtcdSecretName      string
+	EtcdCertSecretName  string
 	ServiceAccountName  string
 	GrpcMaxMessageSize  int
 	AnnotationConfigMap *corev1.ConfigMap

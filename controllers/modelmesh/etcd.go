@@ -25,8 +25,6 @@ const (
 
 //mimics base/patches/etcd.yaml
 func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deployment) error {
-	EtcdSecretName := m.EtcdSecretName
-
 	for containerI, container := range deployment.Spec.Template.Spec.Containers {
 		if container.Name == ModelMeshContainerName {
 			for i, env := range container.Env {
@@ -56,25 +54,33 @@ func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deplo
 		}
 	}
 
-	volumeExists := false
-	for _, volume := range deployment.Spec.Template.Spec.Volumes {
-		if volume.Name == EtcdVolume {
-			volumeExists = true
-			volume.Secret = &corev1.SecretVolumeSource{
-				SecretName: EtcdSecretName,
-			}
-		}
-	}
-	if !volumeExists {
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
-			Name: EtcdVolume,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: EtcdSecretName,
+	sources := []corev1.VolumeProjection{{
+		Secret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: m.EtcdSecretName,
+			},
+		},
+	}}
+
+	if m.EtcdCertSecretName != "" {
+		sources = append(sources, corev1.VolumeProjection{
+			Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: m.EtcdCertSecretName,
 				},
 			},
 		})
 	}
+
+	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes,
+		corev1.Volume{
+			Name: EtcdVolume,
+			VolumeSource: corev1.VolumeSource{
+				Projected: &corev1.ProjectedVolumeSource{
+					Sources: sources,
+				},
+			},
+		})
 
 	return nil
 }

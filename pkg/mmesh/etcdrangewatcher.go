@@ -212,8 +212,8 @@ func (k keysOnlyKvAndWatcher) Watch(ctx context.Context, key string, opts ...etc
 	return k.Watcher.Watch(ctx, key, append(opts, etcd3.WithKeysOnly())...)
 }
 
-func CreateEtcdClient(etcdConfig EtcdConfig, secretData map[string][]byte, logger logr.Logger) (*etcd3.Client, error) {
-	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, secretData, logger)
+func CreateEtcdClient(etcdConfig EtcdConfig, secretData, certSecretData map[string][]byte, logger logr.Logger) (*etcd3.Client, error) {
+	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, secretData, certSecretData, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create etcd client config: %w", err)
 	}
@@ -221,7 +221,7 @@ func CreateEtcdClient(etcdConfig EtcdConfig, secretData map[string][]byte, logge
 	return etcd3.New(*etcdClientConfig)
 }
 
-func getEtcdClientConfig(etcdConfig EtcdConfig, secretData map[string][]byte, logger logr.Logger) (*etcd3.Config, error) {
+func getEtcdClientConfig(etcdConfig EtcdConfig, secretData, certSecretData map[string][]byte, logger logr.Logger) (*etcd3.Config, error) {
 	etcdEndpoints := strings.Split(etcdConfig.Endpoints, ",")
 
 	var tlsConfig tls.Config
@@ -241,7 +241,9 @@ func getEtcdClientConfig(etcdConfig EtcdConfig, secretData map[string][]byte, lo
 				logger.Info("Ignoring JSON-embedded certificate in favor of dedicated secret key", "key", etcdConfig.CertificateFile)
 			}
 			if certificate, ok = secretData[etcdConfig.CertificateFile]; !ok {
-				return nil, fmt.Errorf("referenced TLS certificate secret key not found: %s", etcdConfig.CertificateFile)
+				if certificate, ok = certSecretData[etcdConfig.CertificateFile]; !ok {
+					return nil, fmt.Errorf("referenced TLS certificate secret key not found: %s", etcdConfig.CertificateFile)
+				}
 			}
 		}
 
@@ -260,7 +262,9 @@ func getEtcdClientConfig(etcdConfig EtcdConfig, secretData map[string][]byte, lo
 				logger.Info("Ignoring JSON-embedded client key in favor of dedicated secret key", "key", etcdConfig.ClientKeyFile)
 			}
 			if clientKey, ok = secretData[etcdConfig.ClientKeyFile]; !ok {
-				return nil, fmt.Errorf("referenced TLS key secret key not found: %s", etcdConfig.ClientKeyFile)
+				if clientKey, ok = certSecretData[etcdConfig.ClientKeyFile]; !ok {
+					return nil, fmt.Errorf("referenced TLS key secret key not found: %s", etcdConfig.ClientKeyFile)
+				}
 			}
 		}
 	}
@@ -273,7 +277,9 @@ func getEtcdClientConfig(etcdConfig EtcdConfig, secretData map[string][]byte, lo
 				logger.Info("Ignoring JSON-embedded client cert in favor of dedicated secret key", "key", etcdConfig.ClientCertificateFile)
 			}
 			if clientCert, ok = secretData[etcdConfig.ClientCertificateFile]; !ok {
-				return nil, fmt.Errorf("referenced TLS client certificate secret key not found: %s", etcdConfig.ClientCertificateFile)
+				if clientCert, ok = certSecretData[etcdConfig.ClientCertificateFile]; !ok {
+					return nil, fmt.Errorf("referenced TLS client certificate secret key not found: %s", etcdConfig.ClientCertificateFile)
+				}
 			}
 		}
 	}

@@ -40,6 +40,7 @@ import (
 
 const (
 	EnvEtcdSecretName     = "ETCD_SECRET_NAME"
+	EnvEtcdCertSecretName = "ETCD_CERT_SECRET_NAME"
 	DefaultEtcdSecretName = "model-serving-etcd"
 
 	ConfigType        = "yaml"
@@ -136,7 +137,7 @@ type RESTProxyConfig struct {
 	Resources ResourceRequirements
 }
 
-func (c *Config) GetEtcdSecretName() string {
+func (c *Config) GetEtcdSecretNames() (string, string) {
 	secretName, found := os.LookupEnv(EnvEtcdSecretName)
 	if !found {
 		secretName = DefaultEtcdSecretName
@@ -147,7 +148,9 @@ func (c *Config) GetEtcdSecretName() string {
 		secretName = c.EtcdSecretName
 	}
 
-	return secretName
+	certSecretName, _ := os.LookupEnv(EnvEtcdCertSecretName)
+
+	return secretName, certSecretName
 }
 
 // ConfigProvider provides immutable snapshots of current config

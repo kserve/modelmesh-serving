@@ -178,7 +178,9 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	s = svc
 
-	if err := r.ModelEventStream.UpdateWatchedService(ctx, cfg.GetEtcdSecretName(), cfg.InferenceServiceName, namespace); err != nil {
+	etcdSecreteName, etcdCertSecretName := cfg.GetEtcdSecretNames()
+	if err := r.ModelEventStream.UpdateWatchedService(ctx, etcdSecreteName, etcdCertSecretName,
+		cfg.InferenceServiceName, namespace); err != nil {
 		return RequeueResult, err
 	}
 
