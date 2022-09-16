@@ -41,8 +41,7 @@ type Deployment struct {
 	Name        string
 	Namespace   string
 	// The Owner field can be nil in the CSR case
-	//Owner              mf.Owner
-	Owner              *kserveapi.ServingRuntime
+	Owner              mf.Owner
 	SRSpec             *kserveapi.ServingRuntimeSpec
 	SRAnnotations      map[string]string
 	DefaultVModelOwner string
@@ -287,14 +286,7 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 }
 
 func (m *Deployment) setConfigMap() error {
-	if m.Owner == nil {
-		return nil
-	}
-	// get configmap name from servingRuntime
-	rt := m.Owner
-	configMap := rt.ObjectMeta.Annotations["productConfig"]
-	m.Log.Info("=====ChinDebug1========", "configMap", configMap)
-	m.Log.Info("=====ChinDebug1========", "m.SRAnnotations", m.SRAnnotations)
+	configMap := m.SRAnnotations["productConfig"]
 	if configMap == "" {
 		return nil
 	}

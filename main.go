@@ -79,6 +79,7 @@ const (
 	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
 	EnableClusterSrvngRntmEnvVar   = "ENABLE_CSR_WATCH"
 	NamespaceScopeEnvVar           = "NAMESPACE_SCOPE"
+	TrueString                     = "true"
 )
 
 func init() {
@@ -190,7 +191,7 @@ func main() {
 	flag.Parse()
 
 	// Controller can be in namespace or cluster scope mode depending on an env variable
-	clusterScopeMode := os.Getenv(NamespaceScopeEnvVar) != "true"
+	clusterScopeMode := os.Getenv(NamespaceScopeEnvVar) != TrueString
 
 	// Here we check whether RBAC is set for cluster scope
 	err = cl.Get(context.Background(), client.ObjectKey{Name: "foo"}, &corev1.Namespace{})
@@ -318,7 +319,7 @@ func main() {
 				registryMap[registryKey] = registryValue
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
 				return true
-			} else if envVarVal == "true" {
+			} else if envVarVal == TrueString {
 				// If env var is explicitly true, require that specified CRD is present
 				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
 				os.Exit(1)
@@ -342,7 +343,7 @@ func main() {
 			if err == nil || errors.IsNotFound(err) {
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
 				return true
-			} else if envVarVal == "true" {
+			} else if envVarVal == TrueString {
 				// If env var is explicitly true, require that specified CRD is present
 				setupLog.Error(err, fmt.Sprintf("Unable to access %s Custom Resource", resourceName))
 				os.Exit(1)

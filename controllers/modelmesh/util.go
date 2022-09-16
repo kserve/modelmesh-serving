@@ -57,7 +57,7 @@ func setEnvironmentVar(container string, variable string, value string, deployme
 func unixDomainSockets(rts *kserveapi.ServingRuntimeSpec) (bool, []string, []string) {
 	endpoints := []*string{
 		rts.GrpcDataEndpoint,
-		//rt.Spec.HTTPDataEndpoint,
+		//rts.HTTPDataEndpoint,
 		rts.GrpcMultiModelManagementEndpoint,
 	}
 

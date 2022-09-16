@@ -30,4 +30,4 @@ images:
     newTag: "2022.1"
 
 transformers:
-  - ../../default/metadataLabelTransformer.yaml
+  - ../default/metadataLabelTransformer.yaml

@@ -59,7 +59,10 @@ func TestCalculateConstraintData(t *testing.T) {
 			},
 		},
 	}
-	res := calculateConstraintData(l.Items, false)
+	srSpecMap := make(map[string]kserveapi.ServingRuntimeSpec)
+	srSpecMap[l.Items[0].GetName()] = l.Items[0].Spec
+
+	res := calculateConstraintData(&srSpecMap, false)
 
 	if string(res) != expected {
 		t.Errorf("%v did not match expected %v", string(res), expected)

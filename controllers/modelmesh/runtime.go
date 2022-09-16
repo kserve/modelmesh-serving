@@ -68,7 +68,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	}
 
 	// need to mount storage config for built-in adapters and the scenarios where StorageHelper is not disabled
-	if m.SRSpec.BuiltInAdapter != nil || useStorageHelper(rts) {
+	if rts.BuiltInAdapter != nil || useStorageHelper(rts) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,
 			VolumeSource: corev1.VolumeSource{
@@ -101,7 +101,6 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 //Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
 	rta := m.SRAnnotations
-	//rt := m.Owner
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers
