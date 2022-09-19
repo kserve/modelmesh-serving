@@ -1,0 +1,2 @@
+resources:
+- serving.kserve.io_inferenceservices.yaml
