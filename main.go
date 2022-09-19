@@ -356,7 +356,6 @@ func main() {
 		return false
 	}
 	enableCSRWatch := checkCSRVar(EnableClusterSrvngRntmEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
-	setupLog.Info(fmt.Sprintf("==== ChinDebug === enableCSRWatch is %v", enableCSRWatch))
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {

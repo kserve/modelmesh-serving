@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	ctrl "sigs.k8s.io/controller-runtime"
+	//ctrl "sigs.k8s.io/controller-runtime"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -65,24 +65,22 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: namespace}, m)
 	notfound := errors.IsNotFound(err)
 
-	logger := ctrl.Log.WithName("ClusterConfig")
-	logger.Info("=======ChinDebug======", "notfound", notfound)
+	//logger := ctrl.Log.WithName("ClusterConfig")
+	//logger.Info("=======ChinDebug======", "notfound", notfound)
 
 	if err != nil && !notfound {
 		return err
 	}
-	logger.Info("=======ChinDebug=====", "SrSpecMap", cc.SrSpecMap)
-	logger.Info("=======ChinDebug=====", "configmap", m)
+	//logger.Info("=======ChinDebug=====", "SrSpecMap", cc.SrSpecMap)
+	//logger.Info("=======ChinDebug=====", "configmap", m)
 	if cc.SrSpecMap == nil || len(*cc.SrSpecMap) == 0 {
 		if !notfound {
-			logger.Info("=======ChinDebug===== delete configmap")
 			return cl.Delete(ctx, m)
 		}
-		logger.Info("=======ChinDebug===== return nil")
 		return nil
 	}
 
-	logger.Info("=======ChinDebug===== continue")
+	//logger.Info("=======ChinDebug===== continue")
 
 	commonLabelValue := "modelmesh-controller"
 	m.ObjectMeta = metav1.ObjectMeta{
@@ -97,10 +95,8 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	cc.addConstraints(cc.SrSpecMap, m, cfg.RESTProxy.Enabled)
 
 	if notfound {
-		logger.Info("=======ChinDebug===== create configmap", "configmap", m)
 		return cl.Create(ctx, m)
 	} else {
-		logger.Info("=======ChinDebug===== update configmap", "configmap", m)
 		return cl.Update(ctx, m)
 	}
 }

@@ -100,7 +100,7 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 
 //Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
-	rta := m.SRAnnotations
+	rta := m.Owner.GetAnnotations()
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers

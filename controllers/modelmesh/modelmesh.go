@@ -43,7 +43,6 @@ type Deployment struct {
 	// The Owner field can be nil in the CSR case
 	Owner              mf.Owner
 	SRSpec             *kserveapi.ServingRuntimeSpec
-	SRAnnotations      map[string]string
 	DefaultVModelOwner string
 	Log                logr.Logger
 	Metrics            bool
@@ -106,6 +105,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 	}
 
 	manifest, err = manifest.Transform(
+		mf.InjectOwner(m.Owner),
 		mf.InjectNamespace(m.Namespace),
 		func(resource *unstructured.Unstructured) error {
 			var deployment = &appsv1.Deployment{}
@@ -134,9 +134,6 @@ func (m *Deployment) Apply(ctx context.Context) error {
 			return scheme.Scheme.Convert(deployment, resource, nil)
 		},
 	)
-	if m.Owner != nil {
-		manifest, err = manifest.Transform(mf.InjectOwner(m.Owner))
-	}
 	if err != nil {
 		return fmt.Errorf("Error transforming: %w", err)
 	}
@@ -286,7 +283,7 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 }
 
 func (m *Deployment) setConfigMap() error {
-	configMap := m.SRAnnotations["productConfig"]
+	configMap := m.Owner.GetAnnotations()["productConfig"]
 	if configMap == "" {
 		return nil
 	}
