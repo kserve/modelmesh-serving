@@ -65,21 +65,21 @@ var (
 )
 
 const (
-	ControllerNamespaceEnvVar      = "NAMESPACE"
-	DefaultControllerNamespace     = "model-serving"
-	KubeNamespaceFile              = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	ControllerPodNameEnvVar        = "POD_NAME"
-	ControllerDeploymentNameEnvVar = "CONTROLLER_DEPLOYMENT"
-	DefaultControllerName          = "modelmesh-controller"
-	UserConfigMapName              = "model-serving-config"
-	DevModeLoggingEnvVar           = "DEV_MODE_LOGGING"
-	serviceMonitorCRDName          = "servicemonitors.monitoring.coreos.com"
-	LeaderLockName                 = "modelmesh-controller-leader-lock"
-	LeaderForLifeLockName          = "modelmesh-controller-leader-for-life-lock"
-	EnableInferenceServiceEnvVar   = "ENABLE_ISVC_WATCH"
-	EnableClusterSrvngRntmEnvVar   = "ENABLE_CSR_WATCH"
-	NamespaceScopeEnvVar           = "NAMESPACE_SCOPE"
-	TrueString                     = "true"
+	ControllerNamespaceEnvVar         = "NAMESPACE"
+	DefaultControllerNamespace        = "model-serving"
+	KubeNamespaceFile                 = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+	ControllerPodNameEnvVar           = "POD_NAME"
+	ControllerDeploymentNameEnvVar    = "CONTROLLER_DEPLOYMENT"
+	DefaultControllerName             = "modelmesh-controller"
+	UserConfigMapName                 = "model-serving-config"
+	DevModeLoggingEnvVar              = "DEV_MODE_LOGGING"
+	serviceMonitorCRDName             = "servicemonitors.monitoring.coreos.com"
+	LeaderLockName                    = "modelmesh-controller-leader-lock"
+	LeaderForLifeLockName             = "modelmesh-controller-leader-for-life-lock"
+	EnableInferenceServiceEnvVar      = "ENABLE_ISVC_WATCH"
+	EnableClusterServingRuntimeEnvVar = "ENABLE_CSR_WATCH"
+	NamespaceScopeEnvVar              = "NAMESPACE_SCOPE"
+	TrueString                        = "true"
 )
 
 func init() {
@@ -355,7 +355,7 @@ func main() {
 		}
 		return false
 	}
-	enableCSRWatch := checkCSRVar(EnableClusterSrvngRntmEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
+	enableCSRWatch := checkCSRVar(EnableClusterServingRuntimeEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
@@ -419,8 +419,9 @@ func main() {
 		ControllerNamespace: ControllerNamespace,
 		ControllerName:      controllerDeploymentName,
 		HasNamespaceAccess:  clusterScopeMode,
+		EnableCSRWatch:      enableCSRWatch,
 		RegistryMap:         registryMap,
-	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents, enableCSRWatch); err != nil {
+	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)
 	}

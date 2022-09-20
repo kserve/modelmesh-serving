@@ -36,11 +36,10 @@ const ModelMeshEtcdPrefix = "mm"
 
 //Models a deployment
 type Deployment struct {
-	ServiceName string
-	ServicePort uint16
-	Name        string
-	Namespace   string
-	// The Owner field can be nil in the CSR case
+	ServiceName        string
+	ServicePort        uint16
+	Name               string
+	Namespace          string
 	Owner              mf.Owner
 	SRSpec             *kserveapi.ServingRuntimeSpec
 	DefaultVModelOwner string
