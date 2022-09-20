@@ -56,8 +56,8 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
 // A ClusterConfig represents the configuration shared across
 // a logical model mesh cluster
 type ClusterConfig struct {
-	SrSpecMap *map[string]kserveapi.ServingRuntimeSpec
-	Scheme    *runtime.Scheme
+	SRSpecs map[string]*kserveapi.ServingRuntimeSpec
+	Scheme  *runtime.Scheme
 }
 
 func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl client.Client, cfg *config.Config) error {
@@ -71,9 +71,9 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	if err != nil && !notfound {
 		return err
 	}
-	//logger.Info("=======ChinDebug=====", "SrSpecMap", cc.SrSpecMap)
+	//logger.Info("=======ChinDebug=====", "SRSpecs", cc.SRSpecs)
 	//logger.Info("=======ChinDebug=====", "configmap", m)
-	if cc.SrSpecMap == nil || len(*cc.SrSpecMap) == 0 {
+	if cc.SRSpecs == nil || len(cc.SRSpecs) == 0 {
 		if !notfound {
 			return cl.Delete(ctx, m)
 		}
@@ -92,7 +92,7 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 			"app.kubernetes.io/name":       commonLabelValue,
 		},
 	}
-	cc.addConstraints(cc.SrSpecMap, m, cfg.RESTProxy.Enabled)
+	cc.addConstraints(cc.SRSpecs, m, cfg.RESTProxy.Enabled)
 
 	if notfound {
 		return cl.Create(ctx, m)
@@ -102,9 +102,9 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 }
 
 // Add constraint data to the provided config map
-func (cc ClusterConfig) addConstraints(srSpecMap *map[string]kserveapi.ServingRuntimeSpec, m *corev1.ConfigMap, restProxyEnabled bool) {
+func (cc ClusterConfig) addConstraints(srSpecs map[string]*kserveapi.ServingRuntimeSpec, m *corev1.ConfigMap, restProxyEnabled bool) {
 	//b := calculateConstraintData(rts.Items, restProxyEnabled)
-	b := calculateConstraintData(srSpecMap, restProxyEnabled)
+	b := calculateConstraintData(srSpecs, restProxyEnabled)
 	if m.BinaryData == nil {
 		m.BinaryData = make(map[string][]byte)
 	}
@@ -112,7 +112,7 @@ func (cc ClusterConfig) addConstraints(srSpecMap *map[string]kserveapi.ServingRu
 	m.BinaryData[MMDataPlaneConfigKey] = dataPlaneApiJsonConfigBytes
 }
 
-func calculateConstraintData(srSpecMap *map[string]kserveapi.ServingRuntimeSpec, restProxyEnabled bool) []byte {
+func calculateConstraintData(srSpecs map[string]*kserveapi.ServingRuntimeSpec, restProxyEnabled bool) []byte {
 
 	/*b := []byte(`{
 	  "rt:tf-serving-runtime": {
@@ -130,9 +130,9 @@ func calculateConstraintData(srSpecMap *map[string]kserveapi.ServingRuntimeSpec,
 	}`)*/
 
 	m := make(map[string]interface{})
-	for name, spec := range *srSpecMap {
+	for name, spec := range srSpecs {
 		if !spec.IsDisabled() && spec.IsMultiModelRuntime() {
-			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(&spec, restProxyEnabled, name)
+			mtLabels, pvLabels, rtLabel := GetServingRuntimeLabelSets(spec, restProxyEnabled, name)
 			m[rtLabel] = map[string]interface{}{"required": []string{rtLabel}}
 			// treat each combo of model-type label and proto version label as a separate model type
 			for l := range mtLabels {

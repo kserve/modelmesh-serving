@@ -101,39 +101,38 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	runtimes := &kserveapi.ServingRuntimeList{}
 	csrs := &kserveapi.ClusterServingRuntimeList{}
-	if r.HasNamespaceAccess {
-		if err = r.Client.List(ctx, csrs); err != nil {
-			return RequeueResult, err
-		}
-	}
+
 	if mmEnabled {
 		if err = r.Client.List(ctx, runtimes, client.InNamespace(req.Namespace)); err != nil {
 			return RequeueResult, err
+		}
+		if r.HasNamespaceAccess {
+			if err = r.Client.List(ctx, csrs); err != nil {
+				return RequeueResult, err
+			}
 		}
 	}
 	//log.Info("=== ChinDebug sr reconcile 1 ===", "runtimes", runtimes)
 	//log.Info("=== ChinDebug sr reconcile 1 ===", "len(runtimes.Items)", len(runtimes.Items))
 
 	// build the map for ServingRuntimeSpec
-	srSpecMap := make(map[string]kserveapi.ServingRuntimeSpec)
+	srSpecs := make(map[string]*kserveapi.ServingRuntimeSpec)
 	for i := range csrs.Items {
 		crt := &csrs.Items[i]
 		if crt.Spec.IsMultiModelRuntime() {
-			srSpecMap[crt.GetName()] = crt.Spec
+			srSpecs[crt.GetName()] = &crt.Spec
 		}
 	}
 	// rt spec would override crt spec by design
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.Spec.IsMultiModelRuntime() {
-			srSpecMap[rt.GetName()] = rt.Spec
-		}
+		srSpecs[rt.GetName()] = &rt.Spec
 	}
 
-	//log.Info("=== ChinDebug sr reconcile 1.11 ===", "srSpecMap", srSpecMap)
+	//log.Info("=== ChinDebug sr reconcile 1.11 ===", "srSpecs", srSpecs)
 
 	cfg := r.ConfigProvider.GetConfig()
-	cc := modelmesh.ClusterConfig{SrSpecMap: &srSpecMap, Scheme: r.Scheme}
+	cc := modelmesh.ClusterConfig{SRSpecs: srSpecs, Scheme: r.Scheme}
 	if err = cc.Reconcile(ctx, req.Namespace, r.Client, cfg); err != nil {
 		return RequeueResult, fmt.Errorf("could not reconcile the modelmesh type-constraints configmap: %w", err)
 	}
@@ -424,29 +423,31 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 	}
 
 	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
-	srNameMap := make(map[string]bool)
-	for i := range csrs.Items {
-		crt := &csrs.Items[i]
-		if crt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, crt.Name) {
-			srNameMap[crt.GetName()] = true
-		}
-	}
+	srnns := make([]types.NamespacedName, 0, len(csrs.Items)+len(runtimes.Items))
+	rtNames := make(map[string]struct{})
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
 		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&rt.Spec, p, restProxyEnabled, rt.Name) {
-			srNameMap[rt.GetName()] = true
+			rtNames[rt.Name] = struct{}{}
+			srnns = append(srnns, types.NamespacedName{
+				Name:      rt.Name,
+				Namespace: p.Namespace,
+			})
 		}
 	}
-	srnns := make([]types.NamespacedName, 0, len(srNameMap))
-
-	//r.Log.Info("=== ChinDebug 1.12 get runtimes for predictor ===", "srNameMap", srNameMap)
-	for srName := range srNameMap {
-		srnns = append(srnns, types.NamespacedName{
-			Name:      srName,
-			Namespace: p.Namespace,
-		})
+	for i := range csrs.Items {
+		crt := &csrs.Items[i]
+		if crt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, crt.Name) {
+			if _, ok := rtNames[crt.Name]; !ok {
+				srnns = append(srnns, types.NamespacedName{
+					Name:      crt.Name,
+					Namespace: p.Namespace,
+				})
+			}
+		}
 	}
-	//r.Log.Info("=== ChinDebug get runtimes for predictor ===", "srnns", srnns)
+
+	// r.Log.Info("=== ChinDebug get runtimes for predictor ===", "srnns", srnns)
 
 	return srnns, nil
 }

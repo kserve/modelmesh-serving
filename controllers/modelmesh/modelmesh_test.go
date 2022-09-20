@@ -44,7 +44,7 @@ func TestAddMMDomainSocketMount(t *testing.T) {
 		},
 	}
 
-	m := Deployment{Owner: rt}
+	m := Deployment{Owner: rt, SRSpec: &rt.Spec}
 	err := m.addMMDomainSocketMount(deployment)
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestEnableAccessLogging(t *testing.T) {
 			},
 		},
 	}}
-	m := &Deployment{Owner: rt, EnableAccessLogging: true}
+	m := &Deployment{Owner: rt, EnableAccessLogging: true, SRSpec: &rt.Spec}
 	m.addMMEnvVars(d)
 
 	if _, c := findContainer("mm", d); c == nil {
@@ -86,7 +86,7 @@ func TestEnableAccessLogging(t *testing.T) {
 
 func TestSetConfigMap(t *testing.T) {
 	rt := &kserveapi.ServingRuntime{}
-	m := Deployment{Owner: rt}
+	m := Deployment{Owner: rt, SRSpec: &rt.Spec}
 
 	err := m.setConfigMap()
 	assert.Nil(t, err)
@@ -108,7 +108,7 @@ func TestModelMeshAdditionalEnvVars(t *testing.T) {
 	}}
 	m := &Deployment{Owner: rt, ModelMeshAdditionalEnvVars: []corev1.EnvVar{
 		{Name: "ENV_VAR", Value: "0"},
-	}}
+	}, SRSpec: &rt.Spec}
 	m.addMMEnvVars(d)
 
 	if _, c := findContainer("mm", d); c == nil {
