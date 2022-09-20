@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
+	mf "github.com/manifestival/manifestival"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -194,11 +195,12 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Reconcile this serving runtime
 	//log.Info("==== ChinDebug sr reconcile 2 ====", "req.NamespacedName", req.NamespacedName)
 	rt := &kserveapi.ServingRuntime{}
-	crt := &kserveapi.ClusterServingRuntime{}
+	var owner mf.Owner
 	var spec *kserveapi.ServingRuntimeSpec
 
 	if err = r.Client.Get(ctx, req.NamespacedName, rt); err == nil {
 		spec = &rt.Spec
+		owner = rt
 	} else if errors.IsNotFound(err) {
 		log.Info("Runtime is not found in namespace")
 
@@ -206,10 +208,10 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return r.removeRuntimeFromInfoMap(req)
 		}
 		// try to find the runtime in cluster ServingRuntimes
-		crt = &kserveapi.ClusterServingRuntime{}
+		crt := &kserveapi.ClusterServingRuntime{}
 		if err = r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, crt); err == nil {
 			spec = &crt.Spec
-			rt = nil
+			owner = crt
 		} else if errors.IsNotFound(err) {
 			log.Info("Runtime is not found in cluster")
 
@@ -233,7 +235,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		ServicePort:                cfg.InferenceServicePort,
 		Name:                       req.Name,
 		Namespace:                  req.Namespace,
-		Owner:                      rt,
+		Owner:                      owner,
 		SRSpec:                     spec,
 		DefaultVModelOwner:         PredictorCRSourceId,
 		Log:                        log,
@@ -263,9 +265,6 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		LabelsMap:           cfg.RuntimePodLabels,
 	}
 
-	if rt == nil {
-		mmDeployment.Owner = crt
-	}
 	//log.Info("==== ChinDebug sr reconcile 3 ==== test annotations", "rt.GetAnnotations()[maxLoadingConcurrency]", mmDeployment.Owner.GetAnnotations()["maxLoadingConcurrency"])
 
 	// if the runtime is disabled, delete the deployment
