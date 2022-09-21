@@ -100,7 +100,6 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 
 //Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
-	rta := m.Owner.GetAnnotations()
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers
@@ -249,20 +248,18 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			{}, {}, {}, {}, // allocate larger array to avoid reallocation
 		}[:8]
 
-		if rta != nil {
-			if mlc, ok := rta["maxLoadingConcurrency"]; ok {
-				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
-					Name:  "LOADING_CONCURRENCY",
-					Value: mlc,
-				})
-			}
+		if mlc, ok := m.Owner.GetAnnotations()["maxLoadingConcurrency"]; ok {
+			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
+				Name:  "LOADING_CONCURRENCY",
+				Value: mlc,
+			})
+		}
 
-			if pmcl, ok := rta["perModelConcurrencyLimit"]; ok {
-				builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
-					Name:  "LIMIT_PER_MODEL_CONCURRENCY",
-					Value: pmcl,
-				})
-			}
+		if pmcl, ok := m.Owner.GetAnnotations()["perModelConcurrencyLimit"]; ok {
+			builtInAdapterContainer.Env = append(builtInAdapterContainer.Env, corev1.EnvVar{
+				Name:  "LIMIT_PER_MODEL_CONCURRENCY",
+				Value: pmcl,
+			})
 		}
 	outer:
 		for oidx := range rts.BuiltInAdapter.Env {
