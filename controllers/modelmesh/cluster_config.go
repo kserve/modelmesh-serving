@@ -62,7 +62,6 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	m := &corev1.ConfigMap{}
 	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: namespace}, m)
 	notfound := errors.IsNotFound(err)
-
 	if err != nil && !notfound {
 		return err
 	}
@@ -95,7 +94,6 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 
 // Add constraint data to the provided config map
 func (cc ClusterConfig) addConstraints(srSpecs map[string]*kserveapi.ServingRuntimeSpec, m *corev1.ConfigMap, restProxyEnabled bool) {
-	//b := calculateConstraintData(rts.Items, restProxyEnabled)
 	b := calculateConstraintData(srSpecs, restProxyEnabled)
 	if m.BinaryData == nil {
 		m.BinaryData = make(map[string][]byte)

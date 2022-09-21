@@ -324,7 +324,7 @@ if [[ ! -z $user_ns_array ]]; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
     else
       kubectl label namespace ${user_ns} modelmesh-enabled="true" --overwrite
-      #kubectl apply -f runtimes.yaml -n ${user_ns}
+      kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
         kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
       fi

@@ -326,7 +326,6 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 		r.runtimeInfoMap = make(map[types.NamespacedName]*runtimeInfo)
 	}
 
-	// runtimeInfoMapKey := client.ObjectKeyFromObject(rt)
 	runtimeInfoMapKey := rtName
 	targetRuntimeInfo := r.runtimeInfoMap[runtimeInfoMapKey]
 
@@ -389,7 +388,6 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 	}
 
 	for _, pr := range r.RegistryMap {
-		//if found, err := pr.Find(ctx, rt.GetNamespace(), f); found || err != nil {
 		if found, err := pr.Find(ctx, rtName.Namespace, f); found || err != nil {
 			return found, err
 		}
@@ -569,7 +567,6 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 		ns := &list.Items[i]
 		mme, err := modelMeshEnabled2(context.TODO(), ns.Name, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
 		if err == nil && mme {
-
 			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
 				Namespace: ns.Name,
 				Name:      csr.Name,

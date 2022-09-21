@@ -118,7 +118,6 @@ func TestOverlayMockRuntime(t *testing.T) {
 	}
 
 	m := newMockModelMeshDeployment(t, v)
-
 	m.addRuntimeToDeployment(deployment)
 
 	scontainer := v.Spec.Containers[0]
