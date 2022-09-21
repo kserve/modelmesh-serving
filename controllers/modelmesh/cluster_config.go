@@ -65,22 +65,16 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 	err := cl.Get(ctx, types.NamespacedName{Name: InternalConfigMapName, Namespace: namespace}, m)
 	notfound := errors.IsNotFound(err)
 
-	//logger := ctrl.Log.WithName("ClusterConfig")
-	//logger.Info("=======ChinDebug======", "notfound", notfound)
-
 	if err != nil && !notfound {
 		return err
 	}
-	//logger.Info("=======ChinDebug=====", "SRSpecs", cc.SRSpecs)
-	//logger.Info("=======ChinDebug=====", "configmap", m)
+
 	if cc.SRSpecs == nil || len(cc.SRSpecs) == 0 {
 		if !notfound {
 			return cl.Delete(ctx, m)
 		}
 		return nil
 	}
-
-	//logger.Info("=======ChinDebug===== continue")
 
 	commonLabelValue := "modelmesh-controller"
 	m.ObjectMeta = metav1.ObjectMeta{

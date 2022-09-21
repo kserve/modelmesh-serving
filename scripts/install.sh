@@ -332,7 +332,7 @@ if [[ ! -z $user_ns_array ]]; then
   done
   rm minio-storage-secret.yaml
   rm minio-storage-secret.yaml.bak
-  #rm runtimes.yaml
+  rm runtimes.yaml
 fi
 rm quickstart.yaml quickstart.yaml.bak fvt.yaml fvt.yaml.bak
 
