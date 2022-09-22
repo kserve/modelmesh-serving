@@ -77,7 +77,7 @@ func TestGetServingRuntimeLabelSets(t *testing.T) {
 
 	expectedRtLabel := "rt:runtimename"
 
-	mtLabelSet, pvLabelSet, rtLabel := GetServingRuntimeLabelSets(&rt, false)
+	mtLabelSet, pvLabelSet, rtLabel := GetServingRuntimeLabelSets(&rt.Spec, false, rt.Name)
 	if expectedRtLabel != rtLabel {
 		t.Errorf("Missing expected entry [%s] in set: %v", expectedRtLabel, rtLabel)
 	}

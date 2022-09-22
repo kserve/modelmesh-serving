@@ -315,7 +315,7 @@ func TestValidateServingRuntimeSpec(t *testing.T) {
 			t.Errorf("Unexpected error: %v", err)
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateServingRuntimeSpec(tt.servingRuntime, cfg)
+			err := validateServingRuntimeSpec(&tt.servingRuntime.Spec, cfg)
 
 			if tt.expectError && err == nil {
 				t.Errorf("Expected an error, but didn't get one")

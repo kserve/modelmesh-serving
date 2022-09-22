@@ -50,7 +50,7 @@ func TestCalculateLabel(t *testing.T) {
 				},
 			}
 
-			labelString := generateLabelsEnvVar(rt, false)
+			labelString := generateLabelsEnvVar(&rt.Spec, false, rt.Name)
 			if labelString != tt.expected {
 				t.Fatalf("Expected label %v but found %v", tt.expected, labelString)
 			}

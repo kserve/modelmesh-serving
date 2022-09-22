@@ -33,8 +33,9 @@ import (
 
 func newMockModelMeshDeployment(t *testing.T, rt *kserveapi.ServingRuntime) *Deployment {
 	return &Deployment{
-		Owner: rt,
-		Log:   testr.New(t),
+		Owner:  rt,
+		SRSpec: &rt.Spec,
+		Log:    testr.New(t),
 
 		PullerResources: &v1.ResourceRequirements{},
 		// may need to add more as tests expand
@@ -228,7 +229,7 @@ func TestAddVolumesToDeployment(t *testing.T) {
 			deployment := &appsv1.Deployment{}
 			rt := tt.servingRuntime
 
-			m := Deployment{Owner: rt}
+			m := Deployment{Owner: rt, SRSpec: &rt.Spec}
 			if err := m.addVolumesToDeployment(deployment); err != nil {
 				t.Errorf("Call to add volumes failed: %v", err)
 			}
@@ -271,7 +272,7 @@ func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 	t.Run("defaults-to-no-changes", func(t *testing.T) {
 		d := &appsv1.Deployment{}
 		sr := &kserveapi.ServingRuntime{}
-		m := Deployment{Owner: sr}
+		m := Deployment{Owner: sr, SRSpec: &sr.Spec}
 		err := m.addPassThroughPodFieldsToDeployment(d)
 
 		if err != nil {
@@ -322,7 +323,7 @@ func TestAddPassThroughPodFieldsToDeployment(t *testing.T) {
 			},
 		}
 
-		m := Deployment{Owner: sr}
+		m := Deployment{Owner: sr, SRSpec: &sr.Spec}
 		d := &appsv1.Deployment{}
 		err := m.addPassThroughPodFieldsToDeployment(d)
 
@@ -356,7 +357,7 @@ func TestConfigureRuntimeAnnotations(t *testing.T) {
 			"network-policy": "allow-egress",
 		}
 
-		m := Deployment{Owner: sr, AnnotationsMap: annotationsData}
+		m := Deployment{Owner: sr, AnnotationsMap: annotationsData, SRSpec: &sr.Spec}
 
 		err := m.configureRuntimePodSpecAnnotations(deploy)
 		assert.Nil(t, err)
@@ -368,7 +369,7 @@ func TestConfigureRuntimeAnnotations(t *testing.T) {
 	t.Run("success-no-annotations", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
 		sr := &kserveapi.ServingRuntime{}
-		m := Deployment{Owner: sr, AnnotationsMap: map[string]string{}}
+		m := Deployment{Owner: sr, AnnotationsMap: map[string]string{}, SRSpec: &sr.Spec}
 
 		err := m.configureRuntimePodSpecAnnotations(deploy)
 		assert.Nil(t, err)
@@ -387,7 +388,7 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 			"cp4s-internet":  "allow",
 		}
 
-		m := Deployment{Owner: sr, LabelsMap: labelData}
+		m := Deployment{Owner: sr, LabelsMap: labelData, SRSpec: &sr.Spec}
 
 		err := m.configureRuntimePodSpecLabels(deploy)
 		assert.Nil(t, err)
@@ -400,7 +401,7 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 	t.Run("success-no-labels", func(t *testing.T) {
 		deploy := &appsv1.Deployment{}
 		sr := &kserveapi.ServingRuntime{}
-		m := Deployment{Owner: sr, LabelsMap: map[string]string{}}
+		m := Deployment{Owner: sr, LabelsMap: map[string]string{}, SRSpec: &sr.Spec}
 
 		err := m.configureRuntimePodSpecLabels(deploy)
 		assert.Nil(t, err)

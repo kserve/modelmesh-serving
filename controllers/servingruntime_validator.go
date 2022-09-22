@@ -35,30 +35,30 @@ import (
 // - containers do not mount internal only volumes
 // - some fields in containers are controlled by model mesh and cannot be set
 // - check for overlaps in declared ports with internal ports
-func validateServingRuntimeSpec(rt *kserveapi.ServingRuntime, config *config.Config) error {
-	return validationChain(rt, config,
+func validateServingRuntimeSpec(rts *kserveapi.ServingRuntimeSpec, config *config.Config) error {
+	return validationChain(rts, config,
 		validateBuiltInAdapterSpec,
 		validateContainers,
 		validateVolumes,
 	)
 }
 
-func validationChain(rt *kserveapi.ServingRuntime, config *config.Config,
-	funcs ...func(*kserveapi.ServingRuntime, *config.Config) error) error {
+func validationChain(rts *kserveapi.ServingRuntimeSpec, config *config.Config,
+	funcs ...func(*kserveapi.ServingRuntimeSpec, *config.Config) error) error {
 	for _, f := range funcs {
-		if err := f(rt, config); err != nil {
+		if err := f(rts, config); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateBuiltInAdapterSpec(rt *kserveapi.ServingRuntime, config *config.Config) error {
-	if rt.Spec.BuiltInAdapter == nil {
+func validateBuiltInAdapterSpec(rts *kserveapi.ServingRuntimeSpec, config *config.Config) error {
+	if rts.BuiltInAdapter == nil {
 		return nil // nothing to check
 	}
 
-	st := string(rt.Spec.BuiltInAdapter.ServerType)
+	st := string(rts.BuiltInAdapter.ServerType)
 	found := false
 	if config.BuiltInServerTypes != nil {
 		for _, bist := range config.BuiltInServerTypes {
@@ -71,8 +71,8 @@ func validateBuiltInAdapterSpec(rt *kserveapi.ServingRuntime, config *config.Con
 	if !found {
 		return fmt.Errorf("unrecognized built-in runtime server type %s", st)
 	}
-	for ic := range rt.Spec.Containers {
-		if rt.Spec.Containers[ic].Name == st {
+	for ic := range rts.Containers {
+		if rts.Containers[ic].Name == st {
 			return nil // found, all good
 		}
 	}
@@ -80,9 +80,9 @@ func validateBuiltInAdapterSpec(rt *kserveapi.ServingRuntime, config *config.Con
 	return fmt.Errorf("must include runtime container with name %s", st)
 }
 
-func validateContainers(rt *kserveapi.ServingRuntime, _ *config.Config) error {
-	for i := range rt.Spec.Containers {
-		c := &rt.Spec.Containers[i]
+func validateContainers(rts *kserveapi.ServingRuntimeSpec, _ *config.Config) error {
+	for i := range rts.Containers {
+		c := &rts.Containers[i]
 		if err := validateContainer(c); err != nil {
 			return fmt.Errorf("container spec for %s is invalid: %w", c.Name, err)
 		}
@@ -128,10 +128,10 @@ func validateContainer(c *corev1.Container) error {
 	return nil
 }
 
-func validateVolumes(rt *kserveapi.ServingRuntime, _ *config.Config) error {
+func validateVolumes(rts *kserveapi.ServingRuntimeSpec, _ *config.Config) error {
 	// Block volume names that conflict with injected volumes or reserved prefixes
-	for vi := range rt.Spec.Volumes {
-		if err := checkName(rt.Spec.Volumes[vi].Name, internalVolumes, "volume"); err != nil {
+	for vi := range rts.Volumes {
+		if err := checkName(rts.Volumes[vi].Name, internalVolumes, "volume"); err != nil {
 			return err
 		}
 	}
