@@ -15,7 +15,7 @@ spec:
           - odh-model-controller
         repoRef:
           name: manifests
-          path: manifests/opendatahub/model-mesh
+          path: manifests/opendatahub
       name: model-mesh
   repos:
     - name: odh-manifests
