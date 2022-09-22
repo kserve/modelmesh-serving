@@ -17,10 +17,11 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+
 	authv1 "k8s.io/api/rbac/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 
 	inferenceservicev1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +46,7 @@ func newInferenceServiceSA(inferenceservice *inferenceservicev1.InferenceService
 func createDelegateClusterRoleBinding(serviceAccountName string, serviceAccountNamespace string) *authv1.ClusterRoleBinding {
 	return &authv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceAccountName + "-auth-delegator",
+			Name:      serviceAccountNamespace + "-" + serviceAccountName + "-auth-delegator",
 			Namespace: serviceAccountNamespace,
 		},
 		Subjects: []authv1.Subject{
