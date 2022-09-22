@@ -315,7 +315,7 @@ info "Installing ModelMesh Serving built-in runtimes"
 kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
 
 if [[ ! -z $user_ns_array ]]; then
-  #kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
+  kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
