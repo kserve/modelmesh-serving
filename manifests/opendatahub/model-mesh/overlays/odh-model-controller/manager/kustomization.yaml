@@ -17,4 +17,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/opendatahub/odh-model-controller
-  newTag: nomeshsupport-0.9.0
+  newTag: v0.9.0-authentication
