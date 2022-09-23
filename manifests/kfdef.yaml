@@ -7,7 +7,7 @@ spec:
   applications:
     - kustomizeConfig:
         repoRef:
-          name: manifests
+          name: odh-manifests
           path: odh-common
       name: odh-common
     - kustomizeConfig:
@@ -15,9 +15,12 @@ spec:
           - odh-model-controller
         repoRef:
           name: manifests
-          path: model-mesh
+          path: manifests/opendatahub
       name: model-mesh
   repos:
+    - name: odh-manifests
+      uri: https://api.github.com/repos/opendatahub-io/odh-manifests/tarball/master
     - name: manifests
-      uri: https://api.github.com/repos/opendatahub-io/modelmesh-serving/tarball/master/manifests/opendatahub
+      uri: https://api.github.com/repos/opendatahub-io/modelmesh-serving/tarball/main
   version: master
+
