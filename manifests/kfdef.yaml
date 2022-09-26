@@ -1,8 +1,7 @@
 apiVersion: kfdef.apps.kubeflow.org/v1
 kind: KfDef
 metadata:
-  name: opendatahub
-  namespace: opendatahub
+  name: odh-modelmesh
 spec:
   applications:
     - kustomizeConfig:
@@ -23,4 +22,3 @@ spec:
     - name: manifests
       uri: https://api.github.com/repos/opendatahub-io/modelmesh-serving/tarball/main
   version: master
-
