@@ -63,7 +63,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// confirm 3 serving runtimes exist
 	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
-	Expect(list.Items).To(HaveLen(3))
+	Expect(list.Items).To(HaveLen(4))
 
 	FVTClientInstance.SetDefaultUserConfigMap()
 	// ensure that there are no predictors to start
