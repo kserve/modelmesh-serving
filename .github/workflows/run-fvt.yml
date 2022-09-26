@@ -36,6 +36,7 @@ jobs:
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
         # on reduced resource environments. Also the RollingUpdate strategy for Runtime deployments
         # is adjusted for these environments.
+        # Disable the torchserve ServingRuntime for now (insufficent resources to run them all).
         run: |
           sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
@@ -49,6 +50,7 @@ jobs:
             config/runtimes/ovms-1.x.yaml
           sed -i 's/maxSurge:.*$/maxSurge: 0/' config/internal/base/deployment.yaml.tmpl
           sed -i 's/maxUnavailable:.*$/maxUnavailable: 100%/' config/internal/base/deployment.yaml.tmpl
+          echo -e '\n  disabled: true' >> config/runtimes/torchserve-0.x.yaml
       - name: Build Controller image
         run: |
           make build.develop
