@@ -42,11 +42,6 @@ RUN curl -o /tmp/chromedriver_linux64.zip -L https://chromedriver.storage.google
     unzip /tmp/chromedriver_linux64.zip &&\
     cp chromedriver /usr/local/bin/chromedriver
 
-RUN pip3 install micropipenv &&\
-    ln -s `which pip3` /usr/bin/pip &&\
-    cd $HOME/peak &&\
-    micropipenv install
-
 COPY setup/operatorsetup scripts/install.sh scripts/installandtest.sh $HOME/peak/
 COPY resources $HOME/peak/operator-tests/modelmesh/resources
 COPY util $HOME/peak/operator-tests/modelmesh
