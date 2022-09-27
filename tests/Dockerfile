@@ -42,8 +42,6 @@ RUN curl -o /tmp/chromedriver_linux64.zip -L https://chromedriver.storage.google
     unzip /tmp/chromedriver_linux64.zip &&\
     cp chromedriver /usr/local/bin/chromedriver
 
-COPY Pipfile Pipfile.lock $HOME/peak/
-
 RUN pip3 install micropipenv &&\
     ln -s `which pip3` /usr/bin/pip &&\
     cd $HOME/peak &&\
