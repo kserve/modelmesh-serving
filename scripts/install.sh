@@ -239,6 +239,7 @@ if [[ $delete == "true" ]]; then
   info "Deleting any previous ModelMesh Serving instances and older CRD with serving.kserve.io api group name"
   kubectl delete crd/predictors.serving.kserve.io --ignore-not-found=true
   kubectl delete crd/servingruntimes.serving.kserve.io --ignore-not-found=true
+  kubectl delete crd/clusterservingruntimes.serving.kserve.io --ignore-not-found=true
   kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
   if [[ $namespace_scope_mode != "true" ]]; then
     kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
@@ -312,10 +313,13 @@ elif [[ -n "$kustomize_version" && "$kustomize_version" < "4.0.1" ]]; then
 fi
 
 info "Installing ModelMesh Serving built-in runtimes"
-kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+if [[ $namespace_scope_mode == "true" ]]; then
+    kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+else
+    kustomize build cluster-runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+fi
 
-if [[ ! -z $user_ns_array ]]; then
-  kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
+if [[ $namespace_scope_mode == "false" ]] && [[ ! -z $user_ns_array ]]; then
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
@@ -324,7 +328,6 @@ if [[ ! -z $user_ns_array ]]; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
     else
       kubectl label namespace ${user_ns} modelmesh-enabled="true" --overwrite
-      kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
         kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
       fi
@@ -332,7 +335,6 @@ if [[ ! -z $user_ns_array ]]; then
   done
   rm minio-storage-secret.yaml
   rm minio-storage-secret.yaml.bak
-  rm runtimes.yaml
 fi
 rm quickstart.yaml quickstart.yaml.bak fvt.yaml fvt.yaml.bak
 

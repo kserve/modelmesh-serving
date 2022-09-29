@@ -81,7 +81,7 @@ sed -i.bak 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-control
 rm config/manager/kustomization.yaml.bak
 
 # Install and check if all pods are running - allow 60 retries (10 minutes)
-./scripts/install.sh --namespace "$SERVING_NS" -u modelmesh-user --fvt
+./scripts/install.sh --namespace "$SERVING_NS" -u modelmesh-user --fvt --namespace-scope-mode
 wait_for_pods "$SERVING_NS" 60 "$SLEEP_TIME" || EXIT_CODE=$?
 
 if [[ $EXIT_CODE -ne 0 ]]

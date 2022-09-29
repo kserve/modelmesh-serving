@@ -47,7 +47,9 @@ func createFVTClient() {
 	if controllerNamespace == "" {
 		controllerNamespace = DefaultControllerNamespace
 	}
-	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName, "CONTROLLERNAMESPACE", controllerNamespace)
+	NameSpaceScopeMode = os.Getenv("NAMESPACESCOPEMODE") == "true"
+	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName,
+		"CONTROLLERNAMESPACE", controllerNamespace, "NAMESPACESCOPEMODE", NameSpaceScopeMode)
 
 	var err error
 	FVTClientInstance, err = GetFVTClient(Log, namespace, serviceName, controllerNamespace)
@@ -60,10 +62,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// runs *only* on process #1
 	createFVTClient()
 
-	// confirm 3 serving runtimes exist
+	// confirm 3 serving runtimes exist in namespace scope mode
 	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
-	Expect(list.Items).To(HaveLen(3))
+	if NameSpaceScopeMode {
+		Expect(list.Items).To(HaveLen(3))
+	} else {
+		Expect(list.Items).To(HaveLen(0))
+	}
 
 	FVTClientInstance.SetDefaultUserConfigMap()
 	// ensure that there are no predictors to start
