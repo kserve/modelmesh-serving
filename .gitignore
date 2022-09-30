@@ -32,4 +32,4 @@ bin
 # Modelmesh development related artifacts
 devbuild
 .develop_image_name
-.bash_history
+.dev/
