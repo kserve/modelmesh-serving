@@ -4,6 +4,7 @@ metadata:
   name: example-onnx-mnist
   annotations:
     serving.kserve.io/deploymentMode: ModelMesh
+    create-route: "True"
 spec:
   predictor:
     model:
