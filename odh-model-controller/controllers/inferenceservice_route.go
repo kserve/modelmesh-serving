@@ -87,6 +87,10 @@ func (r *OpenshiftInferenceServiceReconciler) reconcileRoute(inferenceservice *i
 	// Generate the desired route
 	desiredRoute := newRoute(inferenceservice)
 
+	createRoute := true
+	if inferenceservice.Annotations["create-route"] != "True" {
+		createRoute = false
+	}
 	// Create the route if it does not already exist
 	foundRoute := &routev1.Route{}
 	justCreated := false
@@ -95,6 +99,10 @@ func (r *OpenshiftInferenceServiceReconciler) reconcileRoute(inferenceservice *i
 		Namespace: inferenceservice.Namespace,
 	}, foundRoute)
 	if err != nil {
+		if !createRoute {
+			log.Info("Inference Service does not have 'create-route' annotation set to 'True'. Skipping route creation")
+			return nil
+		}
 		if apierrs.IsNotFound(err) {
 			log.Info("Creating Route")
 			// Add .metatada.ownerReferences to the route to be deleted by the
@@ -117,6 +125,10 @@ func (r *OpenshiftInferenceServiceReconciler) reconcileRoute(inferenceservice *i
 		}
 	}
 
+	if !createRoute {
+		log.Info("Inference Service does not have 'create-route' annotation set to 'True'. Deleting existing route")
+		return r.Delete(ctx, foundRoute)
+	}
 	// Reconcile the route spec if it has been manually modified
 	if !justCreated && !CompareInferenceServiceRoutes(*desiredRoute, *foundRoute) {
 		log.Info("Reconciling Route")
