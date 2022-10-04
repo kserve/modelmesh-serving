@@ -56,7 +56,7 @@ jobs:
       - name: Install ModelMesh Serving
         run: |
           kubectl create ns modelmesh-serving
-          ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging --namespace-scope-mode
+          ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
       - name: Free up disk space
         run: |
           echo "Pruning images"
@@ -81,5 +81,5 @@ jobs:
           go install github.com/onsi/ginkgo/v2/ginkgo
           export PATH=/root/go/bin/:$PATH
           export NAMESPACE=modelmesh-serving
-          export NAMESPACESCOPEMODE=true
+          export NAMESPACESCOPEMODE=false
           make fvt
