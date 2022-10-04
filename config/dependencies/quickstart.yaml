@@ -31,7 +31,7 @@ metadata:
     app: etcd
   name: etcd
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: etcd
@@ -40,6 +40,18 @@ spec:
       labels:
         app: etcd
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - etcd
+                topologyKey: topology.kubernetes.io/zone
       containers:
         - command:
             - etcd
