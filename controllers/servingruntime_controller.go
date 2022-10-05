@@ -71,8 +71,8 @@ type ServingRuntimeReconciler struct {
 	ConfigMapName       types.NamespacedName
 	ControllerName      string
 	ControllerNamespace string
-	// whether the controller has RBAC permission to read namespaces
-	HasNamespaceAccess bool
+	// whether the controller has cluster scope permissions
+	ClusterScope bool
 	// whether the controller is enabled to read and watch ClusterServingRuntimes
 	EnableCSRWatch bool
 	// store some information about current runtimes for making scaling decisions
@@ -98,7 +98,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log := r.Log.WithValues("servingruntime", req.NamespacedName)
 	log.V(1).Info("ServingRuntime reconciler called")
 	// Make sure the namespace has serving enabled
-	mmEnabled, err := modelMeshEnabled2(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+	mmEnabled, err := modelMeshEnabled2(ctx, req.Namespace, r.ControllerNamespace, r.Client, r.ClusterScope)
 	if err != nil {
 		return RequeueResult, err
 	}
@@ -138,7 +138,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Delete etcd secret when there is no ServingRuntimes in a namespace
 	etcdSecretName := cfg.GetEtcdSecretName()
-	if len(runtimes.Items) == 0 {
+	if len(srSpecs) == 0 {
 		// We don't delete the etcd secret in the controller namespace
 		if req.Namespace != r.ControllerNamespace {
 			s := &corev1.Secret{}
@@ -454,9 +454,9 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		// watch the user configmap and reconcile all runtimes when it changes
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
-				return r.requestsForRuntimes("", func(rt *kserveapi.ServingRuntime) bool {
-					mme, err := modelMeshEnabled2(context.TODO(), rt.GetNamespace(),
-						r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+				return r.requestsForRuntimes("", func(namespace string) bool {
+					mme, err := modelMeshEnabled2(context.TODO(), namespace,
+						r.ControllerNamespace, r.Client, r.ClusterScope)
 					return err != nil || mme // in case of error just reconcile anyhow
 				})
 			}, r.ConfigProvider, &r.Client)).
@@ -466,7 +466,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
 
-	if r.HasNamespaceAccess {
+	if r.ClusterScope {
 		// watch namespaces to check the modelmesh-enabled flag
 		builder = builder.Watches(&source.Kind{Type: &corev1.Namespace{}}, handler.EnqueueRequestsFromMapFunc(
 			func(o client.Object) []reconcile.Request {
@@ -509,24 +509,54 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 func (r *ServingRuntimeReconciler) requestsForRuntimes(namespace string,
-	filter func(*kserveapi.ServingRuntime) bool) []reconcile.Request {
+	filter func(string) bool) []reconcile.Request {
 	var opts []client.ListOption
 	if namespace != "" {
 		opts = []client.ListOption{client.InNamespace(namespace)}
 	}
-	list := &kserveapi.ServingRuntimeList{}
-	if err := r.Client.List(context.TODO(), list, opts...); err != nil {
+	runtimes := &kserveapi.ServingRuntimeList{}
+	if err := r.Client.List(context.TODO(), runtimes, opts...); err != nil {
 		r.Log.Error(err, "Error listing ServingRuntimes to reconcile", "namespace", namespace)
 		return []reconcile.Request{}
 	}
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for i := range list.Items {
-		rt := &list.Items[i]
-		if filter == nil || filter(rt) {
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace},
-			})
+
+	srnns := make(map[types.NamespacedName]struct{})
+
+	if r.EnableCSRWatch {
+		csrs := &kserveapi.ClusterServingRuntimeList{}
+		if err := r.Client.List(context.TODO(), csrs); err != nil {
+			return []reconcile.Request{}
 		}
+		for i := range csrs.Items {
+			csr := &csrs.Items[i]
+			if csr.Spec.IsMultiModelRuntime() {
+				list := &corev1.NamespaceList{}
+				if err := r.Client.List(context.TODO(), list); err != nil {
+					r.Log.Error(err, "Error listing ClusterServingRuntimes to reconcile")
+					return []reconcile.Request{}
+				}
+				for j := range list.Items {
+					ns := &list.Items[j]
+					mme, err := modelMeshEnabled2(context.TODO(), ns.Name, r.ControllerNamespace, r.Client, r.ClusterScope)
+					if err == nil && mme {
+						srnns[types.NamespacedName{Namespace: ns.Name, Name: csr.Name}] = struct{}{}
+					}
+				}
+			}
+		}
+	}
+
+	for i := range runtimes.Items {
+		rt := &runtimes.Items[i]
+		if filter == nil || filter(rt.Namespace) {
+			srnns[types.NamespacedName{Namespace: rt.Namespace, Name: rt.Name}] = struct{}{}
+		}
+	}
+
+	requests := make([]reconcile.Request, 0, len(srnns))
+
+	for srnn := range srnns {
+		requests = append(requests, reconcile.Request{NamespacedName: srnn})
 	}
 	return requests
 }
@@ -565,7 +595,7 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 
 	for i := range list.Items {
 		ns := &list.Items[i]
-		mme, err := modelMeshEnabled2(context.TODO(), ns.Name, r.ControllerNamespace, r.Client, r.HasNamespaceAccess)
+		mme, err := modelMeshEnabled2(context.TODO(), ns.Name, r.ControllerNamespace, r.Client, r.ClusterScope)
 		if err == nil && mme {
 			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
 				Namespace: ns.Name,
