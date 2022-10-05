@@ -520,44 +520,58 @@ func (r *ServingRuntimeReconciler) requestsForRuntimes(namespace string,
 		return []reconcile.Request{}
 	}
 
-	srnns := make(map[types.NamespacedName]struct{})
-
+	var requests []reconcile.Request
 	if r.EnableCSRWatch {
+		srnns := make(map[types.NamespacedName]struct{})
 		csrs := &kserveapi.ClusterServingRuntimeList{}
 		if err := r.Client.List(context.TODO(), csrs); err != nil {
+			r.Log.Error(err, "Error listing ClusterServingRuntimes to reconcile")
 			return []reconcile.Request{}
+		}
+		var namespaces []string
+		if namespace != "" {
+			namespaces = []string{namespace}
+		} else {
+			list := &corev1.NamespaceList{}
+			if err := r.Client.List(context.TODO(), list); err != nil {
+				r.Log.Error(err, "Error listing namespaces to reconcile")
+				return []reconcile.Request{}
+			}
+			for i := range list.Items {
+				ns := &list.Items[i]
+				if filter == nil || filter(ns.Name) {
+					namespaces = append(namespaces, ns.Name)
+				}
+			}
 		}
 		for i := range csrs.Items {
 			csr := &csrs.Items[i]
 			if csr.Spec.IsMultiModelRuntime() {
-				list := &corev1.NamespaceList{}
-				if err := r.Client.List(context.TODO(), list); err != nil {
-					r.Log.Error(err, "Error listing ClusterServingRuntimes to reconcile")
-					return []reconcile.Request{}
+				for _, ns := range namespaces {
+					srnns[types.NamespacedName{Namespace: ns, Name: csr.Name}] = struct{}{}
 				}
-				for j := range list.Items {
-					ns := &list.Items[j]
-					mme, err := modelMeshEnabled2(context.TODO(), ns.Name, r.ControllerNamespace, r.Client, r.ClusterScope)
-					if err == nil && mme {
-						srnns[types.NamespacedName{Namespace: ns.Name, Name: csr.Name}] = struct{}{}
-					}
-				}
+			}
+		}
+		for i := range runtimes.Items {
+			rt := &runtimes.Items[i]
+			if filter == nil || filter(rt.Namespace) {
+				srnns[types.NamespacedName{Namespace: rt.Namespace, Name: rt.Name}] = struct{}{}
+			}
+		}
+		for srnn := range srnns {
+			requests = append(requests, reconcile.Request{NamespacedName: srnn})
+		}
+	} else {
+		for i := range runtimes.Items {
+			rt := &runtimes.Items[i]
+			if filter == nil || filter(rt.Namespace) {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{Name: rt.Name, Namespace: rt.Namespace},
+				})
 			}
 		}
 	}
 
-	for i := range runtimes.Items {
-		rt := &runtimes.Items[i]
-		if filter == nil || filter(rt.Namespace) {
-			srnns[types.NamespacedName{Namespace: rt.Namespace, Name: rt.Name}] = struct{}{}
-		}
-	}
-
-	requests := make([]reconcile.Request, 0, len(srnns))
-
-	for srnn := range srnns {
-		requests = append(requests, reconcile.Request{NamespacedName: srnn})
-	}
 	return requests
 }
 
@@ -589,6 +603,7 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 
 	// return nothing if can't get namespaces
 	if err := r.Client.List(context.TODO(), list); err != nil || len(list.Items) == 0 {
+		r.Log.Error(err, "Error listing namespaces to reconcile")
 		return []reconcile.Request{}
 	}
 	requests := make([]reconcile.Request, 0, len(list.Items))
