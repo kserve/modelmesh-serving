@@ -54,13 +54,20 @@ eval set -- "$PARAMS"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "${DIR}/.."
 
+# store local development files in .dev directory
+mkdir -p .dev/
+
 # Make sure .bash_history exists and is a file
-touch .bash_history
+touch .dev/.bash_history
+
+# create a minified flattened local copy of the kube config
+kubectl config view --minify --flatten 2> /dev/null > .dev/.kube_config
 
 declare -a docker_run_args=(
   -v "${PWD}:/workspace"
-  -v "${PWD}/.bash_history:/workspace/.bash_history"
-  -v /var/run/docker.sock:/var/run/docker.sock
+  -v "${PWD}/.dev/.bash_history:/root/.bash_history"
+  -v "${PWD}/.dev/.kube_config:/root/.kube/config"
+  -v "/var/run/docker.sock:/var/run/docker.sock"
 )
 
 if [ "${CI}" != "true" ]; then

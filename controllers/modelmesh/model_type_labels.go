@@ -22,12 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntime, restProxyEnabled bool) (
+func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) (
 	mtLabels sets.String, pvLabels sets.String, rtLabel string) {
 
 	// model type labels
-	mtSet := make(sets.String, 2*len(rt.Spec.SupportedModelFormats))
-	for _, t := range rt.Spec.SupportedModelFormats {
+	mtSet := make(sets.String, 2*len(rt.SupportedModelFormats))
+	for _, t := range rt.SupportedModelFormats {
 		// only include model type labels when autoSelect is true
 		if t.AutoSelect != nil && *t.AutoSelect {
 			mtSet.Insert(fmt.Sprintf("mt:%s", t.Name))
@@ -37,19 +37,19 @@ func GetServingRuntimeLabelSets(rt *kserveapi.ServingRuntime, restProxyEnabled b
 		}
 	}
 	// protocol versions
-	pvSet := make(sets.String, len(rt.Spec.ProtocolVersions))
-	for _, pv := range rt.Spec.ProtocolVersions {
+	pvSet := make(sets.String, len(rt.ProtocolVersions))
+	for _, pv := range rt.ProtocolVersions {
 		pvSet.Insert(fmt.Sprintf("pv:%s", pv))
 		if restProxyEnabled && pv == constants.ProtocolGRPCV2 {
 			pvSet.Insert(fmt.Sprintf("pv:%s", constants.ProtocolV2))
 		}
 	}
 	// runtime label
-	return mtSet, pvSet, fmt.Sprintf("rt:%s", rt.Name)
+	return mtSet, pvSet, fmt.Sprintf("rt:%s", rtName)
 }
 
-func GetServingRuntimeLabelSet(rt *kserveapi.ServingRuntime, restProxyEnabled bool) sets.String {
-	s1, s2, l := GetServingRuntimeLabelSets(rt, restProxyEnabled)
+func GetServingRuntimeLabelSet(rt *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) sets.String {
+	s1, s2, l := GetServingRuntimeLabelSets(rt, restProxyEnabled, rtName)
 	s1 = s1.Union(s2)
 	s1.Insert(l)
 	return s1

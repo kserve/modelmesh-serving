@@ -6,7 +6,7 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 
 - A Kubernetes cluster v 1.16+ with cluster administrative privileges
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0.0+)
-- At least 4 vCPU and 8 GB memory. For more details, please see [here](install/environment.md#deployed-components).
+- At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
 ## 1. Install ModelMesh Serving
 
@@ -190,7 +190,7 @@ since a normal Service has issues load balancing gRPC requests. See more info
 To test out **gRPC** inference requests, you can port-forward the headless service _in a separate terminal window_:
 
 ```shell
-kubectl port-forward --address 0.0.0.0 service/modelmesh-serving  8033 -n modelmesh-serving
+kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8033 -n modelmesh-serving
 ```
 
 Then a gRPC client generated from the KServe [grpc_predict_v2.proto](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)

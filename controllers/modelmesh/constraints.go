@@ -28,13 +28,13 @@ const (
 )
 
 func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) error {
-	rt := m.Owner
+	rts := m.SRSpec
 	var container *corev1.Container
 	if _, container = findContainer(ModelMeshContainerName, deployment); container == nil {
 		return errors.New("unable to find the model mesh container")
 	}
 
-	labelString := generateLabelsEnvVar(rt, m.RESTProxyEnabled)
+	labelString := generateLabelsEnvVar(rts, m.RESTProxyEnabled, m.Name)
 	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "MM_LABELS",
 		Value: labelString,
@@ -66,6 +66,6 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 	return nil
 }
 
-func generateLabelsEnvVar(rt *kserveapi.ServingRuntime, restProxyEnabled bool) string {
-	return strings.Join(GetServingRuntimeLabelSet(rt, restProxyEnabled).List(), ",")
+func generateLabelsEnvVar(rts *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) string {
+	return strings.Join(GetServingRuntimeLabelSet(rts, restProxyEnabled, rtName).List(), ",")
 }

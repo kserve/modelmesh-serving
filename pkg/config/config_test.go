@@ -14,6 +14,7 @@
 package config
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -192,6 +193,26 @@ grpcMaxMessageSizeBytes: 33554432`
 	//Verify system config map default
 	if conf.GrpcMaxMessageSizeBytes != expectedGrpcMessageSize {
 		t.Fatalf("Expected GrpcMaxMessageSizeBytes=%v but found %v", expectedGrpcMessageSize, conf.GrpcMaxMessageSizeBytes)
+	}
+}
+
+func TestBuiltInServerTypes(t *testing.T) {
+	yaml := `
+builtInServerTypes:
+ - triton
+ - mlserver
+ - ovms
+ - a_new_one`
+
+	expectedTypes := []string{"triton", "mlserver", "ovms", "a_new_one"}
+
+	conf, err := NewMergedConfigFromString(yaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(expectedTypes, conf.BuiltInServerTypes) {
+		t.Fatalf("Expected BuiltInServerTypes=%v but found %v", expectedTypes, conf.BuiltInServerTypes)
 	}
 }
 

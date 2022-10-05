@@ -1,6 +1,5 @@
 # general
 .env
-.bash_history
 
 public/
 target/
@@ -30,5 +29,7 @@ bin
 .vscode
 *~
 
+# Modelmesh development related artifacts
 devbuild
 .develop_image_name
+.dev/

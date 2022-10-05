@@ -45,13 +45,13 @@ Serving. This is supported by specifying the batch dimension in the schema with
 a variable length of size `-1` and then sending a batch of inputs in a single
 infer request. The Triton runtime supports more advanced batching algorithms,
 including dynamic and sequence batching
-(refer to [Triton's model configuration documentation](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#scheduling-and-batching) for details).
+(refer to [Triton's model configuration documentation](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_configuration.md#scheduling-and-batching) for details).
 Use of these batching algorithms requires inclusion of a `config.pbtxt`, but there
 are some caveats when using both the schema and `config.pbtxt` to configure the
 `InferenceService` predictor.
 
 In Triton, batching support is indicated with the
-[`max_batch_size` model configuration parameter](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#maximum-batch-size).
+[`max_batch_size` model configuration parameter](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_configuration.md#maximum-batch-size).
 Without any `config.pbtxt` the default value for `max_batch_size` is 0, though
 single-request batching is still supported. Note that Triton and ModelMesh Serving
 differ in how the batch dimension is handled. In
@@ -61,7 +61,7 @@ setting `max_batch_size > 0` implicitly changes the input and output shapes
 specified in `config.pbtxt`:
 
 > Input and output shapes are specified by a combination of max_batch_size and the dimensions specified by the input or output dims property. For models with max_batch_size greater-than 0, the full shape is formed as [ -1 ] + dims. For models with max_batch_size equal to 0, the full shape is formed as dims.
-> ([REF](https://github.com/triton-inference-server/server/blob/main/docs/model_configuration.md#inputs-and-outputs))
+> ([REF](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_configuration.md#inputs-and-outputs))
 
 To support the standard schema with a non-zero `max_batch_size`, Serving will
 verify that all inputs and outputs have a batch dimension and remove that

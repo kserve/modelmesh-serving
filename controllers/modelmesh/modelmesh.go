@@ -40,7 +40,8 @@ type Deployment struct {
 	ServicePort        uint16
 	Name               string
 	Namespace          string
-	Owner              *kserveapi.ServingRuntime
+	Owner              mf.Owner
+	SRSpec             *kserveapi.ServingRuntimeSpec
 	DefaultVModelOwner string
 	Log                logr.Logger
 	Metrics            bool
@@ -138,9 +139,9 @@ func (m *Deployment) Apply(ctx context.Context) error {
 		return fmt.Errorf("Error transforming: %w", err)
 	}
 
-	if useStorageHelper(m.Owner) {
+	if useStorageHelper(m.SRSpec) {
 		manifest, err = manifest.Transform(
-			addPullerTransform(m.Owner, m.PullerImage, m.PullerImageCommand, m.PullerResources),
+			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources),
 		)
 		if err != nil {
 			return fmt.Errorf("Error transforming: %w", err)
@@ -200,7 +201,7 @@ func (m *Deployment) addMMDomainSocketMount(deployment *appsv1.Deployment) error
 		return fmt.Errorf("Could not find the model mesh container %v", ModelMeshContainerName)
 	}
 
-	if hasUnix, mountPoint, err := mountPoint(m.Owner); err != nil {
+	if hasUnix, mountPoint, err := mountPoint(m.SRSpec); err != nil {
 		return err
 	} else if hasUnix {
 		c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
@@ -221,9 +222,9 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		}
 	}
 
-	rt := m.Owner
-	if rt.Spec.GrpcDataEndpoint != nil {
-		e, err := ParseEndpoint(*rt.Spec.GrpcDataEndpoint)
+	rts := m.SRSpec
+	if rts.GrpcDataEndpoint != nil {
+		e, err := ParseEndpoint(*rts.GrpcDataEndpoint)
 		if err != nil {
 			return err
 		}
@@ -238,12 +239,12 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		}
 	}
 
-	if useStorageHelper(rt) {
+	if useStorageHelper(rts) {
 		if err := setEnvironmentVar(ModelMeshContainerName, GrpcPortEnvVar, strconv.Itoa(PullerPortNumber), deployment); err != nil {
 			return err
 		}
 	} else {
-		e, err := ParseEndpoint(*rt.Spec.GrpcMultiModelManagementEndpoint)
+		e, err := ParseEndpoint(*rts.GrpcMultiModelManagementEndpoint)
 		if err != nil {
 			return err
 		}
@@ -285,9 +286,7 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 }
 
 func (m *Deployment) setConfigMap() error {
-	// get configmap name from servingRuntime
-	rt := m.Owner
-	configMap := rt.ObjectMeta.Annotations["productConfig"]
+	configMap := m.Owner.GetAnnotations()["productConfig"]
 	if configMap == "" {
 		return nil
 	}

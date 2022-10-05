@@ -22,12 +22,11 @@ kubectl create ns modelmesh-serving
 This installs the `modelmesh-controller` and dependencies in the `modelmesh-serving` namespace. The `minio` pod that this deploys
 contains special test images that are used in the functional tests.
 
-## Building development image
-
-A dockerized development environment is provided to help set up dependencies for testing, linting, and code generating. Using this environment is suggested as this is what the GitHub Actions workflows use. To create the development image, perform the following:
+If you already deployed ModelMesh Serving on a Kubernetes or OpenShift cluster before and are reconnecting to it now,
+make sure to set the default namespace to `modelmesh-serving`.
 
 ```shell
-make build.develop
+kubectl config set-context --current --namespace=modelmesh-serving
 ```
 
 ## Building and updating controller image
@@ -58,6 +57,26 @@ you will need to restart the controller pod. This can be done through the follow
 ```shell
 kubectl rollout restart deploy modelmesh-controller
 ```
+
+## Building the developer image
+
+A dockerized development environment is provided to help set up dependencies for testing, linting, and code generating.
+Using this environment is suggested as this is what the GitHub Actions workflows use.
+To create the development image, perform the following:
+
+```shell
+make build.develop
+```
+
+## Using the developer image for linting and testing
+
+To use the dockerized development environment run:
+
+```shell
+make develop
+```
+
+Then, from inside the developer container, proceed to run the linting, code generation, and testing as described below.
 
 ## Formatting and linting code
 
@@ -97,5 +116,5 @@ To run them, do the following:
 make fvt
 ```
 
-**Note**: sometimes the tests can fail on the first run because pulling the serving runtime images can take a while, causing a timeout.
-Just try again after the pulling is done.
+**Note**: sometimes the tests can fail on the first run because pulling the serving runtime images can take a while,
+causing a timeout. Just try again after the pulling is done.

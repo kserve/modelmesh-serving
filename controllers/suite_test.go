@@ -206,15 +206,19 @@ var _ = AfterEach(func() {
 
 var defaultTestConfigFileContents []byte
 
-func resetReconcilerConfig() {
+func getDefaultConfig() (*config2.Config, error) {
 	if defaultTestConfigFileContents == nil {
 		var err error
 		var testConfigFile = "./testdata/test-config-defaults.yaml"
-		defaultTestConfigFileContents, err = ioutil.ReadFile(testConfigFile)
-		Expect(err).ToNot(HaveOccurred())
+		if defaultTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
+			return nil, err
+		}
 	}
+	return config2.NewMergedConfigFromString(string(defaultTestConfigFileContents))
+}
 
-	config, err := config2.NewMergedConfigFromString(string(defaultTestConfigFileContents))
+func resetReconcilerConfig() {
+	config, err := getDefaultConfig()
 	Expect(err).ToNot(HaveOccurred())
 
 	// re-assign the reference to the config

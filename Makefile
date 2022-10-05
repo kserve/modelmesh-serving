@@ -154,14 +154,12 @@ endif
 mmesh-codegen:
 	protoc -I proto/ --go_out=plugins=grpc:generated/ $(PROTO_FILES)
 
-docs:
-	./scripts/docs.sh
-
-docs.dev:
-	./scripts/docs.sh --dev
+# Check markdown files for invalid links
+check-doc-links:
+	@python3 scripts/verify_doc_links.py && echo "$@: OK"
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
 
 # Remove $(MAKECMDGOALS) if you don't intend make to just be a taskrunner
-.PHONY: all generate manifests fmt fvt controller-gen oc-login deploy-release build.develop $(MAKECMDGOALS)
+.PHONY: all generate manifests check-doc-links fmt fvt controller-gen oc-login deploy-release build.develop $(MAKECMDGOALS)
