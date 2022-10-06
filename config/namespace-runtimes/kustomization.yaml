@@ -6,9 +6,9 @@ patchesJson6902:
   - target:
       group: serving.kserve.io
       version: v1alpha1
-      kind: ServingRuntime
+      kind: ClusterServingRuntime
       name: ".*"
     patch: |-
       - op: replace
         path: /kind
-        value: ClusterServingRuntime
+        value: ServingRuntime

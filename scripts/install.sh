@@ -314,9 +314,9 @@ fi
 
 info "Installing ModelMesh Serving built-in runtimes"
 if [[ $namespace_scope_mode == "true" ]]; then
-    kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+    kustomize build namespace-runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
 else
-    kustomize build cluster-runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+    kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
 fi
 
 if [[ $namespace_scope_mode == "false" ]] && [[ ! -z $user_ns_array ]]; then
