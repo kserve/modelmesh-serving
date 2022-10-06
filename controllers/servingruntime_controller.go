@@ -259,7 +259,6 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		AnnotationsMap:      cfg.RuntimePodAnnotations,
 		LabelsMap:           cfg.RuntimePodLabels,
 	}
-	log.V(1).Info("track deployment owner", "mmDeployment.Owner", mmDeployment.Owner)
 	// if the runtime is disabled, delete the deployment
 	if spec.IsDisabled() || !spec.IsMultiModelRuntime() || !mmEnabled {
 		log.Info("Runtime is disabled, incompatible with modelmesh, or namespace is not modelmesh-enabled")
