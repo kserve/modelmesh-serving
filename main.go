@@ -289,7 +289,7 @@ func main() {
 		Log:                     ctrl.Log.WithName("controllers").WithName("Service"),
 		Scheme:                  mgr.GetScheme(),
 		ControllerDeployment:    types.NamespacedName{Namespace: ControllerNamespace, Name: controllerDeploymentName},
-		NamespaceOwned:          clusterScopeMode,
+		ClusterScope:            clusterScopeMode,
 		MMServices:              mmServiceMap,
 		ModelEventStream:        modelEventStream,
 		ConfigProvider:          cp,
@@ -418,7 +418,7 @@ func main() {
 		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
 		ControllerNamespace: ControllerNamespace,
 		ControllerName:      controllerDeploymentName,
-		HasNamespaceAccess:  clusterScopeMode,
+		ClusterScope:        clusterScopeMode,
 		EnableCSRWatch:      enableCSRWatch,
 		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {

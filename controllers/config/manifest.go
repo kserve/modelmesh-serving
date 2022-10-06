@@ -54,7 +54,7 @@ func Apply(cl client.Client, owner metav1.Object, templatePath string, context i
 	return nil
 }
 
-func Delete(cl client.Client, owner metav1.Object, templatePath string, context interface{}, fns ...mf.Transformer) error {
+func Delete(cl client.Client, owner metav1.Object, templatePath string, context interface{}, namespace string, fns ...mf.Transformer) error {
 	m, err := mf.ManifestFrom(PathTemplateSource(templatePath, context))
 	if err != nil {
 		return err
@@ -64,9 +64,8 @@ func Delete(cl client.Client, owner metav1.Object, templatePath string, context 
 	if owner != nil {
 		asMfOwner := owner.(mf.Owner)
 		fns = append(fns, mf.InjectOwner(asMfOwner))
-		fns = append(fns, mf.InjectNamespace(asMfOwner.GetNamespace()))
+		fns = append(fns, mf.InjectNamespace(namespace))
 	}
-
 	m, err = m.Transform(fns...)
 	if err != nil {
 		return err
