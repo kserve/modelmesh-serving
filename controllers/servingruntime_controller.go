@@ -259,7 +259,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		AnnotationsMap:      cfg.RuntimePodAnnotations,
 		LabelsMap:           cfg.RuntimePodLabels,
 	}
-
+	log.V(1).Info("track deployment owner", "mmDeployment.Owner", mmDeployment.Owner)
 	// if the runtime is disabled, delete the deployment
 	if spec.IsDisabled() || !spec.IsMultiModelRuntime() || !mmEnabled {
 		log.Info("Runtime is disabled, incompatible with modelmesh, or namespace is not modelmesh-enabled")
@@ -521,13 +521,16 @@ func (r *ServingRuntimeReconciler) requestsForRuntimes(namespace string,
 	}
 
 	var requests []reconcile.Request
+	var csrs *kserveapi.ClusterServingRuntimeList
 	if r.EnableCSRWatch {
-		srnns := make(map[types.NamespacedName]struct{})
-		csrs := &kserveapi.ClusterServingRuntimeList{}
+		csrs = &kserveapi.ClusterServingRuntimeList{}
 		if err := r.Client.List(context.TODO(), csrs); err != nil {
 			r.Log.Error(err, "Error listing ClusterServingRuntimes to reconcile")
 			return []reconcile.Request{}
 		}
+	}
+	if csrs != nil && len(csrs.Items) > 0 {
+		srnns := make(map[types.NamespacedName]struct{})
 		var namespaces []string
 		if namespace != "" {
 			namespaces = []string{namespace}
