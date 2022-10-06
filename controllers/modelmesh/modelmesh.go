@@ -178,7 +178,7 @@ func (m *Deployment) ensureMMContainerIsLast(deployment *appsv1.Deployment) erro
 
 func (m *Deployment) Delete(ctx context.Context, client client.Client) error {
 	m.Log.Info("Deleting modelmesh deployment ", "name", m.Name, "namespace", m.Namespace)
-	return config.Delete(client, m.Owner, "config/internal/base/deployment.yaml.tmpl", m)
+	return config.Delete(client, m.Owner, "config/internal/base/deployment.yaml.tmpl", m, m.Namespace)
 }
 
 func (m *Deployment) transform(deployment *appsv1.Deployment, funcs ...func(deployment *appsv1.Deployment) error) error {
