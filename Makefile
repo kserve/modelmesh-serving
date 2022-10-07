@@ -43,7 +43,10 @@ all: manager
 
 # Run unit tests
 test:
+	cp config/runtimes/mlserver-0.x.yaml config/runtimes/ovms-1.x.yaml config/runtimes/triton-2.x.yaml controllers/testdata
+	sed -i 's/ClusterServingRuntime/ServingRuntime/g' controllers/testdata/mlserver-0.x.yaml controllers/testdata/ovms-1.x.yaml controllers/testdata/triton-2.x.yaml
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
+	rm controllers/testdata/mlserver-0.x.yaml controllers/testdata/ovms-1.x.yaml controllers/testdata/triton-2.x.yaml
 
 # Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 fvt:
