@@ -61,14 +61,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(FVTClientInstance).ToNot(BeNil())
 	Log.Info("FVTClientInstance created", "client", FVTClientInstance)
 
-	// confirm 3 serving runtimes exist in namespace scope mode
-	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
-	Expect(err).ToNot(HaveOccurred())
+	// confirm 3 cluster serving runtimes or serving runtimes exist
+	f := FVTClientInstance.ListClusterServingRuntimes
 	if NameSpaceScopeMode {
-		Expect(list.Items).To(HaveLen(3))
-	} else {
-		Expect(list.Items).To(HaveLen(0))
+		f = FVTClientInstance.ListServingRuntimes
 	}
+	list, err := f(metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	Expect(list.Items).To(HaveLen(3))
 
 	config := map[string]interface{}{
 		"scaleToZero": map[string]interface{}{

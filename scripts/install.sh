@@ -282,6 +282,7 @@ kubectl get secret storage-config
 info "Installing ModelMesh Serving RBACs (namespace_scope_mode=$namespace_scope_mode)"
 if [[ $namespace_scope_mode == "true" ]]; then
   kustomize build rbac/namespace-scope | kubectl apply -f -
+  sed -i 's/- bases\/serving.kserve.io_clusterservingruntimes.yaml/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 else
   kustomize build rbac/cluster-scope | kubectl apply -f -
 fi
@@ -297,6 +298,7 @@ fi
 if [[ $namespace_scope_mode == "true" ]]; then
   info "Enabling namespace scope mode"
   kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=true
+  sed -i 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 fi
 
 info "Waiting for ModelMesh Serving controller pod to be up..."

@@ -62,14 +62,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// runs *only* on process #1
 	createFVTClient()
 
-	// confirm 3 serving runtimes exist in namespace scope mode
-	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
-	Expect(err).ToNot(HaveOccurred())
+	// confirm 3 cluster serving runtimes or serving runtimes exist
+	f := FVTClientInstance.ListClusterServingRuntimes
 	if NameSpaceScopeMode {
-		Expect(list.Items).To(HaveLen(3))
-	} else {
-		Expect(list.Items).To(HaveLen(0))
+		f = FVTClientInstance.ListServingRuntimes
 	}
+	list, err := f(metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	Expect(list.Items).To(HaveLen(3))
 
 	FVTClientInstance.SetDefaultUserConfigMap()
 	// ensure that there are no predictors to start
