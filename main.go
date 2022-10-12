@@ -400,17 +400,7 @@ func main() {
 		}
 	}
 
-	if err = (&controllers.PredictorReconciler{
-		Client:         mgr.GetClient(),
-		Log:            ctrl.Log.WithName("controllers").WithName("Predictor"),
-		MMServices:     mmServiceMap,
-		RegistryLookup: registryMap,
-	}).SetupWithManager(mgr, modelEventStream, enableIsvcWatch, predictorControllerEvents); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Predictor")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.ServingRuntimeReconciler{
+	srr := &controllers.ServingRuntimeReconciler{
 		Client:              mgr.GetClient(),
 		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
 		Scheme:              mgr.GetScheme(),
@@ -421,8 +411,20 @@ func main() {
 		ClusterScope:        clusterScopeMode,
 		EnableCSRWatch:      enableCSRWatch,
 		RegistryMap:         registryMap,
-	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
+	}
+	if err = srr.SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.PredictorReconciler{
+		Client:            mgr.GetClient(),
+		Log:               ctrl.Log.WithName("controllers").WithName("Predictor"),
+		MMServices:        mmServiceMap,
+		RegistryLookup:    registryMap,
+		RuntimeReconciler: srr,
+	}).SetupWithManager(mgr, modelEventStream, enableIsvcWatch, predictorControllerEvents); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Predictor")
 		os.Exit(1)
 	}
 

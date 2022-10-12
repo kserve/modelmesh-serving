@@ -189,34 +189,14 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Reconcile this serving runtime
-	rt := &kserveapi.ServingRuntime{}
-	var owner mf.Owner
-	var spec *kserveapi.ServingRuntimeSpec
-
-	if err = r.Client.Get(ctx, req.NamespacedName, rt); err == nil {
-		spec = &rt.Spec
-		owner = rt
-	} else if errors.IsNotFound(err) {
-		log.Info("Runtime is not found in namespace")
-
-		if !r.EnableCSRWatch {
-			return r.removeRuntimeFromInfoMap(req)
-		}
-		// try to find the runtime in cluster ServingRuntimes
-		crt := &kserveapi.ClusterServingRuntime{}
-		if err = r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, crt); err == nil {
-			spec = &crt.Spec
-			owner = crt
-		} else if errors.IsNotFound(err) {
-			log.Info("Runtime is not found in cluster")
-
-			// remove runtime from info map
-			return r.removeRuntimeFromInfoMap(req)
-		} else {
-			return ctrl.Result{}, fmt.Errorf("error retrieving ClusterServingRuntime %s: %w", req.Name, err)
-		}
-	} else {
-		return ctrl.Result{}, fmt.Errorf("error retrieving ServingRuntime %s: %w", req.NamespacedName, err)
+	spec, owner, err := r.getRuntimeSpecAndOwner(ctx, req.NamespacedName)
+	if err != nil {
+		return ctrl.Result{}, nil
+	}
+	if spec == nil {
+		log.Info("Runtime is not found")
+		r.removeRuntimeFromInfoMap(req)
+		return ctrl.Result{}, nil
 	}
 
 	// Check that ServerType is provided in runtime spec and that this value matches that of the specified container
@@ -286,7 +266,32 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
 
-func (r *ServingRuntimeReconciler) removeRuntimeFromInfoMap(req ctrl.Request) (ctrl.Result, error) {
+func (r *ServingRuntimeReconciler) getRuntimeSpecAndOwner(ctx context.Context,
+	nname types.NamespacedName) (*kserveapi.ServingRuntimeSpec, mf.Owner, error) {
+	rt := &kserveapi.ServingRuntime{}
+
+	if err := r.Client.Get(ctx, nname, rt); err == nil {
+		return &rt.Spec, rt, nil
+	} else if errors.IsNotFound(err) {
+		if !r.EnableCSRWatch {
+			return nil, nil, nil
+		}
+		// try to find the runtime in cluster ServingRuntimes
+		crt := &kserveapi.ClusterServingRuntime{}
+		if err = r.Client.Get(ctx, types.NamespacedName{Name: nname.Name}, crt); err == nil {
+			return &crt.Spec, crt, nil
+		} else if errors.IsNotFound(err) {
+			// remove runtime from info map
+			return nil, nil, nil
+		} else {
+			return nil, nil, fmt.Errorf("error retrieving ClusterServingRuntime %s: %w", nname.Name, err)
+		}
+	} else {
+		return nil, nil, fmt.Errorf("error retrieving ServingRuntime %s: %w", nname, err)
+	}
+}
+
+func (r *ServingRuntimeReconciler) removeRuntimeFromInfoMap(req ctrl.Request) {
 	// remove runtime from info map
 	r.runtimeInfoMapMutex.Lock()
 	defer r.runtimeInfoMapMutex.Unlock()
@@ -295,7 +300,6 @@ func (r *ServingRuntimeReconciler) removeRuntimeFromInfoMap(req ctrl.Request) (c
 		// this is safe even if the entry doesn't exist
 		delete(r.runtimeInfoMap, req.NamespacedName)
 	}
-	return ctrl.Result{}, nil
 }
 
 func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx context.Context, log logr.Logger,
@@ -396,6 +400,9 @@ func (r *ServingRuntimeReconciler) runtimeHasPredictors(ctx context.Context, rt 
 }
 
 func runtimeSupportsPredictor(rt *kserveapi.ServingRuntimeSpec, p *api.Predictor, restProxyEnabled bool, rtName string) bool {
+	if !rt.IsMultiModelRuntime() {
+		return false
+	}
 	// assignment to a runtime depends on the model type labels
 	runtimeLabelSet := modelmesh.GetServingRuntimeLabelSet(rt, restProxyEnabled, rtName)
 	predictorTypeString := modelmesh.GetPredictorTypeLabel(p)
@@ -408,16 +415,21 @@ func runtimeSupportsPredictor(rt *kserveapi.ServingRuntimeSpec, p *api.Predictor
 	return true
 }
 
+func (r *ServingRuntimeReconciler) predictorHasSupportingRuntime(ctx context.Context, p *api.Predictor) (bool, error) {
+	if rt := p.Spec.GetRuntime(); rt != "" {
+		// check runtime exists with specified name
+		rs, _, err := r.getRuntimeSpecAndOwner(ctx, types.NamespacedName{Name: rt, Namespace: p.Namespace})
+		return rs != nil, err
+	}
+	// check that there's a runtime matching predictors type/protocol
+	set, err := r.getRuntimesSupportingPredictor(ctx, p)
+	return len(set) != 0, err
+}
+
 // getRuntimesSupportingPredictor returns a map of keys for runtimes that support the predictor p
 //
 // A predictor may be supported by multiple runtimes.
 func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Context, p *api.Predictor) (map[string]struct{}, error) {
-	// list all runtimes
-	runtimes := &kserveapi.ServingRuntimeList{}
-	if err := r.Client.List(ctx, runtimes, client.InNamespace(p.Namespace)); err != nil {
-		return nil, err
-	}
-
 	restProxyEnabled := r.ConfigProvider.GetConfig().RESTProxy.Enabled
 	srnns := make(map[string]struct{})
 
@@ -429,16 +441,23 @@ func (r *ServingRuntimeReconciler) getRuntimesSupportingPredictor(ctx context.Co
 		}
 		for i := range csrs.Items {
 			crt := &csrs.Items[i]
-			if crt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, crt.Name) {
+			if runtimeSupportsPredictor(&crt.Spec, p, restProxyEnabled, crt.Name) {
 				srnns[crt.Name] = struct{}{}
 			}
 		}
 	}
 
+	// list all runtimes
+	runtimes := &kserveapi.ServingRuntimeList{}
+	if err := r.Client.List(ctx, runtimes, client.InNamespace(p.Namespace)); err != nil {
+		return nil, err
+	}
 	for i := range runtimes.Items {
 		rt := &runtimes.Items[i]
-		if rt.Spec.IsMultiModelRuntime() && runtimeSupportsPredictor(&rt.Spec, p, restProxyEnabled, rt.Name) {
+		if runtimeSupportsPredictor(&rt.Spec, p, restProxyEnabled, rt.Name) {
 			srnns[rt.Name] = struct{}{}
+		} else {
+			delete(srnns, rt.Name) // SR blocks any CSR with same name
 		}
 	}
 

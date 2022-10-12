@@ -59,7 +59,8 @@ type PredictorReconciler struct {
 	Log        logr.Logger
 	MMServices *MMServiceMap
 
-	RegistryLookup map[string]predictor_source.PredictorRegistry
+	RegistryLookup    map[string]predictor_source.PredictorRegistry
+	RuntimeReconciler *ServingRuntimeReconciler
 }
 
 // +kubebuilder:rbac:groups=serving.kserve.io,resources=predictors,verbs=get;list;watch;create;update;patch;delete
@@ -162,11 +163,26 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 
 			updateStatus = pr.updatePredictorStatusFromVModel(status, vModelState, nname, true)
 		} else if isNoAddresses(err) {
-			updateStatus = setStatusFailureInfo(status, &api.FailureInfo{
-				Reason:  api.RuntimeUnhealthy,
-				Message: "Waiting for runtime Pod to become available",
-				ModelId: concreteModelName(predictor, sourceId),
-			})
+			// Disambiguate reason that there's no runtimes running
+			// (either no matching runtime or waiting for a runtime to start)
+			fi := &api.FailureInfo{ModelId: concreteModelName(predictor, sourceId)}
+			ok, err2 := pr.RuntimeReconciler.predictorHasSupportingRuntime(ctx, predictor)
+			if err2 != nil {
+				//TODO log
+			}
+			if !ok {
+				if runtime := predictor.Spec.GetRuntime(); runtime != "" {
+					fi.Reason = api.RuntimeNotRecognized
+					fi.Message = fmt.Sprintf("Specified runtime \"%s\" not recognized", runtime)
+				} else {
+					fi.Reason = api.NoSupportingRuntime
+					fi.Message = "No ServingRuntime supports specified model type and/or protocol"
+				}
+			} else {
+				fi.Reason = api.RuntimeUnhealthy
+				fi.Message = "Waiting for runtime Pod to become available"
+			}
+			updateStatus = setStatusFailureInfo(status, fi)
 		} else if grpcstatus.Convert(err).Code() == codes.AlreadyExists {
 			//TODO here should also extract the conflicting owner string, and also trigger a reconcile with that
 			// other source id (in case it no longer exists)
@@ -408,8 +424,12 @@ func decodeModelState(status *mmeshapi.ModelStatusInfo) (api.ModelState, api.Fai
 	if !strings.HasSuffix(msg, "["+modelmesh.ModelTypeLabelThatNoRuntimeSupports+"]") {
 		return api.Loading, api.RuntimeUnhealthy, "Waiting for supporting runtime Pod to become available"
 	}
-	if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
-		return api.FailedToLoad, api.RuntimeNotRecognized, "Specified runtime name not recognized"
+	prefixLen := len(noHomeMessage)
+	nameStart := prefixLen + 3
+	if msg[prefixLen:nameStart] == "rt:" {
+		nameLen := (len(msg) - nameStart - len(": [rt:]")) / 2
+		runtime := msg[nameStart : nameStart+nameLen]
+		return api.FailedToLoad, api.RuntimeNotRecognized, fmt.Sprintf("Specified runtime \"%s\" not recognized", runtime)
 	}
 	return api.FailedToLoad, api.NoSupportingRuntime, "No ServingRuntime supports specified model type and/or protocol"
 }

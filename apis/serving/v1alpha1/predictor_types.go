@@ -116,6 +116,15 @@ type PredictorSpec struct {
 	ProtocolVersion *constants.InferenceServiceProtocol `json:"protocolVersion,omitempty"`
 }
 
+func (ps *PredictorSpec) GetRuntime() string {
+	if ps != nil {
+		if rt := ps.Runtime; rt != nil {
+			return rt.Name
+		}
+	}
+	return ""
+}
+
 // too wide if this is included
 // // +kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".status.grpcEndpoint"
 

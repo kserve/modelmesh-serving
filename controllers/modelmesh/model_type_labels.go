@@ -56,10 +56,9 @@ func GetServingRuntimeLabelSet(rt *kserveapi.ServingRuntimeSpec, restProxyEnable
 }
 
 func GetPredictorTypeLabel(p *api.Predictor) string {
-	runtime := p.Spec.Runtime
-	if runtime != nil && runtime.Name != "" {
+	if runtime := p.Spec.GetRuntime(); runtime != "" {
 		// constrain placement to specific runtime
-		return "rt:" + runtime.Name
+		return "rt:" + runtime
 	}
 	// constrain placement based on model type
 	mt := p.Spec.Model.Type
