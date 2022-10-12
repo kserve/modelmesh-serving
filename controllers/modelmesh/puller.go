@@ -67,6 +67,9 @@ func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Depl
 			}, {
 				Name:  PullerEnvStorageConfigDir,
 				Value: PullerConfigPath,
+			}, {
+				Name:  PullerEnvPVCDir,
+				Value: PullerPVCPath,
 			},
 		},
 		Image:   pullerImage,
@@ -87,6 +90,11 @@ func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Depl
 			{
 				Name:      ConfigStorageMount,
 				MountPath: PullerConfigPath,
+				ReadOnly:  true,
+			},
+			{
+				Name:      PVCMount,
+				MountPath: PullerPVCPath,
 				ReadOnly:  true,
 			},
 		},

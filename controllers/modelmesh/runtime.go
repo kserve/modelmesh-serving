@@ -28,6 +28,7 @@ import (
 
 const (
 	ModelsDir     string  = "/models"
+	PVCRootDir    string  = "/pvc_mounts"
 	ModelDirScale float64 = 1.5
 )
 
@@ -81,6 +82,21 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 		volumes = append(volumes, storageVolume)
 	}
 
+	// need to add pvc volumes
+	for _, pvcName := range m.PVCs {
+		pvcVolume := corev1.Volume{
+			Name: pvcName,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvcName,
+					ReadOnly:  true,
+				},
+			},
+		}
+
+		volumes = append(volumes, pvcVolume)
+	}
+
 	deployment.Spec.Template.Spec.Volumes = volumes
 
 	return nil
@@ -122,6 +138,16 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 			Name:      ModelsDirVolume,
 			MountPath: ModelsDir,
 		},
+	}
+
+	for _, pvcName := range m.PVCs {
+		volumeMounts = append([]corev1.VolumeMount{
+			{
+				Name:      pvcName,
+				MountPath: PVCRootDir + "/" + pvcName,
+				ReadOnly:  true,
+			},
+		}, volumeMounts...)
 	}
 
 	// Now add the containers specified in serving runtime spec

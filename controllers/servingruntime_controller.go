@@ -62,6 +62,10 @@ import (
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
+const (
+	StoragePVCType = "pvc"
+)
+
 // ServingRuntimeReconciler reconciles a ServingRuntime object
 type ServingRuntimeReconciler struct {
 	client.Client
@@ -75,6 +79,8 @@ type ServingRuntimeReconciler struct {
 	ClusterScope bool
 	// whether the controller is enabled to read and watch ClusterServingRuntimes
 	EnableCSRWatch bool
+	// whether the controller is enabled to read and watch secrets
+	EnableSecretWatch bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -224,6 +230,25 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("Invalid runtime Spec: %w", err)
 	}
 
+	s := &corev1.Secret{}
+	if err = r.Client.Get(ctx, types.NamespacedName{
+		Name:      modelmesh.StorageSecretName,
+		Namespace: req.Namespace,
+	}, s); err != nil {
+		return RequeueResult, fmt.Errorf("Could not get the storage secret: %w", err)
+	}
+
+	var pvcs []string
+	var storageConfig map[string]string
+	for _, storageData := range s.Data {
+		if err = json.Unmarshal(storageData, &storageConfig); err != nil {
+			return ctrl.Result{}, fmt.Errorf("Could not parse storage configuration json: %w", err)
+		}
+		if storageConfig["type"] == StoragePVCType {
+			pvcs = append(pvcs, storageConfig["name"])
+		}
+	}
+
 	// construct the deployment
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:                cfg.InferenceServiceName,
@@ -249,6 +274,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		PullerResources:            cfg.StorageHelperResources.ToKubernetesType(),
 		Port:                       cfg.InferenceServicePort,
 		GrpcMaxMessageSize:         cfg.GrpcMaxMessageSizeBytes,
+		PVCs:                       pvcs,
 		// Replicas is set below
 		TLSSecretName:       cfg.TLS.SecretName,
 		TLSClientAuth:       cfg.TLS.ClientAuth,
@@ -491,6 +517,13 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 			}))
 	}
 
+	if r.EnableSecretWatch {
+		builder = builder.Watches(&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				return r.secretRequests(o.(*corev1.Secret), o.GetNamespace())
+			}))
+	}
+
 	if sourcePluginEvents != nil {
 		builder.Watches(&source.Channel{Source: sourcePluginEvents},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
@@ -623,4 +656,17 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 	}
 
 	return requests
+}
+
+func (r *ServingRuntimeReconciler) secretRequests(secret *corev1.Secret, namespace string) []reconcile.Request {
+	// check whether namespace is modelmesh enabled
+	mme, err := modelMeshEnabled2(context.TODO(), namespace, r.ControllerNamespace, r.Client, r.ClusterScope)
+	if err != nil || !mme {
+		return []reconcile.Request{}
+	}
+	if secret.Name == modelmesh.StorageSecretName {
+		return r.requestsForRuntimes(namespace, nil)
+	}
+
+	return []reconcile.Request{}
 }

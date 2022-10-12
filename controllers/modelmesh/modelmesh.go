@@ -53,6 +53,7 @@ type Deployment struct {
 	RESTProxyImage     string
 	RESTProxyResources *corev1.ResourceRequirements
 	RESTProxyPort      uint16
+	PVCs               []string
 	// internal fields used when templating
 	ModelMeshLimitCPU          string
 	ModelMeshRequestsCPU       string
