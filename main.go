@@ -79,8 +79,10 @@ const (
 	EnableInferenceServiceEnvVar      = "ENABLE_ISVC_WATCH"
 	EnableClusterServingRuntimeEnvVar = "ENABLE_CSR_WATCH"
 	EnableSecretEnvVar                = "ENABLE_SECRET_WATCH"
+	DeployPVCForPredictorEnvVar       = "DEPLOY_PVC_FOR_PREDICTOR"
 	NamespaceScopeEnvVar              = "NAMESPACE_SCOPE"
 	TrueString                        = "true"
+	FalseString                       = "false"
 )
 
 func init() {
@@ -314,7 +316,7 @@ func main() {
 		registryKey string, registryValue predictor_source.PredictorRegistry) bool {
 
 		envVarVal, _ := os.LookupEnv(envVar)
-		if envVarVal != "false" {
+		if envVarVal != FalseString {
 			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
 			if err == nil || errors.IsNotFound(err) {
 				registryMap[registryKey] = registryValue
@@ -337,9 +339,9 @@ func main() {
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
 	checkCSRVar := func(envVar string, resourceName string, resourceObject client.Object) bool {
-
+		// default is true
 		envVarVal, _ := os.LookupEnv(envVar)
-		if envVarVal != "false" {
+		if envVarVal != FalseString {
 			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
 			if err == nil || errors.IsNotFound(err) {
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
@@ -359,9 +361,9 @@ func main() {
 	enableCSRWatch := checkCSRVar(EnableClusterServingRuntimeEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
 
 	checkSecretVar := func(envVar string, resourceName string, resourceObject client.Object) bool {
-
+		// default is true
 		envVarVal, _ := os.LookupEnv(envVar)
-		if envVarVal != "false" {
+		if envVarVal != FalseString {
 			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
 			if err == nil || errors.IsNotFound(err) {
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
@@ -377,6 +379,13 @@ func main() {
 		return false
 	}
 	enableSecretWatch := checkSecretVar(EnableSecretEnvVar, "Secret", &corev1.Secret{})
+
+	checkDeployPVCForPredictorVar := func(envVar string) bool {
+		// default is false
+		envVarVal, _ := os.LookupEnv(envVar)
+		return envVarVal == TrueString
+	}
+	deployPVCForPredictor := checkDeployPVCForPredictorVar(DeployPVCForPredictorEnvVar)
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
@@ -432,17 +441,18 @@ func main() {
 	}
 
 	if err = (&controllers.ServingRuntimeReconciler{
-		Client:              mgr.GetClient(),
-		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
-		Scheme:              mgr.GetScheme(),
-		ConfigProvider:      cp,
-		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
-		ControllerNamespace: ControllerNamespace,
-		ControllerName:      controllerDeploymentName,
-		ClusterScope:        clusterScopeMode,
-		EnableCSRWatch:      enableCSRWatch,
-		EnableSecretWatch:   enableSecretWatch,
-		RegistryMap:         registryMap,
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
+		Scheme:                mgr.GetScheme(),
+		ConfigProvider:        cp,
+		ConfigMapName:         types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
+		ControllerNamespace:   ControllerNamespace,
+		ControllerName:        controllerDeploymentName,
+		ClusterScope:          clusterScopeMode,
+		EnableCSRWatch:        enableCSRWatch,
+		EnableSecretWatch:     enableSecretWatch,
+		DeployPVCForPredictor: deployPVCForPredictor,
+		RegistryMap:           registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)

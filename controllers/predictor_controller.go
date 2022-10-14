@@ -42,6 +42,7 @@ import (
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -113,7 +114,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	mmc := pr.getMMClient(nname.Namespace)
 	var finalErr error
 
-	invalidPredictorMessage := validatePredictor(predictor)
+	invalidPredictorMessage := pr.validatePredictor(predictor)
 
 	if invalidPredictorMessage != "" {
 		log.Info("Invalid Predictor specification", "Spec", predictor.Spec)
@@ -224,7 +225,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 
 // validatePredictor checks if there are incompatibilities in the spec
 // Returns a string describing the reason a Predictor is invalid, empty if valid.
-func validatePredictor(predictor *api.Predictor) string {
+func (pr *PredictorReconciler) validatePredictor(predictor *api.Predictor) string {
 	// if it exists, inspect and validate the storage specification
 	if predictor.Spec.Storage == nil {
 		return ""
@@ -239,9 +240,26 @@ func validatePredictor(predictor *api.Predictor) string {
 		return "Only one of spec.schemaPath and spec.storage.schemaPath can be specified"
 	}
 
-	// PersistentVolumeClaim is deprecated and was never supported
+	// PersistentVolumeClaim is checked against the storage secret
 	if storage.PersistentVolumeClaim != nil {
-		return "spec.storage.PersistentVolumeClaim is not supported"
+		s := &corev1.Secret{}
+		if err := pr.Client.Get(context.TODO(), types.NamespacedName{
+			Name:      modelmesh.StorageSecretName,
+			Namespace: predictor.Namespace,
+		}, s); err != nil {
+			return "Could not get the storage secret"
+		}
+		var storageConfig map[string]string
+		for _, storageData := range s.Data {
+			if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+				return "Could not parse storage configuration json"
+			}
+			if storageConfig["type"] == StoragePVCType && storageConfig["name"] == storage.PersistentVolumeClaim.ClaimName {
+				return ""
+			}
+		}
+
+		return "PersistentVolumeClaim name is not in the storage config secret"
 	}
 
 	// S3 is deprecated and can not be specified alongside the new storage fields

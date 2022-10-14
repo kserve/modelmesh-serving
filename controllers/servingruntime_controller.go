@@ -31,6 +31,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -81,6 +82,8 @@ type ServingRuntimeReconciler struct {
 	EnableCSRWatch bool
 	// whether the controller is enabled to read and watch secrets
 	EnableSecretWatch bool
+	// whether the controller is enabled to deploy pvc mounts based on predictors
+	DeployPVCForPredictor bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -235,17 +238,34 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Name:      modelmesh.StorageSecretName,
 		Namespace: req.Namespace,
 	}, s); err != nil {
-		return RequeueResult, fmt.Errorf("Could not get the storage secret: %w", err)
+		return ctrl.Result{}, fmt.Errorf("Could not get the storage secret: %w", err)
 	}
 
-	var pvcs []string
+	pvcs := make(map[string]struct{})
 	var storageConfig map[string]string
 	for _, storageData := range s.Data {
 		if err = json.Unmarshal(storageData, &storageConfig); err != nil {
 			return ctrl.Result{}, fmt.Errorf("Could not parse storage configuration json: %w", err)
 		}
 		if storageConfig["type"] == StoragePVCType {
-			pvcs = append(pvcs, storageConfig["name"])
+			pvcs[storageConfig["name"]] = struct{}{}
+		}
+	}
+	// add pvcs for predictors when the global config is enabled
+	if r.DeployPVCForPredictor {
+		list := &v1beta1.InferenceServiceList{}
+		if err = r.Client.List(ctx, list, client.InNamespace(req.Namespace)); err != nil {
+			return ctrl.Result{}, fmt.Errorf("Could not get inference services: %w", err)
+		}
+
+		for i := range list.Items {
+			isvc := &list.Items[i]
+			if isvc.Spec.Predictor.Model != nil {
+				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
+				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
+					pvcs[u.Host] = struct{}{}
+				}
+			}
 		}
 	}
 

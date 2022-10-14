@@ -83,7 +83,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	}
 
 	// need to add pvc volumes
-	for _, pvcName := range m.PVCs {
+	for pvcName := range m.PVCs {
 		pvcVolume := corev1.Volume{
 			Name: pvcName,
 			VolumeSource: corev1.VolumeSource{
@@ -140,7 +140,7 @@ func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error
 		},
 	}
 
-	for _, pvcName := range m.PVCs {
+	for pvcName := range m.PVCs {
 		volumeMounts = append([]corev1.VolumeMount{
 			{
 				Name:      pvcName,
