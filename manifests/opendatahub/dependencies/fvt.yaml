@@ -56,6 +56,13 @@ spec:
             - containerPort: 2380
               name: server
               protocol: TCP
+          resources:  # ref: https://github.com/coreos/etcd-operator/blob/master/doc/user/spec_examples.md#three-member-cluster-with-resource-requirement
+            limits:
+              cpu: 300m
+              memory: 200Mi
+            requests:
+              cpu: 200m
+              memory: 100Mi
 ---
 apiVersion: v1
 kind: Secret
@@ -106,6 +113,13 @@ spec:
               value: AKIAIOSFODNN7EXAMPLE
             - name: MINIO_SECRET_KEY
               value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          resources:
+            requests:
+              cpu: 20m
+              memory: 100Mi
+            limits:
+              cpu: 250m
+              memory: 1Gi
           image: kserve/modelmesh-minio-dev-examples:latest
           name: minio
 ---
