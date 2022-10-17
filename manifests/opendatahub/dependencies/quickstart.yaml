@@ -58,6 +58,13 @@ spec:
             - containerPort: 2380
               name: server
               protocol: TCP
+          resources:  # ref: https://github.com/coreos/etcd-operator/blob/master/doc/user/spec_examples.md#three-member-cluster-with-resource-requirement
+            limits:
+              cpu: 300m
+              memory: 200Mi
+            requests:
+              cpu: 200m
+              memory: 100Mi
 ---
 apiVersion: v1
 kind: Secret
@@ -69,4 +76,3 @@ stringData:
       "endpoints": "http://etcd:2379",
       "root_prefix": "modelmesh-serving"
     }
-
