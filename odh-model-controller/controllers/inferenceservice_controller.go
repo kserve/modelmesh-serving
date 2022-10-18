@@ -75,11 +75,6 @@ func (r *OpenshiftInferenceServiceReconciler) Reconcile(ctx context.Context, req
 		return ctrl.Result{}, err
 	}
 
-	err = r.ReconcileServingRuntimes(inferenceservice, ctx)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	err = r.ReconcileRoute(inferenceservice, ctx)
 	if err != nil {
 		return ctrl.Result{}, err
