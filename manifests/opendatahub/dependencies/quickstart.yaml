@@ -49,7 +49,7 @@ spec:
             - http://0.0.0.0:2379
             - '--data-dir'
             - /tmp/etcd.data
-          image: quay.io/coreos/etcd:v3.5.4
+          image: quay.io/modh/etcd-container:3.2.32-rhel7.9-20221017084818
           name: etcd
           ports:
             - containerPort: 2379
