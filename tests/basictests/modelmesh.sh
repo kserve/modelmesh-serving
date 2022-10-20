@@ -17,7 +17,7 @@ function check_resources() {
     header "Testing modelmesh controller installation"
     os::cmd::expect_success "oc project ${ODHPROJECT}"
     os::cmd::try_until_text "oc get deployment modelmesh-controller" "modelmesh-controller" $odhdefaulttimeout $odhdefaultinterval
-    os::cmd::try_until_text "oc get pods -l control-plane=modelmesh-controller --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "1" $odhdefaulttimeout $odhdefaultinterval
+    os::cmd::try_until_text "oc get pods -l control-plane=modelmesh-controller --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "3" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::try_until_text "oc get service modelmesh-serving" "modelmesh-serving" $odhdefaulttimeout $odhdefaultinterval
 }
 
@@ -28,10 +28,10 @@ function setup_test_serving_namespace() {
     sed -i "s/<secretkey>/$SECRETKEY/g" ${RESOURCEDIR}/modelmesh/sample-minio.yaml
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/sample-minio.yaml -n ${MODEL_PROJECT}"
     os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l app=minio --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "1" $odhdefaulttimeout $odhdefaultinterval
-    os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/triton-inference-service.yaml -n ${MODEL_PROJECT}"
+    os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/openvino-inference-service.yaml -n ${MODEL_PROJECT}"
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/serving-runtime.yaml -n ${MODEL_PROJECT}"
     os::cmd::try_until_text "oc get pods -n ${ODHPROJECT} -l app=odh-model-controller --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "3" $odhdefaulttimeout $odhdefaultinterval
-    os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l name=modelmesh-serving-triton-2.x --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "2" $odhdefaulttimeout $odhdefaultinterval
+    os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l name=modelmesh-serving-ovms-1.x --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "2" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::try_until_text "oc get inferenceservice -n ${MODEL_PROJECT} ${PREDICTOR_NAME} -o jsonpath='{$.status.modelStatus.states.activeModelState}'" "Loaded" $odhdefaulttimeout $odhdefaultinterval
     oc project ${ODHPROJECT}
 }
@@ -41,8 +41,8 @@ function teardown_test_serving() {
     oc project ${MODEL_PROJECT}
     os::cmd::expect_success "oc delete -f ${RESOURCEDIR}/modelmesh/sample-minio.yaml"
     os::cmd::try_until_text "oc get pods -l app=minio --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "0" $odhdefaulttimeout $odhdefaultinterval
-    os::cmd::expect_success "oc delete -f ${RESOURCEDIR}/modelmesh/triton-inference-service.yaml "
-    os::cmd::try_until_text "oc get pods -l name=modelmesh-serving-triton-2.x --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "0" $odhdefaulttimeout $odhdefaultinterval
+    os::cmd::expect_success "oc delete -f ${RESOURCEDIR}/modelmesh/openvino-inference-service.yaml "
+    os::cmd::try_until_text "oc get pods -l name=modelmesh-serving-ovms-1.x --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "0" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::expect_success "oc delete project ${MODEL_PROJECT}"
     oc project ${ODHPROJECT}
 }

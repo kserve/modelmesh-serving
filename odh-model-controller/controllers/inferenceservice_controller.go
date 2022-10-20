@@ -25,8 +25,12 @@ import (
 	authv1 "k8s.io/api/rbac/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // OpenshiftInferenceServiceReconciler holds the controller configuration.
@@ -111,8 +115,36 @@ func (r *OpenshiftInferenceServiceReconciler) SetupWithManager(mgr ctrl.Manager)
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.Secret{}).
-		Owns(&authv1.ClusterRoleBinding{})
+		Owns(&authv1.ClusterRoleBinding{}).
+		Watches(&source.Kind{Type: &predictorv1.ServingRuntime{}},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				r.Log.Info("Reconcile event triggered by serving runtime: " + o.GetName())
+				inferenceServicesList := &inferenceservicev1.InferenceServiceList{}
+				opts := []client.ListOption{client.InNamespace(o.GetNamespace())}
 
+				// Todo: Get only Inference Services that are deploying on the specific serving runtime
+				err := r.List(context.TODO(), inferenceServicesList, opts...)
+				if err != nil {
+					r.Log.Info("Error getting list of inference services for namespace")
+					return []reconcile.Request{}
+				}
+
+				if len(inferenceServicesList.Items) == 0 {
+					r.Log.Info("No InferenceServices found for Serving Runtime: " + o.GetName())
+					return []reconcile.Request{}
+				}
+
+				reconcileRequests := make([]reconcile.Request, 0, len(inferenceServicesList.Items))
+				for _, inferenceService := range inferenceServicesList.Items {
+					reconcileRequests = append(reconcileRequests, reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name:      inferenceService.Name,
+							Namespace: inferenceService.Namespace,
+						},
+					})
+				}
+				return reconcileRequests
+			}))
 	err := builder.Complete(r)
 	if err != nil {
 		return err
