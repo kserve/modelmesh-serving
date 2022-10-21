@@ -35,7 +35,7 @@ else
   curl -O -L https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${PULL_NUMBER}.patch
   echo "Applying followng patch:"
   cat ${PULL_NUMBER}.patch > ${ARTIFACT_DIR}/github-pr-${PULL_NUMBER}.patch
-  git apply ${PULL_NUMBER}.patch
+  git am ${PULL_NUMBER}.patch
 fi
 popd
 ## Point kfctl_openshift.yaml to the manifests in the PR
