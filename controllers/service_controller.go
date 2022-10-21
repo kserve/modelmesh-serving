@@ -97,7 +97,7 @@ type ServiceReconciler struct {
 	ConfigProvider       *config.ConfigProvider
 	ConfigMapName        types.NamespacedName
 	ControllerDeployment types.NamespacedName
-	NamespaceOwned       bool
+	ClusterScope         bool
 
 	MMServices       *MMServiceMap
 	ModelEventStream *mmesh.ModelMeshEventStream
@@ -127,7 +127,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	var namespace string
 	var owner metav1.Object
-	if r.NamespaceOwned {
+	if r.ClusterScope {
 		// Per-namespace Services owned by the Namespace resource itself
 		namespace = req.Name
 		n := &corev1.Namespace{}
@@ -412,7 +412,7 @@ func (r *ServiceReconciler) reconcileServiceMonitor(ctx context.Context, metrics
 
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder := ctrl.NewControllerManagedBy(mgr).Named("ServiceReconciler").Owns(&corev1.Service{})
-	if r.NamespaceOwned {
+	if r.ClusterScope {
 		// Services are owned by Namespace resources
 		r.setupForClusterScope(builder)
 	} else {

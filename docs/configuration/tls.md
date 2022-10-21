@@ -56,7 +56,7 @@ For basic TLS, only the fields `tls.crt` and `tls.key` are needed in the kube se
 
 3.  Create a `Certificate` CR
 
-        oc apply -f - <<EOF
+        kubectl apply -f - <<EOF
         apiVersion: cert-manager.io/v1
         kind: Certificate
         metadata:
@@ -107,16 +107,17 @@ For basic TLS, only the fields `tls.crt` and `tls.key` are needed in the kube se
 
     **Example:**
 
-        kubectl apply -f - <<EOF
+        kubectl create -f - <<EOF
         apiVersion: v1
         kind: ConfigMap
         metadata:
           name: model-serving-config
         data:
           config.yaml: |
-            tls.secretName: ${SECRET_NAME}
+            tls:
+              secretName: ${SECRET_NAME}
         EOF
 
 6.  Retrieve the `ca.crt` (to be used in clients)
 
-        kubectl get secret ${SECRET_NAME} -o jsonpath="{.data.ca\.crt}"
+        kubectl get secret ${SECRET_NAME} -o jsonpath="{.data.ca\.crt}" > ca.crt
