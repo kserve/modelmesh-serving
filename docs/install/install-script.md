@@ -12,7 +12,7 @@
 
 We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
-The install script has a `--quickstart` option for setting up a self-contained ModelMesh Serving instance. This will deploy and configure local etcd and MinIO servers in the same Kubernetes namespace. Note that this is only for experimentation and/or development use - in particular the connections to these datastores are not secure and the etcd cluster is a single member which is not highly available. Use of `--quickstart` also configures the `storage-config` secret to be able to pull from the [ModelMesh Serving example models bucket](../example-models.md) which contains the model data for the sample InferenceServices. For complete details on the manifests applied with `--quickstart` see [config/dependencies/quickstart.yaml](https://github.com/kserve/modelmesh-serving/blob/main/config/dependencies/quickstart.yaml).
+The install script has a `--quickstart` option for setting up a self-contained ModelMesh Serving instance. This will deploy and configure local etcd and MinIO servers in the same Kubernetes namespace. Note that this is only for experimentation and/or development use - in particular the connections to these datastores are not secure and the etcd cluster is a single member which is not highly available. Use of `--quickstart` also configures the `storage-config` secret to be able to pull from the [ModelMesh Serving example models bucket](../example-models.md) which contains the model data for the sample `InferenceService`s. For complete details on the manifests applied with `--quickstart` see [config/dependencies/quickstart.yaml](https://github.com/kserve/modelmesh-serving/blob/main/config/dependencies/quickstart.yaml).
 
 ## Setup the etcd connection information
 
@@ -116,7 +116,7 @@ usage: ./scripts/setup_user_namespaces.sh [flags]
     -h, --help                    Display this help
 ```
 
-The following command will setup two namespaces with the required label, optional storage secret, and built-in runtimes, so you can deploy sample InferenceServices into any of them immediately.
+The following command will setup two namespaces with the required label, optional storage secret, and built-in runtimes, so you can deploy sample `InferenceService`s into any of them immediately.
 
 ```shell
 ./scripts/setup_user_namespaces.sh -u "ns1 ns2" --create-storage-secret --deploy-serving-runtimes

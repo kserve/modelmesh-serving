@@ -2,8 +2,6 @@
 
 The KServe `InferenceService` CRD is the primary user interface that ModelMesh Serving uses for deploying models. An `InferenceService` is comprised of three components: a Predictor, a Transformer, and an Explainer. Currently, ModelMesh Serving primarily only supports the Predictor component for deploying models. There is preliminary support for Transformers, however, transformer deployment is handled by the KServe controller. As such, each `InferenceService`'s transformer will require its own pod.
 
-# InferenceService Spec
-
 Here is an example of an `InferenceService` spec containing fields that would typically be used with ModelMesh:
 
 ```yaml
@@ -30,9 +28,9 @@ spec:
 
 **Note**
 
-- While both the KServe controller and ModelMesh controller will reconcile InferenceService resources, the ModelMesh controller will
-  only handle those InferenceServices with the `serving.kserve.io/deploymentMode: ModelMesh` annotation. Otherwise, the KServe controller will
-  handle reconciliation. Likewise, the KServe controller will not reconcile an InferenceService with the `serving.kserve.io/deploymentMode: ModelMesh`
+- While both the KServe controller and ModelMesh controller will reconcile `InferenceService` resources, the ModelMesh controller will
+  only handle those `InferenceServices` with the `serving.kserve.io/deploymentMode: ModelMesh` annotation. Otherwise, the KServe controller will
+  handle reconciliation. Likewise, the KServe controller will not reconcile an `InferenceService` with the `serving.kserve.io/deploymentMode: ModelMesh`
   annotation, and will defer under the assumption that the ModelMesh controller will handle it.
 - `runtime` is optional. If included, the model will be loaded/served using the `ServingRuntime` with the specified name, and the predictors `modelFormat` must match an entry
   in that runtime's `supportedModelFormats` list (see [runtimes](../runtimes/)).
@@ -75,7 +73,7 @@ The Status section of the `InferenceService` custom resource reflects details ab
 
 - `url` - URL holds the primary url that will distribute traffic over the provided traffic targets. This will be one the REST or gRPC endpoints that are available.
 - `restUrl` - REST endpoint of the component if available. This endpoint is provided through a REST proxy sidecar (if enabled), and this will also be the same for all predictors owned by a given ModelMesh Serving installation.
-- `grpcUrl` - gRPC endpoint of the component if available. Note that this will currently be the same for all InferenceService owned by a given ModelMesh Serving installation.
+- `grpcUrl` - gRPC endpoint of the component if available. Note that this will currently be the same for all `InferenceService` owned by a given ModelMesh Serving installation.
 
 `conditions` - Various condition entries. Pertinent entries are:
 
@@ -94,7 +92,7 @@ The Status section of the `InferenceService` custom resource reflects details ab
     - `Loaded` - The model is loaded in at least one pod and ready to respond immediately to inferencing requests.
     - `FailedToLoad` - The model could not be loaded for some reason. See the `lastFailureInfo` field for more details.
 
-  - `targetModelState` - This will be set only when `transitionStatus` is not `UpToDate`, meaning that the target model differs from the currently-active model. The target model always corresponds to the InferenceService predictor's current [spec](#inferenceservice-spec). The possible values are the same as `activeModelState` but should generally only be either `Loading` or `FailedToLoad`.
+  - `targetModelState` - This will be set only when `transitionStatus` is not `UpToDate`, meaning that the target model differs from the currently-active model. The target model always corresponds to the `InferenceService` predictor's current [spec](#inferenceservice-spec). The possible values are the same as `activeModelState` but should generally only be either `Loading` or `FailedToLoad`.
 
 - `transitionStatus` - Indicates state of the predictor relative to its current spec. It may be one of:
 
@@ -118,9 +116,9 @@ The Status section of the `InferenceService` custom resource reflects details ab
     - `InvalidPredictorSpec` - The current `InferenceService` predictor spec is invalid or unsupported.
   - `location` - Indication of the pod in which a loading failure most recently occurred, if applicable. Its value will be the last 12 digits of the pod's full name.
   - `message` - A message containing more detail about the error/failure.
-  - `modelId` - The internal id of the model in question. This includes a hash of the InferenceService's predictor spec.
+  - `modelId` - The internal id of the model in question. This includes a hash of the `InferenceService`'s predictor spec.
   - `time` - The time at which the failure occurred, if applicable.
 
-Upon creation, the active model status of an InferenceService will always transition to `Loaded` state (unless the loading fails), but later if unused, it is possible that the active model status ends up in a `Standby` state which means the model is still available to serve requests but the first request could incur a loading delay. Whether this happens is a function of the available capacity and usage pattern of other models. It's possible that models will transition from `Standby` back to `Loaded` "by themselves" if more capacity becomes available.
+Upon creation, the active model status of an `InferenceService` will always transition to `Loaded` state (unless the loading fails), but later if unused, it is possible that the active model status ends up in a `Standby` state which means the model is still available to serve requests but the first request could incur a loading delay. Whether this happens is a function of the available capacity and usage pattern of other models. It's possible that models will transition from `Standby` back to `Loaded` "by themselves" if more capacity becomes available.
 
 Model loading will be retried immediately in other pods if it fails, after which it will be re-attempted periodically (every ten minutes or so).

@@ -25,7 +25,7 @@ kubectl create namespace modelmesh-serving
 ./scripts/install.sh --namespace modelmesh-serving --quickstart
 ```
 
-This will install ModelMesh serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
+This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
 Eventually after running this script, you should see a `Successfully installed ModelMesh Serving!` message.
 
 **Note**: These etcd and MinIO deployments are intended for development/experimentation and not for production.
@@ -55,8 +55,8 @@ mlserver-0.x              sklearn      mlserver     5m
 triton-2.x                tensorflow   triton       5m
 ```
 
-`ServingRuntimes` are automatically provisioned based on the framework of the model deployed.
-Two `ServingRuntimes` are included with ModelMesh Serving by default. The current mappings for these
+`ServingRuntime`s are automatically provisioned based on the framework of the model deployed.
+Two `ServingRuntime`s are included with ModelMesh Serving by default. The current mappings for these
 are:
 
 | ServingRuntime | Supported Frameworks                |
@@ -68,9 +68,9 @@ are:
 
 With ModelMesh Serving now installed, try deploying a model using the KServe `InferenceService` CRD.
 
-> **Note**: While both the KServe controller and ModelMesh controller will reconcile InferenceService resources, the ModelMesh controller will
-> only handle those InferenceServices with the `serving.kserve.io/deploymentMode: ModelMesh` annotation. Otherwise, the KServe controller will
-> handle reconciliation. Likewise, the KServe controller will not reconcile an InferenceService with the `serving.kserve.io/deploymentMode: ModelMesh`
+> **Note**: While both the KServe controller and ModelMesh controller will reconcile `InferenceService` resources, the ModelMesh controller will
+> only handle those `InferenceService`s with the `serving.kserve.io/deploymentMode: ModelMesh` annotation. Otherwise, the KServe controller will
+> handle reconciliation. Likewise, the KServe controller will not reconcile an `InferenceService` with the `serving.kserve.io/deploymentMode: ModelMesh`
 > annotation, and will defer under the assumption that the ModelMesh controller will handle it.
 
 Here, we deploy an SKLearn MNIST model which is served from the local MinIO container:
@@ -124,7 +124,7 @@ NAME                    URL   READY   PREV   LATEST   PREVROLLEDOUTREVISION   LA
 example-sklearn-isvc          False                                                                 3s
 ```
 
-Eventually, you should see the ServingRuntime pods that will hold the SKLearn model become `Running`.
+Eventually, you should see the `ServingRuntime` pods that will hold the SKLearn model become `Running`.
 
 ```shell
 kubectl get pods
@@ -134,7 +134,7 @@ modelmesh-serving-mlserver-0.x-7db675f677-twrwd   3/3     Running   0          2
 modelmesh-serving-mlserver-0.x-7db675f677-xvd8q   3/3     Running   0          2m
 ```
 
-Then, checking on the `InferenceServices` again, you should see that the one we deployed is now ready with a provided URL:
+Then, checking on the `InferenceService` again, you should see that the one we deployed is now ready with a provided URL:
 
 ```shell
 kubectl get isvc
@@ -199,7 +199,7 @@ file can be used with `localhost:8033`. A ready-to-use Python example of this ca
 Alternatively, you can test inference with [grpcurl](https://github.com/fullstorydev/grpcurl). This can easily be installed with `brew install grpcurl` if on macOS.
 
 With `grpcurl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your InferenceService.
+variable below is set to the name of your `InferenceService`.
 
 ```shell
 MODEL_NAME=example-sklearn-isvc
@@ -240,7 +240,7 @@ kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8008 -n modelme
 ```
 
 With `curl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your InferenceService.
+variable below is set to the name of your `InferenceService`.
 
 ```shell
 MODEL_NAME=example-sklearn-isvc
