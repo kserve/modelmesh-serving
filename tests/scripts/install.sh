@@ -21,7 +21,7 @@ else
       echo "Trying restart of marketplace community operator pod"
       oc delete pod -n openshift-marketplace $(oc get pod -n openshift-marketplace -l marketplace.operatorSource=community-operators -o jsonpath="{$.items[*].metadata.name}")
       sleep 3m
-    fi  
+    fi
     retry=$(( retry - 1))
     sleep 1m
   done
@@ -49,27 +49,8 @@ else
   fi
 fi
 
-if [ -z "${OPENSHIFT_USER}" ] || [ -z "${OPENSHIFT_PASS}" ]; then
-  OAUTH_PATCH_TEXT="$(cat $HOME/peak/operator-tests/odh-manifests/resources/oauth-patch.htpasswd.json)"
-  echo "Creating HTPASSWD OAuth provider"
-  oc apply -f $HOME/peak/operator-tests/odh-manifests/resources/htpasswd.secret.yaml
-
-  # Test if any oauth identityProviders exists. If not, initialize the identityProvider list
-  if ! oc get oauth cluster -o json | jq -e '.spec.identityProviders' ; then
-    echo 'No oauth identityProvider exists. Initializing oauth .spec.identityProviders = []'
-    oc patch oauth cluster --type json -p '[{"op": "add", "path": "/spec/identityProviders", "value": []}]'
-  fi
-
-  # Patch in the htpasswd identityProvider prevent deletion of any existing identityProviders like ldap
-  #  We can have multiple identityProvdiers enabled aslong as their 'name' value is unique
-  oc patch oauth cluster --type json -p '[{"op": "add", "path": "/spec/identityProviders/-", "value": '"$OAUTH_PATCH_TEXT"'}]'
-
-  export OPENSHIFT_USER=admin
-  export OPENSHIFT_PASS=admin
-fi
-
 if ! [ -z "${SKIP_KFDEF_INSTALL}" ]; then
-  ## SKIP_KFDEF_INSTALL is useful in an instance where the 
+  ## SKIP_KFDEF_INSTALL is useful in an instance where the
   ## operator install comes with an init container to handle
   ## the KfDef creation
   echo "Relying on existing KfDef because SKIP_KFDEF_INSTALL was set"
