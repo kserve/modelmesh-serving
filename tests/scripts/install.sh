@@ -28,7 +28,7 @@ else
 fi
 popd
 ## Grabbing and applying the patch in the PR we are testing
-pushd ~/src/odh-manifests
+pushd ~/src/${REPO_NAME}
 if [ -z "$PULL_NUMBER" ]; then
   echo "No pull number, assuming nightly run"
 else
@@ -43,9 +43,9 @@ pushd ~/kfdef
 if [ -z "$PULL_NUMBER" ]; then
   echo "No pull number, not modifying kfctl_openshift.yaml"
 else
-  if [ $REPO_NAME == "odh-manifests" ]; then
+  if [ $REPO_NAME == "modelmesh-serving" ]; then
     echo "Setting manifests in kfctl_openshift to use pull number: $PULL_NUMBER"
-    sed -i "s#uri: https://github.com/opendatahub-io/odh-manifests/tarball/master#uri: https://api.github.com/repos/opendatahub-io/odh-manifests/tarball/pull/${PULL_NUMBER}/head#" ./kfctl_openshift.yaml
+    sed -i "s#uri: https://github.com/${REPO_OWNER}/${REPO_NAME}/tarball/main#uri: https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/tarball/pull/${PULL_NUMBER}/head#" ./kfctl_openshift.yaml
   fi
 fi
 
