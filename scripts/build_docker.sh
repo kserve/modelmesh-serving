@@ -22,6 +22,7 @@ usage: $0 [flags]
   [-t | --target]     Specify a target to build, default: "runtime"
   [--tag]             Docker Image Tag to use
   [--devimage]        Full name of dev docker image
+  [--engine]          Container Engine to be used, default: "docker"
 EOF
 )"
 
@@ -34,6 +35,7 @@ DOCKER_TARGET="runtime"
 DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date +"%Y%m%dT%H%M%S%Z")"
 CONTROLLER_IMG="kserve/modelmesh-controller"
 DEV_IMAGE="$(cat .develop_image_name)"
+ENGINE="docker"
 
 while (("$#")); do
   arg="$1"
@@ -62,6 +64,15 @@ while (("$#")); do
   --devimage)
     if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
       DEV_IMAGE=$2
+      shift 2
+    else
+      echo "Error: Argument for $1 is missing" >&2
+      usage
+    fi
+    ;;
+  --engine)
+    if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+      ENGINE=$2
       shift 2
     else
       echo "Error: Argument for $1 is missing" >&2
@@ -102,5 +113,5 @@ if [[ $DOCKER_TARGET == 'runtime' ]]; then
   docker_args+=("--build-arg=IMAGE_VERSION=${DOCKER_TAG}")
 fi
 
-docker build . \
+$ENGINE build . \
   "${docker_args[@]}"
