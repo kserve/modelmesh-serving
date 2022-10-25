@@ -29,6 +29,7 @@ function setup_test_serving_namespace() {
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/sample-minio.yaml -n ${MODEL_PROJECT}"
     os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l app=minio --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "1" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/mnist-sklearn.yaml -n ${MODEL_PROJECT}"
+    os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/serving-runtime.yaml -n ${MODEL_PROJECT}"
     os::cmd::try_until_text "oc get pods -n ${ODHPROJECT} -l app=odh-model-controller --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "3" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l name=modelmesh-serving-mlserver-0.x --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "2" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::try_until_text "oc get inferenceservice -n ${MODEL_PROJECT} example-sklearn-isvc -o jsonpath='{$.status.modelStatus.states.activeModelState}'" "Loaded" $odhdefaulttimeout $odhdefaultinterval
