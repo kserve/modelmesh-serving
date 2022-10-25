@@ -2,7 +2,7 @@
 
 ### InferenceService CR in `FailedtoLoad` state
 
-Check details in the InferenceService Model Status `lastFailureInfo`. The message field should indicate the problem or give a clue as to what the problem is.
+Check details in the `InferenceService` Model Status `lastFailureInfo`. The message field should indicate the problem or give a clue as to what the problem is.
 
 Otherwise, the location field should have the runtime pod name suffix in which the error occurred. Check the logs of the adapter/puller, model server, and mm containers in this pod
 

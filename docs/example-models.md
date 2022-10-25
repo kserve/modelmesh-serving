@@ -4,7 +4,7 @@ If ModelMesh Serving was deployed using `--quickstart`, a set of example models 
 
 ## InferenceServices
 
-The `config/example-isvcs` directory contains InferenceService manifests for many of the example models. Assuming that the entry specified below is added to the storage configuration secret, the InferenceServices can be deployed and used for experimentation.
+The `config/example-isvcs` directory contains `InferenceService` manifests for many of the example models. Assuming that the entry specified below is added to the storage configuration secret, the `InferenceService`s can be deployed and used for experimentation.
 
 ## Naming Conventions
 

@@ -9,7 +9,7 @@ Currently, only gRPC requests are supported by ModelMesh. However, if the `restP
 
 ### Configure gRPC client
 
-Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the InferenceService as the `model_name` field in the `ModelInferRequest` message.
+Configure your gRPC client to point to address `modelmesh-serving:8033`, which is based on the kube-dns address and port corresponding to the service. Use the protobuf-based gRPC inference service defined [here](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md#grpc) to make inference requests to the model using the `ModelInfer` RPC, setting the name of the `InferenceService` as the `model_name` field in the `ModelInferRequest` message.
 
 Configure the gRPC clients which talk to your service to explicitly use:
 
@@ -141,9 +141,9 @@ $ grpcurl \
 }
 ```
 
-Note that you have to provide the `model_name` in the data load, which is the name of the InferenceService deployed.
+Note that you have to provide the `model_name` in the data load, which is the name of the `InferenceService` deployed.
 
-If a custom serving runtime which doesn't use the KFS V2 API is being used, the `mm-vmodel-id` header must be set to the InferenceService name.
+If a custom serving runtime which doesn't use the KFS V2 API is being used, the `mm-vmodel-id` header must be set to the `InferenceService` name.
 
 If you are sure the requests from your client are being routed in such a way that balances evenly across the cluster (as described [above](#configure-grpc-client)), you should include an additional metadata parameter `mm-balanced = true`. This allows some internal performance optimizations but should not be included if the source if the requests is not properly balanced.
 
@@ -162,7 +162,7 @@ grpcurl \
 
 ## Inference using REST
 
-> **Note**: The [REST proxy](https://github.com/kserve/rest-proxy) is currently in an alpha state and may still have issues with certain usage scenarios. When the use case is more performance or resource intensive, consider disabling the REST proxy (it is enabled by default), and using gRPC instead. With the REST proxy enabled, an extra container is deployed in each serving runtime pod which increases resource usage and inference request performance is reduced. See [Configuration](../configuration/README.md) for how to disable/enable the REST inferencing endpoint for ModelMesh ServingRuntimes.
+> **Note**: The [REST proxy](https://github.com/kserve/rest-proxy) is currently in an alpha state and may still have issues with certain usage scenarios. When the use case is more performance or resource intensive, consider disabling the REST proxy (it is enabled by default), and using gRPC instead. With the REST proxy enabled, an extra container is deployed in each serving runtime pod which increases resource usage and inference request performance is reduced. See [Configuration](../configuration/README.md) for how to disable/enable the REST inferencing endpoint for ModelMesh `ServingRuntime`s.
 
 By default, REST requests will go through the `modelmesh-serving` service using port `8008`.
 

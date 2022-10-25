@@ -200,8 +200,8 @@ spec:
   grpcDataEndpoint: "port:8090"
 ```
 
-In each entry of the `supportedModelFormats` list, `autoSelect: true` can optionally be specified to indicate that that the given `ServingRuntime` can be considered for automatic placement of `InferenceServices` with the corresponding model type/format if no runtime is explicitly specified.
-For example, if a user applies an `InferenceService` with `predictor.model.modelFormat.name: new-modelformat` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modelformat`. If `autoSelect` were `false` or unspecified, the `InferenceService` would fail to load with the message "No ServingRuntime supports specified model type and/or protocol" unless the runtime `example-runtime` was specified directly in the YAML.
+In each entry of the `supportedModelFormats` list, `autoSelect: true` can optionally be specified to indicate that that the given `ServingRuntime` can be considered for automatic placement of `InferenceService`s with the corresponding model type/format if no runtime is explicitly specified.
+For example, if a user applies an `InferenceService` with `predictor.model.modelFormat.name: new-modelformat` and no `runtime` value, the above `ServingRuntime` will be used since it contains an "auto-selectable" supported model format that matches `new-modelformat`. If `autoSelect` were `false` or unspecified, the `InferenceService` would fail to load with the message "No `ServingRuntime` supports specified model type and/or protocol" unless the runtime `example-runtime` was specified directly in the YAML.
 
 ### Runtime container resource allocations
 
@@ -213,7 +213,7 @@ The ability to specify multiple containers provides a nice way to integrate with
 
 ![Custom with puller](../images/rt-custom-direct.png)
 
-_Note: In the above diagram, only the adapter and model server containers are explicitly specified in the ServingRuntime CR, the others are included automatically._
+_Note: In the above diagram, only the adapter and model server containers are explicitly specified in the `ServingRuntime` CR, the others are included automatically._
 
 The [built-in runtimes](https://github.com/kserve/modelmesh-serving/tree/main/config/runtimes) based on [Nvidia's Triton Inferencing Server](https://github.com/kserve/modelmesh-serving/blob/main/config/runtimes/triton-2.x.yaml) and the [Seldon MLServer](https://github.com/SeldonIO/MLServer), and their corresponding adapters serve as good examples of this and can be used as a reference.
 
@@ -225,7 +225,7 @@ Available attributes in the `ServingRuntime` spec:
 
 | Attribute                          | Description                                                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `multiModel`                       | Whether this ServingRuntime is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                       |
+| `multiModel`                       | Whether this `ServingRuntime` is ModelMesh-compatible and intended for multi-model usage (as opposed to KServe single-model serving).                                     |
 | `disabled`                         | Disables this runtime                                                                                                                                                     |
 | `containers`                       | List of containers associated with the runtime                                                                                                                            |
 | `containers[ ].image`              | The container image for the current container                                                                                                                             |
