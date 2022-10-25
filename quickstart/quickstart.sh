@@ -43,8 +43,8 @@ oc::wait::object::availability "oc get crd predictors.serving.kserve.io" 5 120
 oc::wait::object::availability "oc get crd servingruntimes.serving.kserve.io" 5 120
 
 oc apply -f minio.yaml -n $INFERENCE_SERVICE_PROJECT
-oc apply -f triton-inference-service.yaml -n $INFERENCE_SERVICE_PROJECT
-oc apply -f triton-serving-runtime.yaml -n $INFERENCE_SERVICE_PROJECT
+oc apply -f openvino-inference-service.yaml -n $INFERENCE_SERVICE_PROJECT
+oc apply -f openvino-serving-runtime.yaml -n $INFERENCE_SERVICE_PROJECT
 
 rm minio.yaml
 
