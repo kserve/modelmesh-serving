@@ -31,7 +31,7 @@ const (
 	ModelDirScale float64 = 1.5
 )
 
-//Sets the model mesh grace period to match the deployment grace period
+// Sets the model mesh grace period to match the deployment grace period
 func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 	if deployment.Spec.Template.Spec.TerminationGracePeriodSeconds != nil {
 		gracePeriodS := deployment.Spec.Template.Spec.TerminationGracePeriodSeconds
@@ -98,13 +98,13 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 	return resource.NewQuantity(int64(float64(memorySize.Value())*ModelDirScale), resource.BinarySI)
 }
 
-//Adds the provided runtime to the deployment
+// Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers
 	lifecycle := &corev1.Lifecycle{
-		PreStop: &corev1.Handler{
+		PreStop: &corev1.LifecycleHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path: "/prestop",
 				Port: intstr.FromInt(8090),
