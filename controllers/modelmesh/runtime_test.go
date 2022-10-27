@@ -375,6 +375,52 @@ func TestConfigureRuntimeAnnotations(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Empty(t, deploy.Spec.Template.Annotations)
 	})
+
+	t.Run("success-set-annotations-from-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					Annotations: map[string]string{
+						"foo":            "bar",
+						"network-policy": "allow-egress",
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, AnnotationsMap: map[string]string{}, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecAnnotations(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Annotations["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Annotations["network-policy"], "allow-egress")
+	})
+
+	t.Run("success-overwrite-annotations-from-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		// annotations from user config
+		annotationsData := map[string]string{
+			"foo":            "bar",
+			"network-policy": "allow-egress",
+		}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					Annotations: map[string]string{
+						"network-policy": "overwritten-by-servingruntime",
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, AnnotationsMap: annotationsData, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecAnnotations(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Annotations["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Annotations["network-policy"], "overwritten-by-servingruntime")
+	})
 }
 
 func TestConfigureRuntimeLabels(t *testing.T) {
@@ -406,5 +452,55 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 		err := m.configureRuntimePodSpecLabels(deploy)
 		assert.Nil(t, err)
 		assert.Empty(t, deploy.Spec.Template.Labels)
+	})
+
+	t.Run("success-set-labels-from-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					Labels: map[string]string{
+						"foo":            "bar",
+						"network-policy": "allow-egress",
+						"cp4s-internet":  "allow",
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, LabelsMap: map[string]string{}, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecLabels(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Labels["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Labels["network-policy"], "allow-egress")
+		assert.Equal(t, deploy.Spec.Template.Labels["cp4s-internet"], "allow")
+	})
+
+	t.Run("success-overwrite-labels-from-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		// labels from user config
+		labelData := map[string]string{
+			"foo":            "bar",
+			"network-policy": "allow-egress",
+			"cp4s-internet":  "allow",
+		}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					Labels: map[string]string{
+						"network-policy": "overwritten-by-servingruntime",
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, LabelsMap: labelData, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecLabels(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Labels["foo"], "bar")
+		assert.Equal(t, deploy.Spec.Template.Labels["network-policy"], "overwritten-by-servingruntime")
+		assert.Equal(t, deploy.Spec.Template.Labels["cp4s-internet"], "allow")
 	})
 }
