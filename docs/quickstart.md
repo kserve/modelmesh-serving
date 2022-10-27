@@ -45,24 +45,26 @@ pod/minio                                   1/1     Running   0          5m
 pod/modelmesh-controller-547bfb64dc-mrgrq   1/1     Running   0          5m
 ```
 
-Check that the `ServingRuntimes` are available:
+Check that the `ServingRuntime`s are available:
 
 ```shell
 kubectl get servingruntimes
 
 NAME           DISABLED   MODELTYPE    CONTAINERS   AGE
 mlserver-0.x              sklearn      mlserver     5m
+ovms-1.x                  openvino_ir  ovms         5m
 triton-2.x                tensorflow   triton       5m
 ```
 
 `ServingRuntime`s are automatically provisioned based on the framework of the model deployed.
-Two `ServingRuntime`s are included with ModelMesh Serving by default. The current mappings for these
+Three `ServingRuntime`s are included with ModelMesh Serving by default. The current mappings for these
 are:
 
 | ServingRuntime | Supported Frameworks                |
 | -------------- | ----------------------------------- |
 | triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
 | mlserver-0.x   | sklearn, xgboost, lightgbm          |
+| ovms-1.x       | openvino_ir, onnx                   |
 
 ## 2. Deploy a model
 
