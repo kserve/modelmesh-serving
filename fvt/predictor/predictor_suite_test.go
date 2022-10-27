@@ -24,6 +24,7 @@ import (
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestPredictorSuite(t *testing.T) {
@@ -63,11 +64,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	createFVTClient()
 
 	// confirm 3 cluster serving runtimes or serving runtimes exist
-	f := FVTClientInstance.ListClusterServingRuntimes
+	var err error
+	var list *unstructured.UnstructuredList
 	if NameSpaceScopeMode {
-		f = FVTClientInstance.ListServingRuntimes
+		list, err = FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	} else {
+		list, err = FVTClientInstance.ListClusterServingRuntimes(metav1.ListOptions{})
 	}
-	list, err := f(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(list.Items).To(HaveLen(3))
 

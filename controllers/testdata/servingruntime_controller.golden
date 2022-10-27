@@ -525,7 +525,7 @@ spec:
           secretName: secret
 status: {}
 '''
-"Sample Runtime controllers/testdata/mlserver-0.x.yaml should be a valid runtime specification" = '''
+"Sample Runtime config/runtimes/mlserver-0.x.yaml should be a valid runtime specification" = '''
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -771,7 +771,7 @@ spec:
           secretName: secret
 status: {}
 '''
-"Sample Runtime controllers/testdata/ovms-1.x.yaml should be a valid runtime specification" = '''
+"Sample Runtime config/runtimes/ovms-1.x.yaml should be a valid runtime specification" = '''
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1009,7 +1009,7 @@ spec:
           secretName: secret
 status: {}
 '''
-"Sample Runtime controllers/testdata/triton-2.x.yaml should be a valid runtime specification" = '''
+"Sample Runtime config/runtimes/triton-2.x.yaml should be a valid runtime specification" = '''
 apiVersion: apps/v1
 kind: Deployment
 metadata:

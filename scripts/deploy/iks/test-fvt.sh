@@ -61,9 +61,6 @@ run_fvt() {
     fi
   fi
 
-  if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
-      REV=0
-  fi
   return "$REV"
 }
 

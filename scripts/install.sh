@@ -239,9 +239,9 @@ if [[ $delete == "true" ]]; then
   info "Deleting any previous ModelMesh Serving instances and older CRD with serving.kserve.io api group name"
   kubectl delete crd/predictors.serving.kserve.io --ignore-not-found=true
   kubectl delete crd/servingruntimes.serving.kserve.io --ignore-not-found=true
-  kubectl delete crd/clusterservingruntimes.serving.kserve.io --ignore-not-found=true
   kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
   if [[ $namespace_scope_mode != "true" ]]; then
+    kubectl delete crd/clusterservingruntimes.serving.kserve.io --ignore-not-found=true
     kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
   fi
   kustomize build default | kubectl delete -f - --ignore-not-found=true
@@ -298,6 +298,7 @@ fi
 if [[ $namespace_scope_mode == "true" ]]; then
   info "Enabling namespace scope mode"
   kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=true
+  # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation 
   sed -i 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 fi
 
@@ -321,7 +322,7 @@ else
     kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
 fi
 
-if [[ $namespace_scope_mode == "false" ]] && [[ ! -z $user_ns_array ]]; then
+if [[ $namespace_scope_mode != "true" ]] && [[ ! -z $user_ns_array ]]; then
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
