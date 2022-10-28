@@ -21,13 +21,24 @@ spec:
   selector:
     matchLabels:
       control-plane: modelmesh-controller
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       labels:
         control-plane: modelmesh-controller
     spec:
       affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: control-plane
+                      operator: In
+                      values:
+                        - modelmesh-controller
+                topologyKey: topology.kubernetes.io/zone
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
