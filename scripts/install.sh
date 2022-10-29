@@ -282,6 +282,7 @@ kubectl get secret storage-config
 info "Installing ModelMesh Serving RBACs (namespace_scope_mode=$namespace_scope_mode)"
 if [[ $namespace_scope_mode == "true" ]]; then
   kustomize build rbac/namespace-scope | kubectl apply -f -
+  # We don't install the ClusterServingRuntime CRD when in namespace scope mode, so comment it out first in the CRD manifest file
   sed -i 's/- bases\/serving.kserve.io_clusterservingruntimes.yaml/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 else
   kustomize build rbac/cluster-scope | kubectl apply -f -

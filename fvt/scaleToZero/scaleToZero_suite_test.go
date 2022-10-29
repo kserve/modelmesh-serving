@@ -14,6 +14,7 @@
 package scaleToZero
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"testing"
 	"time"
@@ -61,12 +62,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(FVTClientInstance).ToNot(BeNil())
 	Log.Info("FVTClientInstance created", "client", FVTClientInstance)
 
-	// confirm 3 cluster serving runtimes or serving runtimes exist
-	f := FVTClientInstance.ListClusterServingRuntimes
+	// confirm 3 cluster serving runtimes or serving runtimes
+	var list *unstructured.UnstructuredList
 	if NameSpaceScopeMode {
-		f = FVTClientInstance.ListServingRuntimes
+		list, err = FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	} else {
+		list, err = FVTClientInstance.ListClusterServingRuntimes(metav1.ListOptions{})
 	}
-	list, err := f(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(list.Items).To(HaveLen(3))
 
