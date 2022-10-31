@@ -45,7 +45,7 @@ if [ -z "$PULL_NUMBER" ]; then
 else
   if [ $REPO_NAME == "modelmesh-serving" ]; then
     echo "Setting manifests in kfctl_openshift to use pull number: $PULL_NUMBER"
-    sed -i "s#uri: https://github.com/${REPO_OWNER}/${REPO_NAME}/tarball/main#uri: https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/tarball/pull/${PULL_NUMBER}/head#" ./kfctl_openshift.yaml
+    sed -i "s#uri: https://api.github.com/${REPO_OWNER}/${REPO_NAME}/tarball/main#uri: https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/tarball/pull/${PULL_NUMBER}/head#" ./kfctl_openshift.yaml
   fi
 fi
 
