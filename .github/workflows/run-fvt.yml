@@ -81,4 +81,5 @@ jobs:
           go install github.com/onsi/ginkgo/v2/ginkgo
           export PATH=/root/go/bin/:$PATH
           export NAMESPACE=modelmesh-serving
+          export NAMESPACESCOPEMODE=false
           make fvt

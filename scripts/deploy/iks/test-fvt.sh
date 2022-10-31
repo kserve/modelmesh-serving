@@ -35,7 +35,6 @@ retry() {
 # Run fvt tests and look for PASS
 run_fvt() {
   local REV=1
-  local RUN_STATUS="FAILED"
 
   echo " =====   run standard fvt   ====="
   kubectl get all -n "$SERVING_NS"
@@ -49,9 +48,9 @@ run_fvt() {
   export PATH=/root/go/bin/:$PATH
 
   export NAMESPACE=${SERVING_NS}
+  export NAMESPACESCOPEMODE=false
   ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
   cat fvt.out
-  RUN_STATUS=$(cat fvt.out | awk '{ print $1}' | grep PASS)
 
   if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
     export NAMESPACE="modelmesh-user"

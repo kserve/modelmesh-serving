@@ -69,7 +69,7 @@ var _ = Describe("Sample Runtime", func() {
 				m, err = mf.ManifestFrom(mf.Path(filepath.Join("..", sampleFilename)))
 				m.Client = mfc.NewClient(k8sClient)
 				Expect(err).ToNot(HaveOccurred())
-				m, err = m.Transform(mf.InjectNamespace(namespace))
+				m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))
 				Expect(err).ToNot(HaveOccurred())
 				err = m.Apply()
 				Expect(err).ToNot(HaveOccurred())
@@ -100,7 +100,7 @@ var _ = Describe("Prometheus metrics configuration", func() {
 		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
 		m.Client = mfc.NewClient(k8sClient)
 		Expect(err).ToNot(HaveOccurred())
-		m, err = m.Transform(mf.InjectNamespace(namespace))
+		m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))
 		Expect(err).ToNot(HaveOccurred())
 		err = m.Apply()
 		Expect(err).ToNot(HaveOccurred())
@@ -179,7 +179,7 @@ var _ = Describe("REST Proxy configuration", func() {
 		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
 		m.Client = mfc.NewClient(k8sClient)
 		Expect(err).ToNot(HaveOccurred())
-		m, err = m.Transform(mf.InjectNamespace(namespace))
+		m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))
 		Expect(err).ToNot(HaveOccurred())
 		err = m.Apply()
 		Expect(err).ToNot(HaveOccurred())
@@ -193,3 +193,10 @@ var _ = Describe("REST Proxy configuration", func() {
 		Expect(d).To(SnapshotMatcher())
 	})
 })
+
+func convertToServingRuntime(resource *unstructured.Unstructured) error {
+	if resource.GetKind() == "ClusterServingRuntime" {
+		resource.SetKind("ServingRuntime")
+	}
+	return nil
+}

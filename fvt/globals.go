@@ -21,6 +21,7 @@ var Log logr.Logger
 var FVTClientInstance *FVTClient
 
 var DefaultTimeout = int64(120)
+var NameSpaceScopeMode = false
 
 var DefaultConfig = map[string]interface{}{
 	"podsPerRuntime": 1,
