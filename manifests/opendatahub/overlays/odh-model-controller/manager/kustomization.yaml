@@ -17,4 +17,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/opendatahub/odh-model-controller
-  newTag: v0.9.1-authentication
+  newTag: v0.9.2-auth
