@@ -21,7 +21,7 @@ spec:
   selector:
     matchLabels:
       control-plane: modelmesh-controller
-  replicas: 1
+  replicas: 1 # This can be increased safely to enable HA. A good value to set is 3.
   template:
     metadata:
       labels:
@@ -36,6 +36,17 @@ spec:
                     operator: In
                     values:
                       - amd64
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: control-plane
+                      operator: In
+                      values:
+                        - modelmesh-controller
+                topologyKey: topology.kubernetes.io/zone
       containers:
         - command:
             - /manager
