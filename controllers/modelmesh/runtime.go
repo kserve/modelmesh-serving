@@ -31,7 +31,7 @@ const (
 	ModelDirScale float64 = 1.5
 )
 
-//Sets the model mesh grace period to match the deployment grace period
+// Sets the model mesh grace period to match the deployment grace period
 func (m *Deployment) syncGracePeriod(deployment *appsv1.Deployment) error {
 	if deployment.Spec.Template.Spec.TerminationGracePeriodSeconds != nil {
 		gracePeriodS := deployment.Spec.Template.Spec.TerminationGracePeriodSeconds
@@ -98,13 +98,13 @@ func calculateModelDirSize(rts *kserveapi.ServingRuntimeSpec) *resource.Quantity
 	return resource.NewQuantity(int64(float64(memorySize.Value())*ModelDirScale), resource.BinarySI)
 }
 
-//Adds the provided runtime to the deployment
+// Adds the provided runtime to the deployment
 func (m *Deployment) addRuntimeToDeployment(deployment *appsv1.Deployment) error {
 	rts := m.SRSpec
 
 	// first prepare the common variables needed for both adapter and other containers
 	lifecycle := &corev1.Lifecycle{
-		PreStop: &corev1.Handler{
+		PreStop: &corev1.LifecycleHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path: "/prestop",
 				Port: intstr.FromInt(8090),
@@ -360,32 +360,15 @@ func (m *Deployment) addPassThroughPodFieldsToDeployment(deployment *appsv1.Depl
 }
 
 func (m *Deployment) configureRuntimePodSpecAnnotations(deployment *appsv1.Deployment) error {
-
-	if deployment.Spec.Template.Annotations == nil {
-		deployment.Spec.Template.Annotations = m.AnnotationsMap
-		return nil
-	}
-
-	// apply user configmap annotations
-	for key, value := range m.AnnotationsMap {
-		// set labels for pods created by deployment
-		deployment.Spec.Template.Annotations[key] = value
-	}
-
+	// merging the annotations
+	// priority: ServingRuntimePodSpec > AnnotationsMap > whatever in the deployment template
+	deployment.Spec.Template.Annotations = Union(deployment.Spec.Template.Annotations, m.AnnotationsMap, m.SRSpec.ServingRuntimePodSpec.Annotations)
 	return nil
 }
 
 func (m *Deployment) configureRuntimePodSpecLabels(deployment *appsv1.Deployment) error {
-
-	if deployment.Spec.Template.Labels == nil {
-		deployment.Spec.Template.Labels = m.LabelsMap
-		return nil
-	}
-
-	for key, value := range m.LabelsMap {
-		// set labels for pods created by deployment
-		deployment.Spec.Template.Labels[key] = value
-	}
-
+	// merging the labels
+	// priority: ServingRuntimePodSpec > LabelsMap > whatever in the deployment template
+	deployment.Spec.Template.Labels = Union(deployment.Spec.Template.Labels, m.LabelsMap, m.SRSpec.ServingRuntimePodSpec.Labels)
 	return nil
 }
