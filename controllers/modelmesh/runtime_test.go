@@ -504,3 +504,82 @@ func TestConfigureRuntimeLabels(t *testing.T) {
 		assert.Equal(t, deploy.Spec.Template.Labels["cp4s-internet"], "allow")
 	})
 }
+
+func TestConfigureRuntimeImagePullSecrets(t *testing.T) {
+	t.Run("success-set-image-pull-secrets", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &kserveapi.ServingRuntime{}
+		imagePullSecretsData := []v1.LocalObjectReference{
+			{Name: "config-image-pull-secret-1"},
+			{Name: "config-image-pull-secret-2"},
+		}
+
+		m := Deployment{Owner: sr, ImagePullSecrets: imagePullSecretsData, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecImagePullSecrets(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[0].Name, "config-image-pull-secret-1")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[1].Name, "config-image-pull-secret-2")
+	})
+
+	t.Run("success-no-image-pull-secrets", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &kserveapi.ServingRuntime{}
+		m := Deployment{Owner: sr, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecImagePullSecrets(deploy)
+		assert.Nil(t, err)
+		assert.Empty(t, deploy.Spec.Template.Spec.ImagePullSecrets)
+	})
+
+	t.Run("success-set-image-pull-secrets-from-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					ImagePullSecrets: []v1.LocalObjectReference{
+						{Name: "sr-image-pull-secret-1"},
+						{Name: "sr-image-pull-secret-2"},
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecImagePullSecrets(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[0].Name, "sr-image-pull-secret-1")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[1].Name, "sr-image-pull-secret-2")
+	})
+
+	t.Run("success-set-image-pull-secrets-from-config-and-servingruntime-spec", func(t *testing.T) {
+		deploy := &appsv1.Deployment{}
+		imagePullSecretsData := []v1.LocalObjectReference{
+			{Name: "config-image-pull-secret-1"},
+			{Name: "config-image-pull-secret-2"},
+			{Name: "overlap-image-pull-secret"},
+		}
+		sr := &kserveapi.ServingRuntime{
+			Spec: kserveapi.ServingRuntimeSpec{
+				ServingRuntimePodSpec: kserveapi.ServingRuntimePodSpec{
+					ImagePullSecrets: []v1.LocalObjectReference{
+						{Name: "overlap-image-pull-secret"},
+						{Name: "sr-image-pull-secret-1"},
+						{Name: "sr-image-pull-secret-2"},
+					},
+				},
+			},
+		}
+
+		m := Deployment{Owner: sr, ImagePullSecrets: imagePullSecretsData, SRSpec: &sr.Spec}
+
+		err := m.configureRuntimePodSpecImagePullSecrets(deploy)
+		assert.Nil(t, err)
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[0].Name, "config-image-pull-secret-1")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[1].Name, "config-image-pull-secret-2")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[2].Name, "overlap-image-pull-secret")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[3].Name, "sr-image-pull-secret-1")
+		assert.Equal(t, deploy.Spec.Template.Spec.ImagePullSecrets[4].Name, "sr-image-pull-secret-2")
+	})
+}

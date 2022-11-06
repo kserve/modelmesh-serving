@@ -293,3 +293,21 @@ internalModelMeshEnvVars:
 		t.Fatalf("Expected InternalModelMeshEnvVars to have env var with value [%s], but got [%s]", expectedValue, envvar.Value)
 	}
 }
+
+func TestImagePullSecrets(t *testing.T) {
+	yaml := `
+imagePullSecrets:
+  - name: "config-image-pull-secret"
+`
+	expectedSecretName := "config-image-pull-secret"
+
+	conf, err := NewMergedConfigFromString(yaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secret := conf.ImagePullSecrets[0]
+	if secret.Name != expectedSecretName {
+		t.Fatalf("Expected ImagePullSecrets to have secret with name [%s], but got [%s]", expectedSecretName, secret.Name)
+	}
+}

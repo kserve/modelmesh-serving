@@ -52,6 +52,7 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `restProxy.port`                           | Port on which the REST proxy to serve REST requests                                                   | `8008`                                     |
 | `runtimePodLabels`                         | `metadata.labels` to be added to all `ServingRuntime` pods                                            | (\*\*\*\*\*) See default labels below      |
 | `runtimePodAnnotations`                    | `metadata.annotations` to be added to all `ServingRuntime` pods                                       | (\*\*\*\*\*) See default annotations below |
+| `imagePullSecrets`                         | The image pull secrets to use for runtime Pods                                                        |                                            |
 
 (\*) Currently requires a controller restart to take effect
 
