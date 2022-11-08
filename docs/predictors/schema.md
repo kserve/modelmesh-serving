@@ -58,7 +58,7 @@ This is a sample schema for an MNIST model that includes a batch dimension. The 
 
 The `predictor.storage.schemaPath` field of the `InferenceService` custom resource should be set to point to this JSON file within the `InferenceService` predictor's specified storage instance.
 
-#### Example `InferenceService` CR with provided schema
+#### Example InferenceService CR with provided schema
 
 ```yaml
 apiVersion: serving.kserve.io/v1beta1

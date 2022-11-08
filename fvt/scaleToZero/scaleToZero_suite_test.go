@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -51,7 +53,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if controllerNamespace == "" {
 		controllerNamespace = DefaultControllerNamespace
 	}
-	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName, "CONTROLLERNAMESPACE", controllerNamespace)
+	NameSpaceScopeMode = os.Getenv("NAMESPACESCOPEMODE") == "true"
+	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName,
+		"CONTROLLERNAMESPACE", controllerNamespace, "NAMESPACESCOPEMODE", NameSpaceScopeMode)
 
 	var err error
 	FVTClientInstance, err = GetFVTClient(Log, namespace, serviceName, controllerNamespace)
@@ -59,8 +63,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(FVTClientInstance).ToNot(BeNil())
 	Log.Info("FVTClientInstance created", "client", FVTClientInstance)
 
-	// confirm 3 serving runtimes exist
-	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	// confirm 3 cluster serving runtimes or serving runtimes
+	var list *unstructured.UnstructuredList
+	if NameSpaceScopeMode {
+		list, err = FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	} else {
+		list, err = FVTClientInstance.ListClusterServingRuntimes(metav1.ListOptions{})
+	}
 	Expect(err).ToNot(HaveOccurred())
 	Expect(list.Items).To(HaveLen(3))
 

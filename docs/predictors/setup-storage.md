@@ -94,4 +94,4 @@ azureKey: |
   }
 ```
 
-Remember that after updating the storage config secret, there may be a delay of up to 2 minutes until the change is picked up. You should take this into account when creating/updating InferenceServices that use storage keys which have just been added or updated - they may fail to load otherwise.
+Remember that after updating the storage config secret, there may be a delay of up to 2 minutes until the change is picked up. You should take this into account when creating/updating `InferenceService`s that use storage keys which have just been added or updated - they may fail to load otherwise.

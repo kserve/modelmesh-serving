@@ -237,6 +237,7 @@ if [[ $delete == "true" ]]; then
   kubectl delete crd/servingruntimes.serving.kserve.io --ignore-not-found=true
   kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
   if [[ $namespace_scope_mode != "true" ]]; then
+    kubectl delete crd/clusterservingruntimes.serving.kserve.io --ignore-not-found=true
     kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
   fi
   kustomize build default | kubectl delete -f - --ignore-not-found=true
@@ -277,6 +278,8 @@ kubectl get secret storage-config
 info "Installing ModelMesh Serving RBACs (namespace_scope_mode=$namespace_scope_mode)"
 if [[ $namespace_scope_mode == "true" ]]; then
   kustomize build rbac/namespace-scope | kubectl apply -f -
+  # We don't install the ClusterServingRuntime CRD when in namespace scope mode, so comment it out first in the CRD manifest file
+  sed -i 's/- bases\/serving.kserve.io_clusterservingruntimes.yaml/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 else
   kustomize build rbac/cluster-scope | kubectl apply -f -
 fi
@@ -292,6 +295,8 @@ fi
 if [[ $namespace_scope_mode == "true" ]]; then
   info "Enabling namespace scope mode"
   kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=true
+  # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation 
+  sed -i 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
 fi
 
 info "Waiting for ModelMesh Serving controller pod to be up..."
@@ -308,10 +313,13 @@ elif [[ -n "$kustomize_version" && "$kustomize_version" < "4.0.1" ]]; then
 fi
 
 info "Installing ModelMesh Serving built-in runtimes"
-kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+if [[ $namespace_scope_mode == "true" ]]; then
+    kustomize build namespace-runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+else
+    kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl apply -f -
+fi
 
-if [[ ! -z $user_ns_array ]]; then
-  kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
+if [[ $namespace_scope_mode != "true" ]] && [[ ! -z $user_ns_array ]]; then
   cp dependencies/minio-storage-secret.yaml .
   sed -i.bak "s/controller_namespace/${namespace}/g" minio-storage-secret.yaml
 
@@ -320,7 +328,6 @@ if [[ ! -z $user_ns_array ]]; then
       echo "Kube namespace does not exist: $user_ns. Will skip."
     else
       kubectl label namespace ${user_ns} modelmesh-enabled="true" --overwrite
-      kubectl apply -f runtimes.yaml -n ${user_ns}
       if ([ $quickstart == "true" ] || [ $fvt == "true" ]); then
         kubectl apply -f minio-storage-secret.yaml -n ${user_ns}
       fi
@@ -328,7 +335,6 @@ if [[ ! -z $user_ns_array ]]; then
   done
   rm minio-storage-secret.yaml
   rm minio-storage-secret.yaml.bak
-  rm runtimes.yaml
 fi
 
 success "Successfully installed ModelMesh Serving!"

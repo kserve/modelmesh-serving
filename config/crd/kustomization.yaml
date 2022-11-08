@@ -18,8 +18,7 @@ resources:
   # Including creation of Service here for now, will later be done automatically
   - bases/serving.kserve.io_predictors.yaml
   - bases/serving.kserve.io_inferenceservices.yaml
-  # ClusterServingRuntime not yet supported by modelmesh-serving
-  #  - bases/serving.kserve.io_clusterservingruntimes.yaml
+  - bases/serving.kserve.io_clusterservingruntimes.yaml
   - bases/serving.kserve.io_servingruntimes.yaml
   # +kubebuilder:scaffold:crdkustomizeresource
 

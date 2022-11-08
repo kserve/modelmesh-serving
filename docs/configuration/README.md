@@ -45,12 +45,12 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `metrics.port`                             | Port on which to serve metrics via the `/metrics` endpoint                                            | `2112`                                     |
 | `metrics.scheme`                           | Scheme to use for the `/metrics` endpoint (`http` or `https`)                                         | `https`                                    |
 | `metrics.disablePrometheusOperatorSupport` | Disable the support of Prometheus operator for metrics only if `metrics.enabled` is true              | `false`                                    |
-| `scaleToZero.enabled`                      | Whether to scale down Serving Runtimes that have no InferenceServices                                 | `true`                                     |
-| `scaleToZero.gracePeriodSeconds`           | The number of seconds to wait after InferenceServices are deleted before scaling to zero              | `60`                                       |
+| `scaleToZero.enabled`                      | Whether to scale down `ServingRuntime`s that have no `InferenceService`s                              | `true`                                     |
+| `scaleToZero.gracePeriodSeconds`           | The number of seconds to wait after `InferenceService`s are deleted before scaling to zero            | `60`                                       |
 | `grpcMaxMessageSizeBytes`                  | The max number of bytes for the gRPC request payloads (\*\*\*\* see below)                            | `16777216` (16MiB)                         |
-| `restProxy.enabled`                        | Enables the provided REST proxy container being deployed in each ServingRuntime deployment            | `true`                                     |
+| `restProxy.enabled`                        | Enables the provided REST proxy container being deployed in each `ServingRuntime` deployment          | `true`                                     |
 | `restProxy.port`                           | Port on which the REST proxy to serve REST requests                                                   | `8008`                                     |
-| `runtimePodLabels`                         | `metadata.labels` to be added to all ServingRuntime pods                                              | (\*\*\*\*\*) See default labels below      |
+| `runtimePodLabels`                         | `metadata.labels` to be added to all `ServingRuntime` pods                                            | (\*\*\*\*\*) See default labels below      |
 | `runtimePodAnnotations`                    | `metadata.annotations` to be added to all `ServingRuntime` pods                                       | (\*\*\*\*\*) See default annotations below |
 
 (\*) Currently requires a controller restart to take effect
@@ -67,7 +67,7 @@ All certificates must be encoded in PEM PKCS8 format. See the [dedicated page](.
 
 (\*\*\*\*) The max gRPC request payload size depends on both this setting and adjusting the model serving runtimes' max message limit. See [inference docs](/docs/predictors/run-inference.md) for details.
 
-(\*\*\*\*\*) Default ServingRuntime Pod labels and annotations
+(\*\*\*\*\*) Default `ServingRuntime` Pod labels and annotations
 
 Labels:
 

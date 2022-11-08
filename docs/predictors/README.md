@@ -1,6 +1,6 @@
 # Using ModelMesh Serving
 
-Trained models are deployed in ModelMesh Serving via `InferenceServices`s. The `predictor` component of an `InferenceService` represents a stable service endpoint behind which the underlying model can change.
+Trained models are deployed in ModelMesh Serving via `InferenceService`s. The `predictor` component of an `InferenceService` represents a stable service endpoint behind which the underlying model can change.
 
 Models must reside on shared storage. Currently, S3, GCS, and Azure Blob Storage are supported with limited supported for HTTP(S). Note that model data residing at a particular path within a given storage instance is **assumed to be immutable**. Different versions of the same logical model are treated at the base level as independent models and must reside at different paths. In particular, where a given model server/runtime natively supports the notion of versioning (such as Nvidia Triton, TensorFlow Serving, etc), the provided path should not point to the top of a (pseudo-)directory structure containing multiple versions. Instead, point to the subdirectory which corresponds to a specific version.
 
@@ -34,7 +34,7 @@ There should be secret key called `localMinIO` that looks like:
 
 #### 2. Create an InferenceService to serve the sample model
 
-The `config/example-isvcs` directory contains InferenceService manifests for many of the example models. For a list of available models, see the [example models documentation](../example-models.md#available-models).
+The `config/example-isvcs` directory contains `InferenceService` manifests for many of the example models. For a list of available models, see the [example models documentation](../example-models.md#available-models).
 
 Here we are deploying an sklearn model located at `sklearn/mnist-svm.joblib` within the MinIO storage.
 
@@ -108,7 +108,7 @@ grpc://modelmesh-serving.modelmesh-serving:8033
 ```
 
 The active model state should reflect immediate availability, but may take some seconds to move from `Loading` to `Loaded`.
-Inferencing requests for this InferenceService received prior to loading completion will block until it completes.
+Inferencing requests for this `InferenceService` received prior to loading completion will block until it completes.
 
 See the [InferenceService Status](inferenceservice-cr.md#predictor-status) section for details of how to interpret the different states.
 
@@ -116,7 +116,7 @@ See the [InferenceService Status](inferenceservice-cr.md#predictor-status) secti
 
 **Note**
 
-When `ScaleToZero` is enabled, the first InferenceService assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
+When `ScaleToZero` is enabled, the first `InferenceService` assigned to the Triton runtime may be stuck in the `Pending` state for some time while the Triton pods are being created. The Triton image is large and may take a while to download.
 
 ---
 
@@ -126,7 +126,7 @@ The built-in runtimes implement the gRPC protocol of the [KServe Predict API Ver
 The `.proto` file for this API can be downloaded from [KServe's repo](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/grpc_predict_v2.proto)
 or from the [`modelmesh-serving` repository at `fvt/proto/kfs_inference_v2.proto`](https://github.com/kserve/modelmesh-serving/blob/main/fvt/proto/kfs_inference_v2.proto).
 
-To send an inference request, configure your gRPC client to point to address `modelmesh-serving:8033` and construct a request to the model using the `ModelInfer` RPC, setting the name of the InferenceService as the `model_name` field in the `ModelInferRequest` message.
+To send an inference request, configure your gRPC client to point to address `modelmesh-serving:8033` and construct a request to the model using the `ModelInfer` RPC, setting the name of the `InferenceService` as the `model_name` field in the `ModelInferRequest` message.
 
 Here is an example of how to do this using the command-line based [grpcurl](https://github.com/fullstorydev/grpcurl):
 
@@ -139,8 +139,8 @@ Forwarding from 127.0.0.1:8033 -> 8033
 Forwarding from [::1]:8033 -> 8033
 ```
 
-In a separate terminal window, send an inference request using the proto file from `fvt/proto` or one that you have locally. Note that you have to provide the `model_name` in the data load, which is the name of the InferenceService deployed.
-Note that you have to set the `model_name` in the data payload to the name of the InferenceService.
+In a separate terminal window, send an inference request using the proto file from `fvt/proto` or one that you have locally. Note that you have to provide the `model_name` in the data load, which is the name of the `InferenceService` deployed.
+Note that you have to set the `model_name` in the data payload to the name of the `InferenceService`.
 
 ```shell
 $ grpcurl -plaintext -proto fvt/proto/kfs_inference_v2.proto localhost:8033 list
@@ -172,9 +172,9 @@ $ grpcurl -plaintext -proto fvt/proto/kfs_inference_v2.proto -d '{ "model_name":
 ## Updating the model
 
 Changes can be made to the `InferenceService` predictor spec, such as changing the target storage and/or model, without interrupting the inferencing service.
-The InferenceService will continue to use the prior spec/model until the new one is loaded and ready.
+The `InferenceService` will continue to use the prior spec/model until the new one is loaded and ready.
 
-Below, we are changing the InferenceService to use a completely different model, in practice the schema of the InferenceService's model would be consistent across updates even if the type of model or ML framework changes.
+Below, we are changing the `InferenceService` to use a completely different model, in practice the schema of the `InferenceService`'s model would be consistent across updates even if the type of model or ML framework changes.
 
 ```shell
 $ kubectl apply -f - <<EOF
@@ -208,7 +208,7 @@ $ kubectl describe isvc example-mnist-isvc
 ...
 ```
 
-The "transition" status of the InferenceService will be `InProgress` while waiting for the new backing model to be ready,
+The "transition" status of the `InferenceService` will be `InProgress` while waiting for the new backing model to be ready,
 and return to `UpToDate` once the transition is complete.
 
 ```shell

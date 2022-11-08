@@ -39,7 +39,7 @@ When an `InferenceService` using one of these model types is deployed, Pods corr
         memory: 1Gi
       ```
 - `replicas` - if not set, the value defaults to the global config parameter `podsPerRuntime` with value of 2.
-  - Remember that if [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled which it is by default, runtimes will have 0 replicas until an InferenceService is created that uses that runtime. Once an InferenceService is assigned, the runtime pods will scale up to this number.
+  - Remember that if [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled which it is by default, runtimes will have 0 replicas until an `InferenceService` is created that uses that runtime. Once an `InferenceService` is assigned, the runtime pods will scale up to this number.
 - `containers[ ].imagePullPolicy` - set to default `IfNotPresent`
 - `nodeSelector`
 - `affinity`

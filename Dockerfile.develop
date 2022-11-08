@@ -17,7 +17,7 @@
 ###############################################################################
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 
-ARG GOLANG_VERSION=1.17.9
+ARG GOLANG_VERSION=1.18.7
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
 ARG KUBEBUILDER_VERSION=v3.3.0

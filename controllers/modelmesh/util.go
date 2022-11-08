@@ -20,10 +20,15 @@ import (
 	"strings"
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
+	kserveutils "github.com/kserve/kserve/pkg/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	Union = kserveutils.Union
 )
 
 // Find a container by name in the given deployment, returns (-1, nil) if not found

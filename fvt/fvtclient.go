@@ -194,6 +194,11 @@ var (
 		Version:  api.GroupVersion.Version,
 		Resource: "servingruntimes", // this must be the plural form
 	}
+	gvrCRuntime = schema.GroupVersionResource{
+		Group:    api.GroupVersion.Group,
+		Version:  api.GroupVersion.Version,
+		Resource: "clusterservingruntimes", // this must be the plural form
+	}
 	gvrPredictor = schema.GroupVersionResource{
 		Group:    api.GroupVersion.Group,
 		Version:  api.GroupVersion.Version,
@@ -271,6 +276,9 @@ func (fvt *FVTClient) ListServingRuntimes(options metav1.ListOptions) (*unstruct
 	return fvt.Resource(gvrRuntime).Namespace(fvt.namespace).List(context.TODO(), options)
 }
 
+func (fvt *FVTClient) ListClusterServingRuntimes(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	return fvt.Resource(gvrCRuntime).List(context.TODO(), options)
+}
 func (fvt *FVTClient) GetPredictor(name string) *unstructured.Unstructured {
 	obj, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred())
