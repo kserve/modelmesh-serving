@@ -24,6 +24,7 @@ import (
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestPredictorSuite(t *testing.T) {
@@ -47,7 +48,9 @@ func createFVTClient() {
 	if controllerNamespace == "" {
 		controllerNamespace = DefaultControllerNamespace
 	}
-	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName, "CONTROLLERNAMESPACE", controllerNamespace)
+	NameSpaceScopeMode = os.Getenv("NAMESPACESCOPEMODE") == "true"
+	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName,
+		"CONTROLLERNAMESPACE", controllerNamespace, "NAMESPACESCOPEMODE", NameSpaceScopeMode)
 
 	var err error
 	FVTClientInstance, err = GetFVTClient(Log, namespace, serviceName, controllerNamespace)
@@ -60,8 +63,14 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// runs *only* on process #1
 	createFVTClient()
 
-	// confirm 3 serving runtimes exist
-	list, err := FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	// confirm 3 cluster serving runtimes or serving runtimes exist
+	var err error
+	var list *unstructured.UnstructuredList
+	if NameSpaceScopeMode {
+		list, err = FVTClientInstance.ListServingRuntimes(metav1.ListOptions{})
+	} else {
+		list, err = FVTClientInstance.ListClusterServingRuntimes(metav1.ListOptions{})
+	}
 	Expect(err).ToNot(HaveOccurred())
 	Expect(list.Items).To(HaveLen(3))
 

@@ -16,6 +16,9 @@ ifeq (run,$(firstword $(MAKECMDGOALS)))
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 
+# Container Engine to be used for building images
+ENGINE ?= "docker"
+
 # Image URL to use all building/pushing image targets
 IMG ?= kserve/modelmesh-controller:latest
 # Namespace to deploy model-serve into
@@ -111,11 +114,11 @@ generate: controller-gen
 
 # Build the final runtime docker image
 build:
-	./scripts/build_docker.sh --target runtime
+	./scripts/build_docker.sh --target runtime --engine $(ENGINE)
 
 # Build the develop docker image
 build.develop:
-	./scripts/build_devimage.sh
+	./scripts/build_devimage.sh $(ENGINE)
 
 # Start a terminal session in the develop docker container
 develop: build.develop

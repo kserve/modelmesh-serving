@@ -33,12 +33,12 @@ The default configuration is for the cluster scope mode. Use the `--namespace-sc
 | 6          | Built-in Runtime | The OVMS runtime Pods      | 0 \(\*) | 850m / 10 or 900m / 11 \(\*\*)    | 1568Mi / 1984Mi or 1664Mi / 2496Mi \(\*\*) |
 | **totals** |                  |                            | 3       | 450m / 1.4                        | 864Mi / 1.25Gi                             |
 
-When a ModelMesh serving instance is installed with the `--quickstart` option, pods shown in 1 - 6 are created.
+When a ModelMesh Serving instance is installed with the `--quickstart` option, pods shown in 1 - 6 are created.
 However, do note that the quickstart-deployed etcd and MinIO pods are intended for development/experimentation and not for production.
 
-(\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until an InferenceService is created that uses that runtime. Once an InferenceService is assigned, the runtime pods will scale up to 2.
+(\*) [`ScaleToZero`](../production-use/scaling.md#scale-to-zero) is enabled by default, so runtimes will have 0 replicas until an `InferenceService` is created that uses that runtime. Once an `InferenceService` is assigned, the runtime pods will scale up to 2.
 
-When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no InferenceServices for that runtime. When `ScaletoZero` is enabled and first InferenceService CR is submitted, ModelMesh serving will spin up the corresponding built-in runtime pods.
+When `ScaleToZero` **is enabled** (default), deployments for runtime pods will be scaled to 0 when there are no `InferenceService`s for that runtime. When `ScaletoZero` is enabled and first `InferenceService` CR is submitted, ModelMesh Serving will spin up the corresponding built-in runtime pods.
 
 When `ScaletoZero` is **disabled**, pods shown in 4 to 6 are created (default two pods per runtime), which will greatly increase the total CPU(request/limit) and total memory(request/limit).
 
