@@ -33,6 +33,7 @@ oc new-project $MODELMESH_PROJECT
 oc apply -f ../manifests/kfdef.yaml -n $MODELMESH_PROJECT
 
 oc new-project $INFERENCE_SERVICE_PROJECT
+oc label namespace $INFERENCE_SERVICE_PROJECT "modelmesh-enabled=true" --overwrite=true || echo "Failed to apply modelmesh-enabled label."
 
 SECRETKEY=$(openssl rand -hex 32)
 sed "s/<secretkey>/$SECRETKEY/g" sample-minio.yaml > minio.yaml

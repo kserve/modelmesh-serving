@@ -26,6 +26,7 @@ function setup_test_serving_namespace() {
     header "Setting up test modelmesh serving in ${MODEL_PROJECT}"
     SECRETKEY=$(openssl rand -hex 32)
     sed -i "s/<secretkey>/$SECRETKEY/g" ${RESOURCEDIR}/modelmesh/sample-minio.yaml
+    oc label namespace ${MODEL_PROJECT} "modelmesh-enabled=true" --overwrite=true || echo "Failed to apply modelmesh-enabled label."
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/sample-minio.yaml -n ${MODEL_PROJECT}"
     os::cmd::try_until_text "oc get pods -n ${MODEL_PROJECT} -l app=minio --field-selector='status.phase=Running' -o jsonpath='{$.items[*].metadata.name}' | wc -w" "1" $odhdefaulttimeout $odhdefaultinterval
     os::cmd::expect_success "oc apply -f ${RESOURCEDIR}/modelmesh/openvino-inference-service.yaml -n ${MODEL_PROJECT}"
