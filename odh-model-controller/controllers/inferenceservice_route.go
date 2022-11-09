@@ -40,12 +40,7 @@ const (
 // NewInferenceServiceRoute defines the desired route object
 func NewInferenceServiceRoute(inferenceservice *inferenceservicev1.InferenceService, enableAuth bool) *routev1.Route {
 
-	routePortName := modelmeshServicePort
-	if enableAuth {
-		routePortName = modelmeshAuthServicePort
-	}
-
-	return &routev1.Route{
+	finalRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      inferenceservice.Name,
 			Namespace: inferenceservice.Namespace,
@@ -60,11 +55,7 @@ func NewInferenceServiceRoute(inferenceservice *inferenceservicev1.InferenceServ
 				Weight: pointer.Int32Ptr(100),
 			},
 			Port: &routev1.RoutePort{
-				TargetPort: intstr.FromInt(routePortName),
-			},
-			TLS: &routev1.TLSConfig{
-				Termination:                   routev1.TLSTerminationReencrypt,
-				InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+				TargetPort: intstr.FromInt(modelmeshServicePort),
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
 			Path:           "/v2/models/" + inferenceservice.Name,
@@ -73,6 +64,18 @@ func NewInferenceServiceRoute(inferenceservice *inferenceservicev1.InferenceServ
 			Ingress: []routev1.RouteIngress{},
 		},
 	}
+
+	if enableAuth {
+		finalRoute.Spec.Port = &routev1.RoutePort{
+			TargetPort: intstr.FromInt(modelmeshAuthServicePort),
+		}
+		finalRoute.Spec.TLS = &routev1.TLSConfig{
+			Termination:                   routev1.TLSTerminationReencrypt,
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+		}
+	}
+
+	return finalRoute
 }
 
 // CompareInferenceServiceRoutes checks if two routes are equal, if not return false
