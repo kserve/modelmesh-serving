@@ -84,6 +84,8 @@ type Config struct {
 	RuntimePodLabels      map[string]string
 	RuntimePodAnnotations map[string]string
 
+	ImagePullSecrets []corev1.LocalObjectReference
+
 	// For internal use only
 	InternalModelMeshEnvVars EnvVarList
 }

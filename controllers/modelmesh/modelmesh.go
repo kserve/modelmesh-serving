@@ -34,7 +34,7 @@ const logYaml = false
 
 const ModelMeshEtcdPrefix = "mm"
 
-//Models a deployment
+// Models a deployment
 type Deployment struct {
 	ServiceName        string
 	ServicePort        uint16
@@ -73,6 +73,7 @@ type Deployment struct {
 	AnnotationConfigMap *corev1.ConfigMap
 	AnnotationsMap      map[string]string
 	LabelsMap           map[string]string
+	ImagePullSecrets    []corev1.LocalObjectReference
 	EnableAccessLogging bool
 	Client              client.Client
 }
@@ -126,6 +127,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 				m.configureRuntimePodSpecAnnotations,
 				m.configureRuntimePodSpecLabels,
 				m.ensureMMContainerIsLast,
+				m.configureRuntimePodSpecImagePullSecrets,
 			); tErr != nil {
 				return tErr
 			}
