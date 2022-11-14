@@ -15,8 +15,8 @@ apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
   annotations:
-    create-route: "True"
-    enable-auth: "True"
+    enable-route: "true"
+    enable-auth: "true"
   name: ovms-1.x
   labels:
     name: modelmesh-serving-ovms-1.x-SR
