@@ -1009,6 +1009,247 @@ spec:
           secretName: secret
 status: {}
 '''
+"Sample Runtime config/runtimes/torchserve-0.x.yaml should be a valid runtime specification" = '''
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      modelmesh-service: modelmesh-serving
+      name: modelmesh-serving-torchserve-0.x
+  strategy:
+    rollingUpdate:
+      maxSurge: 75%
+      maxUnavailable: 15%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: modelmesh-controller
+        app.kubernetes.io/managed-by: modelmesh-controller
+        app.kubernetes.io/name: modelmesh-controller
+        modelmesh-service: modelmesh-serving
+        name: modelmesh-serving-torchserve-0.x
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+      containers:
+      - command:
+        - /opt/app/torchserve-adapter
+        env:
+        - name: ADAPTER_PORT
+          value: "8085"
+        - name: RUNTIME_PORT
+          value: "7071"
+        - name: RUNTIME_DATA_ENDPOINT
+          value: port:7070
+        - name: CONTAINER_MEM_REQ_BYTES
+          valueFrom:
+            resourceFieldRef:
+              containerName: torchserve
+              divisor: "0"
+              resource: requests.memory
+        - name: MEM_BUFFER_BYTES
+          value: "134217728"
+        - name: LOADTIME_TIMEOUT
+          value: "90000"
+        - name: USE_EMBEDDED_PULLER
+          value: "true"
+        - name: RUNTIME_VERSION
+          value: replace
+        image: image:tag
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            httpGet:
+              path: /prestop
+              port: 8090
+              scheme: HTTP
+        name: torchserve-adapter
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 96Mi
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /models
+          name: models-dir
+        - mountPath: /storage-config
+          name: storage-config
+          readOnly: true
+      - args:
+        - while [ ! -e "$TS_CONFIG_FILE" ]; do echo "waiting for config file...";
+          sleep 1; done;
+        - exec
+        - torchserve
+        - --start
+        - --foreground
+        env:
+        - name: TS_CONFIG_FILE
+          value: /models/_torchserve_models/mmconfig.properties
+        image: torchserve-0:replace
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            httpGet:
+              path: /prestop
+              port: 8090
+              scheme: HTTP
+        name: torchserve
+        resources:
+          limits:
+            cpu: "5"
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /models
+          name: models-dir
+      - env:
+        - name: MM_SERVICE_NAME
+          value: modelmesh-serving
+        - name: MM_SVC_GRPC_PORT
+          value: "1234"
+        - name: WKUBE_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: WKUBE_POD_IPADDR
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: MM_LOCATION
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: KV_STORE
+          value: etcd:/opt/kserve/mmesh/etcd/etcd_connection
+        - name: MM_METRICS
+          value: disabled
+        - name: SHUTDOWN_TIMEOUT_MS
+          value: "90000"
+        - name: INTERNAL_SERVING_GRPC_PORT
+          value: "7070"
+        - name: INTERNAL_GRPC_PORT
+          value: "8085"
+        - name: MM_SVC_GRPC_MAX_MSG_SIZE
+          value: "16777216"
+        - name: MM_KVSTORE_PREFIX
+          value: mm
+        - name: MM_DEFAULT_VMODEL_OWNER
+          value: ksp
+        - name: MM_LABELS
+          value: mt:pytorch-mar,mt:pytorch-mar:0,rt:torchserve-0.x
+        - name: MM_TYPE_CONSTRAINTS_PATH
+          value: /etc/watson/mmesh/config/type_constraints
+        - name: MM_DATAPLANE_CONFIG_PATH
+          value: /etc/watson/mmesh/config/dataplane_api_config
+        image: image:tag
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /opt/kserve/mmesh/stop.sh
+              - wait
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /live
+            port: 8089
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: mm
+        ports:
+        - containerPort: 1234
+          name: grpc
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ready
+            port: 8089
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: "3"
+            memory: 448Mi
+          requests:
+            cpu: 300m
+            memory: 448Mi
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/watson/mmesh/config
+          name: tc-config
+        - mountPath: /opt/kserve/mmesh/etcd
+          name: etcd-config
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 90
+      volumes:
+      - emptyDir:
+          sizeLimit: 1536Mi
+        name: models-dir
+      - name: storage-config
+        secret:
+          defaultMode: 420
+          secretName: storage-config
+      - configMap:
+          defaultMode: 420
+          name: tc-config
+        name: tc-config
+      - name: etcd-config
+        secret:
+          defaultMode: 420
+          secretName: secret
+status: {}
+'''
 "Sample Runtime config/runtimes/triton-2.x.yaml should be a valid runtime specification" = '''
 apiVersion: apps/v1
 kind: Deployment

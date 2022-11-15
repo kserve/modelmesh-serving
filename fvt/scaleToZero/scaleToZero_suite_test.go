@@ -71,7 +71,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		list, err = FVTClientInstance.ListClusterServingRuntimes(metav1.ListOptions{})
 	}
 	Expect(err).ToNot(HaveOccurred())
-	Expect(list.Items).To(HaveLen(3))
+	Expect(list.Items).To(HaveLen(4))
 
 	config := map[string]interface{}{
 		"scaleToZero": map[string]interface{}{

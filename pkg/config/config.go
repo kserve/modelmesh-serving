@@ -341,7 +341,7 @@ func defaults(v *viper.Viper) {
 	// default size 16MiB in bytes
 	v.SetDefault("GrpcMaxMessageSizeBytes", 16777216)
 	v.SetDefault("BuiltInServerTypes", []string{
-		string(kserveapi.MLServer), string(kserveapi.Triton), string(kserveapi.OVMS),
+		string(kserveapi.MLServer), string(kserveapi.Triton), string(kserveapi.OVMS), "torchserve",
 	})
 }
 

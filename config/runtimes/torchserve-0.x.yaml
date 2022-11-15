@@ -1,0 +1,59 @@
+# Copyright 2022 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: torchserve-0.x
+  labels:
+    name: modelmesh-serving-torchserve-0.x-SR
+spec:
+  supportedModelFormats:
+    - name: pytorch-mar
+      version: "0"
+      autoSelect: true
+
+  multiModel: true
+
+  grpcEndpoint: "port:8085"
+  grpcDataEndpoint: "port:7070"
+
+  containers:
+    - name: torchserve
+      image: torchserve-0:replace
+      args:
+        # Adapter creates the config file; wait for it to exist before starting
+        - while [ ! -e "$TS_CONFIG_FILE" ]; do echo "waiting for config file..."; sleep 1; done;
+        - exec
+        - torchserve
+        - --start
+        - --foreground
+      env:
+        - name: TS_CONFIG_FILE
+          value: /models/_torchserve_models/mmconfig.properties
+        # TBD, this may give better performance
+        #- name: TS_PREFER_DIRECT_BUFFER
+        #  value: true
+        # Additional TS_ prefixed TorchServe config options may be added here
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: "5"
+          memory: 1Gi
+  builtInAdapter:
+    serverType: torchserve
+    runtimeManagementPort: 7071
+    memBufferBytes: 134217728
+    modelLoadingTimeoutMillis: 90000

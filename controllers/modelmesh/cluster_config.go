@@ -46,6 +46,10 @@ var dataPlaneApiJsonConfigBytes = []byte(`{
         "tensorflow.serving.PredictionService/Predict": {
             "idExtractionPath": [1, 1],
             "vModelId": true
+        },
+        "org.pytorch.serve.grpc.inference.InferenceAPIsService/Predictions": {
+            "idExtractionPath": [1],
+            "vModelId": true
         }
     },
     "allowOtherRpcs": true
