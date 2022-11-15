@@ -372,3 +372,14 @@ func (m *Deployment) configureRuntimePodSpecLabels(deployment *appsv1.Deployment
 	deployment.Spec.Template.Labels = Union(deployment.Spec.Template.Labels, m.LabelsMap, m.SRSpec.ServingRuntimePodSpec.Labels)
 	return nil
 }
+
+func (m *Deployment) configureRuntimePodSpecImagePullSecrets(deployment *appsv1.Deployment) error {
+	// merging the image pull secrets from deploymentTemplate (if any), configMap and ServingRuntimePodSpec
+	deployment.Spec.Template.Spec.ImagePullSecrets = mergeImagePullSecrets(
+		deployment.Spec.Template.Spec.ImagePullSecrets,
+		m.ImagePullSecrets,
+		m.SRSpec.ServingRuntimePodSpec.ImagePullSecrets,
+	)
+
+	return nil
+}

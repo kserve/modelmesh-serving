@@ -258,6 +258,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Client:              r.Client,
 		AnnotationsMap:      cfg.RuntimePodAnnotations,
 		LabelsMap:           cfg.RuntimePodLabels,
+		ImagePullSecrets:    cfg.ImagePullSecrets,
 	}
 	// if the runtime is disabled, delete the deployment
 	if spec.IsDisabled() || !spec.IsMultiModelRuntime() || !mmEnabled {

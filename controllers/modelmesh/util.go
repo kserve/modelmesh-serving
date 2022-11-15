@@ -135,3 +135,26 @@ func mountPoint(rts *kserveapi.ServingRuntimeSpec) (bool, string, error) {
 
 	return false, "", nil
 }
+
+// mergeImagePullSecrets merge image pull secret lists and remove duplicates
+func mergeImagePullSecrets(secrets ...[]corev1.LocalObjectReference) []corev1.LocalObjectReference {
+	imagePullSecrets := []corev1.LocalObjectReference{}
+
+	// remove the duplicated secrets and keep the order of the secret in the list
+	for _, secret := range secrets {
+		for _, v := range secret {
+			exist := false
+			for _, ips := range imagePullSecrets {
+				if ips.Name == v.Name {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{Name: v.Name})
+			}
+		}
+	}
+
+	return imagePullSecrets
+}
