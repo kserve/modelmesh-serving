@@ -1,4 +1,4 @@
-# Python Based Custom Runtime with MLServer
+# Python-Based Custom Runtime with MLServer
 
 [MLServer](https://github.com/SeldonIO/MLServer) is a Python server that supports
 [KServe’s V2 Data Plane](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md)
@@ -7,18 +7,18 @@ with the goal of providing simple multi-model serving. It contains built in supp
 The high-level steps to building a custom Runtime supporting a new framework are:
 
 1. Implement a class that inherits from
-   [MLServer's `MLModel` class](https://github.com/SeldonIO/MLServer/blob/0.3.2/mlserver/model.py)
+   [MLServer's `MLModel` class](https://github.com/SeldonIO/MLServer/blob/master/mlserver/model.py)
    and implements the `load()` and `predict()` functions.
 
-1. Package the class and all dependencies into a container image that can be executed in a manner compatible with ModelMesh Serving
+1. Package the class and all dependencies into a container image that can be executed in a manner compatible with ModelMesh Serving.
 
-1. Create a new `ServingRuntime` resource using that image
+1. Create a new `ServingRuntime` resource using that image.
 
-This page provides templates for each step of the process to use as a reference when building a Python-based custom Serving Runtime.
+This page provides templates for each step of the process to use as a reference when building a Python-based custom `ServingRuntime`. Details about deploying a model using the runtime can be found [here](/docs/predictors).
 
 ## Custom MLModel Template
 
-MLServer can be extended by adding new implementations of the `MLModel` class. The two main functions are `load()` and `predict()`. Below is a template implementation of an `MLModel` class in MLServer that includes the suggested structure with TODOs where runtime specific changes will need to be made.
+MLServer can be extended by adding implementations of the `MLModel` class. The two main functions are `load()` and `predict()`. Below is a template implementation of an `MLModel` class in MLServer that includes the suggested structure with TODOs where runtime specific changes will need to be made. Another example implemention of this class can be found in the MLServer docs [here](https://mlserver.readthedocs.io/en/stable/examples/custom/README.html#training).
 
 ```python
 from typing import List
@@ -78,22 +78,15 @@ class CustomMLModel(MLModel):
 
 ## Runtime Image Template
 
-Given an `MLModel` implementation, we need to package it and all of its dependencies, including MLServer, into an image that supports being ran as a ModelMesh Serving `ServingRuntime`. There are a variety of ways to build such an image and there may be different requirements on the image. The below snippet shows the set of directives that could be in the `Dockerfile` to make the image compatible with ModelMesh Serving.
+Given an `MLModel` implementation, we need to package it and all of its dependencies, including MLServer, into an image that supports being run as a ModelMesh Serving `ServingRuntime`. There are a variety of ways to build such an image and there may be different requirements on the image. The below snippet shows a set of directives that could be included in the `Dockerfile` to make it compatible with ModelMesh Serving.
 
----
-
-**Note**
-
-The below snippet assumes the custom model module is called `custom_model.py` and the class is `CustomMLModel`. Make changes accordingly for the actual implementation.
-
----
+> **Note**: The below snippet assumes the custom model module is named `custom_model.py` and the class is named `CustomMLModel`. Please make changes accordingly.
 
 ```dockerfile
 # TODO: choose appropriate base image, install Python, MLServer, and
 # dependencies of your MLModel implementation
-# FROM ...
-# ...
-# RUN pip install mlserver
+FROM python:3.8-slim-buster
+RUN pip install mlserver
 # ...
 
 # The custom `MLModel` implementation should be on the Python search path
@@ -103,8 +96,8 @@ COPY --chown=${USER} ./custom_model.py /opt/custom_model.py
 ENV PYTHONPATH=/opt/
 
 # environment variables to be compatible with ModelMesh Serving
-#  these can also be set in the ServingRuntime, but this is recommended for
-#  consistency when building and testing
+# these can also be set in the ServingRuntime, but this is recommended for
+# consistency when building and testing
 ENV MLSERVER_MODELS_DIR=/models/_mlserver_models \
     MLSERVER_GRPC_PORT=8001 \
     MLSERVER_HTTP_PORT=8002 \
@@ -116,61 +109,68 @@ ENV MLSERVER_MODELS_DIR=/models/_mlserver_models \
 # a basic model settings file
 ENV MLSERVER_MODEL_IMPLEMENTATION=custom_model.CustomMLModel
 
-RUN mlserver start $MLSERVER_MODELS_DIR
+CMD ["mlserver", "start", "${MLSERVER_MODELS_DIR}"]
 ```
 
-### Build on ModelMesh Serving MLServer Image
+Alternatively, you can [use MLServer's helpers to build a custom Docker image](https://mlserver.readthedocs.io/en/latest/examples/custom/README.html#building-a-custom-image) containing your code.
 
 ## Custom ServingRuntime Template
 
-With a built container image containing MLServer, the custom runtime, and all required dependencies, the following template shows how to create a `ServingRuntime` using the image.
+Once a container image containing MLServer, the custom runtime, and all of the required dependencies is built, you can use the following template to create a `ServingRuntime` using the image.
 
 ```yaml
 apiVersion: serving.kserve.io/v1alpha1
 kind: ServingRuntime
 metadata:
-  name: {{MODEL_TYPE}}
+  name: {{CUSTOM-RUNTIME-NAME}}
 spec:
   supportedModelFormats:
-    - name: {{MODEL_TYPE}}
+    - name: {{MODEL-FORMAT-NAME}}
+      version: "1"
       autoSelect: true
-  builtInAdapter:
-    memBufferBytes: 134217728
-    modelLoadingTimeoutMillis: 90000
-    runtimeManagementPort: 8001
-    serverType: mlserver
   multiModel: true
   grpcDataEndpoint: port:8001
   grpcEndpoint: port:8085
   containers:
     - name: mlserver
-      image: {{CUSTOM_RUNTIME_MLSERVER_IMAGE}}
+      image: {{CUSTOM-IMAGE-NAME}}
       env:
         - name: MLSERVER_MODELS_DIR
-          value: /models/_mlserver_models/
+          value: "/models/_mlserver_models/"
         - name: MLSERVER_GRPC_PORT
           value: "8001"
+        # The default value for HTTP port is 8080 which conflicts with MMesh's
         - name: MLSERVER_HTTP_PORT
           value: "8002"
         - name: MLSERVER_LOAD_MODELS_AT_STARTUP
           value: "false"
+        # Set a dummy model name so that MLServer doesn't error on a RepositoryIndex call when no models exist
         - name: MLSERVER_MODEL_NAME
           value: dummy-model
-        # listen only on localhost
+        # Set server address to localhost to ensure MLServer only listens inside the pod
         - name: MLSERVER_HOST
-          value: 127.0.0.1
+          value: "127.0.0.1"
+        # Increase gRPC max message size to support larger payloads
+        # Unlimited (-1) because it will be restricted at the MMesh layer
+        - name: MLSERVER_GRPC_MAX_MESSAGE_LENGTH
+          value: "-1"
       resources:
-        limits:
-          cpu: "5"
-          memory: 1Gi
         requests:
           cpu: 500m
           memory: 1Gi
+        limits:
+          cpu: "5"
+          memory: 1Gi
+  builtInAdapter:
+    serverType: mlserver
+    runtimeManagementPort: 8001
+    memBufferBytes: 134217728
+    modelLoadingTimeoutMillis: 90000
 ```
 
 ### Debugging
 
-To enable easier debugging, add the environment variables `MLSERVER_DEBUG` and `MLSERVER_MODEL_PARALLEL_WORKERS` in the `ServingRuntime` as shown below.
+To enable debugging, add the environment variables `MLSERVER_DEBUG` and `MLSERVER_MODEL_PARALLEL_WORKERS` in the `ServingRuntime` as shown below.
 
 ```yaml
 - name: MLSERVER_DEBUG
