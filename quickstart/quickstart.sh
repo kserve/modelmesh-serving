@@ -35,18 +35,14 @@ oc apply -f ../manifests/kfdef.yaml -n $MODELMESH_PROJECT
 oc new-project $INFERENCE_SERVICE_PROJECT
 oc label namespace $INFERENCE_SERVICE_PROJECT "modelmesh-enabled=true" --overwrite=true || echo "Failed to apply modelmesh-enabled label."
 
-SECRETKEY=$(openssl rand -hex 32)
-sed "s/<secretkey>/$SECRETKEY/g" sample-minio.yaml > minio.yaml
-
 echo "Waiting for kserve crds to be created by the Operator"
 oc::wait::object::availability "oc get crd inferenceservices.serving.kserve.io" 5 120
 oc::wait::object::availability "oc get crd predictors.serving.kserve.io" 5 120
 oc::wait::object::availability "oc get crd servingruntimes.serving.kserve.io" 5 120
 
-oc apply -f minio.yaml -n $INFERENCE_SERVICE_PROJECT
+oc apply -f sample-minio.yaml -n $INFERENCE_SERVICE_PROJECT
 oc apply -f openvino-inference-service.yaml -n $INFERENCE_SERVICE_PROJECT
 oc apply -f openvino-serving-runtime.yaml -n $INFERENCE_SERVICE_PROJECT
 
-rm minio.yaml
 
 oc apply -f service_account.yaml -n $INFERENCE_SERVICE_PROJECT

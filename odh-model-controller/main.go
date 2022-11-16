@@ -101,7 +101,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup InferenceService controller
+	//Setup InferenceService controller
 	if err = (&controllers.OpenshiftInferenceServiceReconciler{
 		Client:       mgr.GetClient(),
 		Log:          ctrl.Log.WithName("controllers").WithName("InferenceService"),
@@ -109,6 +109,15 @@ func main() {
 		MeshDisabled: getEnvAsBool("MESH_DISABLED", false),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "InferenceService")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.StorageSecretReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("StorageSecret"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "StorageSecret")
 		os.Exit(1)
 	}
 
