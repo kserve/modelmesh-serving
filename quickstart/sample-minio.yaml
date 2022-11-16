@@ -29,22 +29,24 @@ spec:
         - name: MINIO_ACCESS_KEY
           value:  THEACCESSKEY
         - name: MINIO_SECRET_KEY
-          value: <secretkey>
+          value: THESECRETKEY
       image: quay.io/opendatahub/modelmesh-minio-examples:v0.8.0
       name: minio
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: storage-config
-stringData:
-  localMinIO: |
-    {
-      "type": "s3",
-      "access_key_id": "THEACCESSKEY",
-      "secret_access_key": "<secretkey>",
-      "endpoint_url": "http://minio:9000",
-      "default_bucket": "modelmesh-example-models",
-      "region": "us-south"
-    }
-
+  name: aws-connection-minio-data-connection
+  labels:
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/managed: 'true'
+  annotations:
+    opendatahub.io/connection-type: s3
+    openshift.io/display-name: Minio Data Connection
+data:
+  AWS_ACCESS_KEY_ID: VEhFQUNDRVNTS0VZ
+  AWS_DEFAULT_REGION: dXMtc291dGg=
+  AWS_S3_BUCKET: bW9kZWxtZXNoLWV4YW1wbGUtbW9kZWxz
+  AWS_S3_ENDPOINT: aHR0cDovL21pbmlvOjkwMDA=
+  AWS_SECRET_ACCESS_KEY: VEhFU0VDUkVUS0VZ
+type: Opaque
