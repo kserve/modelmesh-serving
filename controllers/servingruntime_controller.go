@@ -241,14 +241,14 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("Could not get the storage secret: %w", err)
 	}
 
-	pvcs := make(map[string]struct{})
+	pvcsMap := make(map[string]struct{})
 	var storageConfig map[string]string
 	for _, storageData := range s.Data {
 		if err = json.Unmarshal(storageData, &storageConfig); err != nil {
 			return ctrl.Result{}, fmt.Errorf("Could not parse storage configuration json: %w", err)
 		}
 		if storageConfig["type"] == StoragePVCType {
-			pvcs[storageConfig["name"]] = struct{}{}
+			pvcsMap[storageConfig["name"]] = struct{}{}
 		}
 	}
 	// add pvcs for predictors when the global config is enabled
@@ -263,12 +263,16 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			if isvc.Spec.Predictor.Model != nil {
 				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
 				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
-					pvcs[u.Host] = struct{}{}
+					pvcsMap[u.Host] = struct{}{}
 				}
 			}
 		}
 	}
 
+	pvcs := make([]string, 0, len(pvcsMap))
+	for pvc := range pvcsMap {
+		pvcs = append(pvcs, pvc)
+	}
 	// construct the deployment
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:                cfg.InferenceServiceName,

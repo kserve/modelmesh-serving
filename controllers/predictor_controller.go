@@ -240,26 +240,36 @@ func (pr *PredictorReconciler) validatePredictor(predictor *api.Predictor) strin
 		return "Only one of spec.schemaPath and spec.storage.schemaPath can be specified"
 	}
 
-	// PersistentVolumeClaim is checked against the storage secret
-	if storage.PersistentVolumeClaim != nil {
-		s := &corev1.Secret{}
-		if err := pr.Client.Get(context.TODO(), types.NamespacedName{
-			Name:      modelmesh.StorageSecretName,
-			Namespace: predictor.Namespace,
-		}, s); err != nil {
-			return "Could not get the storage secret"
-		}
-		var storageConfig map[string]string
-		for _, storageData := range s.Data {
-			if err := json.Unmarshal(storageData, &storageConfig); err != nil {
-				return "Could not parse storage configuration json"
+	if storage.StorageSpec.Parameters != nil {
+		parameters := *storage.StorageSpec.Parameters
+		if storageType, ok := parameters["type"]; ok && storageType == StoragePVCType {
+			s := &corev1.Secret{}
+			if err := pr.Client.Get(context.TODO(), types.NamespacedName{
+				Name:      modelmesh.StorageSecretName,
+				Namespace: predictor.Namespace,
+			}, s); err != nil {
+				return "Could not get the storage secret"
 			}
-			if storageConfig["type"] == StoragePVCType && storageConfig["name"] == storage.PersistentVolumeClaim.ClaimName {
-				return ""
+			var storageConfig map[string]string
+			found := false
+			for _, storageData := range s.Data {
+				if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+					return "Could not parse storage configuration json"
+				}
+				if storageConfig["type"] == StoragePVCType && storageConfig["name"] == parameters["name"] {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "PersistentVolumeClaim name is not in the storage config secret"
 			}
 		}
+	}
 
-		return "PersistentVolumeClaim name is not in the storage config secret"
+	// PersistentVolumeClaim is deprecated and was never supported
+	if storage.PersistentVolumeClaim != nil {
+		return "spec.storage.PersistentVolumeClaim is not supported"
 	}
 
 	// S3 is deprecated and can not be specified alongside the new storage fields
@@ -329,6 +339,8 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 
 	setVmodelCtx, cancel := context.WithTimeout(ctx, GrpcRequestTimeout)
 	defer cancel()
+	pr.Log.Info("===Chin===", "predictor.Spec.Storage.StorageKey", predictor.Spec.Storage.StorageKey)
+	pr.Log.Info("===Chin===", "predictor.Spec.Storage", predictor.Spec.Storage.StorageSpec)
 
 	path, schemaPath, storageKey, storageParams := extractModelFields(predictor)
 

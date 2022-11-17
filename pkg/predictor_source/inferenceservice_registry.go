@@ -28,7 +28,6 @@ import (
 	"github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"knative.dev/pkg/apis"
 
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,7 +39,6 @@ const (
 	runtimeAnnotation    = "serving.kserve.io/servingRuntime"
 
 	azureBlobHostSuffix = "blob.core.windows.net"
-	pvcStorageType      = "pvc"
 )
 
 var _ PredictorRegistry = (*InferenceServiceRegistry)(nil)
@@ -164,9 +162,9 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		}
 
 		switch u.Scheme {
-		case pvcStorageType:
+		case "pvc":
 			modelPath = strings.TrimPrefix(u.Path, "/")
-			uriParameters["type"] = pvcStorageType
+			uriParameters["type"] = "pvc"
 			uriParameters["name"] = u.Host
 		case "s3":
 			modelPath = strings.TrimPrefix(u.Path, "/")
@@ -324,11 +322,6 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	p.Spec.Storage.SchemaPath = schemaPath
 	p.Spec.Storage.Parameters = &parameters
 	p.Spec.Storage.StorageKey = secretKey
-	if parameters["type"] == pvcStorageType {
-		p.Spec.Storage.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{}
-		p.Spec.Storage.PersistentVolumeClaim.ClaimName = parameters["name"]
-		p.Spec.Storage.PersistentVolumeClaim.ReadOnly = true
-	}
 	return p, nil
 
 }
