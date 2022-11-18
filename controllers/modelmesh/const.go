@@ -29,7 +29,6 @@ const (
 	SocketVolume    = "domain-socket"
 
 	ConfigStorageMount = "storage-config"
-	PVCMount           = "pvc-mount"
 
 	//The name of the puller container
 	PullerContainerName = "puller"
@@ -47,7 +46,7 @@ const (
 	PullerEnvStorageConfigDir = "STORAGE_CONFIG_DIR"
 
 	//The env variable puller uses to configure the pvc dir (secrets)
-	PullerEnvPVCDir = "PVC_DIR"
+	PullerEnvPVCDir = "PVC_MOUNTS_DIR"
 
 	//The puller default port number
 	PullerPortNumber = 8086
@@ -56,7 +55,7 @@ const (
 	PullerModelPath = "/models"
 
 	//The puller model PVC path
-	PullerPVCPath = "/pvc_mounts"
+	DefaultPVCMountsDir = "/pvc_mounts"
 
 	//The puller model config path
 	PullerConfigPath = "/storage-config"

@@ -339,8 +339,6 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 
 	setVmodelCtx, cancel := context.WithTimeout(ctx, GrpcRequestTimeout)
 	defer cancel()
-	pr.Log.Info("===Chin===", "predictor.Spec.Storage.StorageKey", predictor.Spec.Storage.StorageKey)
-	pr.Log.Info("===Chin===", "predictor.Spec.Storage", predictor.Spec.Storage.StorageSpec)
 
 	path, schemaPath, storageKey, storageParams := extractModelFields(predictor)
 

@@ -142,7 +142,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 
 	if useStorageHelper(m.SRSpec) {
 		manifest, err = manifest.Transform(
-			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources),
+			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources, m.PVCs),
 		)
 		if err != nil {
 			return fmt.Errorf("Error transforming: %w", err)
