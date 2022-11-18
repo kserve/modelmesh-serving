@@ -55,8 +55,9 @@ var (
 // Config holds process global configuration information
 type Config struct {
 	// System config
-	EtcdSecretName    string // DEPRECATED - should be removed in the future
-	ModelMeshEndpoint string // For dev use only
+	EtcdSecretName              string // DEPRECATED - should be removed in the future
+	ModelMeshEndpoint           string // For dev use only
+	EnableDeployPVCForPredictor bool
 
 	// Service config
 	InferenceServiceName    string

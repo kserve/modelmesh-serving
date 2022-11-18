@@ -233,46 +233,11 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("Invalid runtime Spec: %w", err)
 	}
 
-	s := &corev1.Secret{}
-	if err = r.Client.Get(ctx, types.NamespacedName{
-		Name:      modelmesh.StorageSecretName,
-		Namespace: req.Namespace,
-	}, s); err != nil {
-		return ctrl.Result{}, fmt.Errorf("Could not get the storage secret: %w", err)
+	var pvcs []string
+	if pvcs, err = r.getPVCs(ctx, req); err != nil {
+		return ctrl.Result{}, fmt.Errorf("Could not get pvcs: %w", err)
 	}
 
-	pvcsMap := make(map[string]struct{})
-	var storageConfig map[string]string
-	for _, storageData := range s.Data {
-		if err = json.Unmarshal(storageData, &storageConfig); err != nil {
-			return ctrl.Result{}, fmt.Errorf("Could not parse storage configuration json: %w", err)
-		}
-		if storageConfig["type"] == StoragePVCType {
-			pvcsMap[storageConfig["name"]] = struct{}{}
-		}
-	}
-	// add pvcs for predictors when the global config is enabled
-	if r.DeployPVCForPredictor {
-		list := &v1beta1.InferenceServiceList{}
-		if err = r.Client.List(ctx, list, client.InNamespace(req.Namespace)); err != nil {
-			return ctrl.Result{}, fmt.Errorf("Could not get inference services: %w", err)
-		}
-
-		for i := range list.Items {
-			isvc := &list.Items[i]
-			if isvc.Spec.Predictor.Model != nil {
-				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
-				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
-					pvcsMap[u.Host] = struct{}{}
-				}
-			}
-		}
-	}
-
-	pvcs := make([]string, 0, len(pvcsMap))
-	for pvc := range pvcsMap {
-		pvcs = append(pvcs, pvc)
-	}
 	// construct the deployment
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:                cfg.InferenceServiceName,
@@ -334,6 +299,50 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("could not apply the model mesh deployment: %w", err)
 	}
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
+}
+
+func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request) ([]string, error) {
+	s := &corev1.Secret{}
+	if err := r.Client.Get(ctx, types.NamespacedName{
+		Name:      modelmesh.StorageSecretName,
+		Namespace: req.Namespace,
+	}, s); err != nil {
+		return nil, fmt.Errorf("Could not get the storage secret: %w", err)
+	}
+
+	pvcsMap := make(map[string]struct{})
+	var storageConfig map[string]string
+	for _, storageData := range s.Data {
+		if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+			return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
+		}
+		if storageConfig["type"] == StoragePVCType {
+			pvcsMap[storageConfig["name"]] = struct{}{}
+		}
+	}
+	// add pvcs for predictors when the global config is enabled
+	if r.DeployPVCForPredictor {
+		list := &v1beta1.InferenceServiceList{}
+		if err := r.Client.List(ctx, list, client.InNamespace(req.Namespace)); err != nil {
+			return nil, fmt.Errorf("Could not get inference services: %w", err)
+		}
+
+		for i := range list.Items {
+			isvc := &list.Items[i]
+			if isvc.Spec.Predictor.Model != nil {
+				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
+				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
+					pvcsMap[u.Host] = struct{}{}
+				}
+			}
+		}
+	}
+	pvcs := make([]string, 0, len(pvcsMap))
+	for pvc := range pvcsMap {
+		pvcs = append(pvcs, pvc)
+	}
+
+	return pvcs, nil
 }
 
 func (r *ServingRuntimeReconciler) removeRuntimeFromInfoMap(req ctrl.Request) (ctrl.Result, error) {
@@ -544,7 +553,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	if r.EnableSecretWatch {
 		builder = builder.Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				return r.secretRequests(o.(*corev1.Secret), o.GetNamespace())
+				return r.storageSecretRequests(o.(*corev1.Secret))
 			}))
 	}
 
@@ -682,14 +691,14 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 	return requests
 }
 
-func (r *ServingRuntimeReconciler) secretRequests(secret *corev1.Secret, namespace string) []reconcile.Request {
+func (r *ServingRuntimeReconciler) storageSecretRequests(secret *corev1.Secret) []reconcile.Request {
 	// check whether namespace is modelmesh enabled
-	mme, err := modelMeshEnabled2(context.TODO(), namespace, r.ControllerNamespace, r.Client, r.ClusterScope)
+	mme, err := modelMeshEnabled2(context.TODO(), secret.Namespace, r.ControllerNamespace, r.Client, r.ClusterScope)
 	if err != nil || !mme {
 		return []reconcile.Request{}
 	}
 	if secret.Name == modelmesh.StorageSecretName {
-		return r.requestsForRuntimes(namespace, nil)
+		return r.requestsForRuntimes(secret.Namespace, nil)
 	}
 
 	return []reconcile.Request{}
