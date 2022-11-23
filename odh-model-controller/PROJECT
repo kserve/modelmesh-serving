@@ -1,6 +1,0 @@
-domain: opendatahub.io
-layout:
-- go.kubebuilder.io/v3
-projectName: odh-model-controller
-repo: github.com/opendatahub-io/odh-model-controller
-version: "3"
