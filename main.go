@@ -433,18 +433,17 @@ func main() {
 	}
 
 	if err = (&controllers.ServingRuntimeReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
-		Scheme:                mgr.GetScheme(),
-		ConfigProvider:        cp,
-		ConfigMapName:         types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
-		ControllerNamespace:   ControllerNamespace,
-		ControllerName:        controllerDeploymentName,
-		ClusterScope:          clusterScopeMode,
-		EnableCSRWatch:        enableCSRWatch,
-		EnableSecretWatch:     enableSecretWatch,
-		DeployPVCForPredictor: conf.EnableDeployPVCForPredictor,
-		RegistryMap:           registryMap,
+		Client:              mgr.GetClient(),
+		Log:                 ctrl.Log.WithName("controllers").WithName("ServingRuntime"),
+		Scheme:              mgr.GetScheme(),
+		ConfigProvider:      cp,
+		ConfigMapName:       types.NamespacedName{Namespace: ControllerNamespace, Name: UserConfigMapName},
+		ControllerNamespace: ControllerNamespace,
+		ControllerName:      controllerDeploymentName,
+		ClusterScope:        clusterScopeMode,
+		EnableCSRWatch:      enableCSRWatch,
+		EnableSecretWatch:   enableSecretWatch,
+		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")
 		os.Exit(1)

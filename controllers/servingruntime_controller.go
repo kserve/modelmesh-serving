@@ -82,8 +82,6 @@ type ServingRuntimeReconciler struct {
 	EnableCSRWatch bool
 	// whether the controller is enabled to read and watch secrets
 	EnableSecretWatch bool
-	// whether the controller is enabled to deploy pvc mounts based on predictors
-	DeployPVCForPredictor bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -317,11 +315,14 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 			return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
 		}
 		if storageConfig["type"] == StoragePVCType {
+			if _, exists := storageConfig["name"]; !exists {
+				return nil, fmt.Errorf("Missing PVC name in storage configuration")
+			}
 			pvcsMap[storageConfig["name"]] = struct{}{}
 		}
 	}
 	// add pvcs for predictors when the global config is enabled
-	if r.DeployPVCForPredictor {
+	if r.ConfigProvider.GetConfig().AllowAnyPVC {
 		list := &v1beta1.InferenceServiceList{}
 		if err := r.Client.List(ctx, list, client.InNamespace(req.Namespace)); err != nil {
 			return nil, fmt.Errorf("Could not get inference services: %w", err)

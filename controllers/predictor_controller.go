@@ -42,7 +42,6 @@ import (
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	mmeshapi "github.com/kserve/modelmesh-serving/generated/mmesh"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -238,33 +237,6 @@ func (pr *PredictorReconciler) validatePredictor(predictor *api.Predictor) strin
 
 	if storage.SchemaPath != nil && predictor.Spec.SchemaPath != nil {
 		return "Only one of spec.schemaPath and spec.storage.schemaPath can be specified"
-	}
-
-	if storage.StorageSpec.Parameters != nil {
-		parameters := *storage.StorageSpec.Parameters
-		if storageType, ok := parameters["type"]; ok && storageType == StoragePVCType {
-			s := &corev1.Secret{}
-			if err := pr.Client.Get(context.TODO(), types.NamespacedName{
-				Name:      modelmesh.StorageSecretName,
-				Namespace: predictor.Namespace,
-			}, s); err != nil {
-				return "Could not get the storage secret"
-			}
-			var storageConfig map[string]string
-			found := false
-			for _, storageData := range s.Data {
-				if err := json.Unmarshal(storageData, &storageConfig); err != nil {
-					return "Could not parse storage configuration json"
-				}
-				if storageConfig["type"] == StoragePVCType && storageConfig["name"] == parameters["name"] {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return "PersistentVolumeClaim name is not in the storage config secret"
-			}
-		}
 	}
 
 	// PersistentVolumeClaim is deprecated and was never supported

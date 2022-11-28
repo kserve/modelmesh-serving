@@ -53,6 +53,7 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `runtimePodLabels`                         | `metadata.labels` to be added to all `ServingRuntime` pods                                            | (\*\*\*\*\*) See default labels below      |
 | `runtimePodAnnotations`                    | `metadata.annotations` to be added to all `ServingRuntime` pods                                       | (\*\*\*\*\*) See default annotations below |
 | `imagePullSecrets`                         | The image pull secrets to use for runtime Pods                                                        |                                            |
+| `allowAnyPVC`                              | Allows any PVC in predictor to configure PVC for runtime pods when it's not in storage secret         | `false`                                    |
 
 (\*) Currently requires a controller restart to take effect
 
