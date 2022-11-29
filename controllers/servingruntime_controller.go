@@ -232,7 +232,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	var pvcs []string
-	if pvcs, err = r.getPVCs(ctx, req); err != nil {
+	if pvcs, err = r.getPVCs(ctx, req, spec); err != nil {
 		return ctrl.Result{}, fmt.Errorf("Could not get pvcs: %w", err)
 	}
 
@@ -299,7 +299,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
 
-func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request) ([]string, error) {
+func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec) ([]string, error) {
 	s := &corev1.Secret{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      modelmesh.StorageSecretName,
@@ -330,7 +330,11 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 
 		for i := range list.Items {
 			isvc := &list.Items[i]
-			if isvc.Spec.Predictor.Model != nil {
+			p, err := predictor_source.BuildBasePredictorFromInferenceService(isvc)
+			if err != nil {
+				return nil, fmt.Errorf("Could not build base predictor from inference service: %w", err)
+			}
+			if runtimeSupportsPredictor(rt, p, r.ConfigProvider.GetConfig().RESTProxy.Enabled, req.Name) && isvc.Spec.Predictor.Model != nil {
 				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
 				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
 					pvcsMap[u.Host] = struct{}{}
