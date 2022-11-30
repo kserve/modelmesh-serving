@@ -31,7 +31,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -232,7 +231,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	var pvcs []string
-	if pvcs, err = r.getPVCs(ctx, req, spec); err != nil {
+	if pvcs, err = r.getPVCs(ctx, req, spec, cfg); err != nil {
 		return ctrl.Result{}, fmt.Errorf("Could not get pvcs: %w", err)
 	}
 
@@ -299,7 +298,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
 
-func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec) ([]string, error) {
+func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec, cfg *config.Config) ([]string, error) {
 	s := &corev1.Secret{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      modelmesh.StorageSecretName,
@@ -315,30 +314,33 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 			return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
 		}
 		if storageConfig["type"] == StoragePVCType {
-			if _, exists := storageConfig["name"]; !exists {
-				return nil, fmt.Errorf("Missing PVC name in storage configuration")
+			if name := storageConfig["name"]; name != "" {
+				pvcsMap[name] = struct{}{}
+			} else {
+				r.Log.V(1).Info("Missing PVC name in storage configuration")
 			}
-			pvcsMap[storageConfig["name"]] = struct{}{}
 		}
 	}
+
 	// add pvcs for predictors when the global config is enabled
-	if r.ConfigProvider.GetConfig().AllowAnyPVC {
-		list := &v1beta1.InferenceServiceList{}
-		if err := r.Client.List(ctx, list, client.InNamespace(req.Namespace)); err != nil {
-			return nil, fmt.Errorf("Could not get inference services: %w", err)
+	if cfg.AllowAnyPVC {
+		restProxyEnabled := cfg.RESTProxy.Enabled
+		f := func(p *api.Predictor) bool {
+			if runtimeSupportsPredictor(rt, p, restProxyEnabled, req.Name) &&
+				p.Spec.Storage != nil && p.Spec.Storage.Parameters != nil {
+				params := *p.Spec.Storage.Parameters
+				if stype := params["type"]; stype == "pvc" {
+					if name := params["name"]; name != "" {
+						pvcsMap[name] = struct{}{}
+					}
+				}
+			}
+			return false
 		}
 
-		for i := range list.Items {
-			isvc := &list.Items[i]
-			p, err := predictor_source.BuildBasePredictorFromInferenceService(isvc)
-			if err != nil {
-				return nil, fmt.Errorf("Could not build base predictor from inference service: %w", err)
-			}
-			if runtimeSupportsPredictor(rt, p, r.ConfigProvider.GetConfig().RESTProxy.Enabled, req.Name) && isvc.Spec.Predictor.Model != nil {
-				storageUri := isvc.Spec.Predictor.Model.PredictorExtensionSpec.StorageURI
-				if u, urlErr := url.Parse(*storageUri); urlErr == nil {
-					pvcsMap[u.Host] = struct{}{}
-				}
+		for _, pr := range r.RegistryMap {
+			if _, err := pr.Find(ctx, req.Namespace, f); err != nil {
+				return nil, err
 			}
 		}
 	}

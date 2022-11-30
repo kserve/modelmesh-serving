@@ -113,7 +113,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	mmc := pr.getMMClient(nname.Namespace)
 	var finalErr error
 
-	invalidPredictorMessage := pr.validatePredictor(predictor)
+	invalidPredictorMessage := validatePredictor(predictor)
 
 	if invalidPredictorMessage != "" {
 		log.Info("Invalid Predictor specification", "Spec", predictor.Spec)
@@ -224,7 +224,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 
 // validatePredictor checks if there are incompatibilities in the spec
 // Returns a string describing the reason a Predictor is invalid, empty if valid.
-func (pr *PredictorReconciler) validatePredictor(predictor *api.Predictor) string {
+func validatePredictor(predictor *api.Predictor) string {
 	// if it exists, inspect and validate the storage specification
 	if predictor.Spec.Storage == nil {
 		return ""
