@@ -81,7 +81,7 @@ spec:
               cpu: "1"
               memory: 512Mi
           volumeMounts:
-            - mountPath: /etc/model-serving/config-defaults.yaml
+            - mountPath: /etc/model-serving/config/default
               name: config-defaults
               readOnly: true
           securityContext:
