@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,6 +54,7 @@ import (
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
 const predictorTimeout = time.Second * 120
@@ -478,6 +479,18 @@ func (fvt *FVTClient) RunTfsInference(req *tfsapi.PredictRequest) (*tfsapi.Predi
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	return grpcClient.Predict(ctx, req)
+}
+
+func (fvt *FVTClient) RunTorchserveInference(req *torchserveapi.PredictionsRequest) (*torchserveapi.PredictionResponse, error) {
+	if fvt.grpcConn == nil {
+		return nil, errors.New("you must connect to model mesh before running an inference")
+	}
+
+	grpcClient := torchserveapi.NewInferenceAPIsServiceClient(fvt.grpcConn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	return grpcClient.Predictions(ctx, req)
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
