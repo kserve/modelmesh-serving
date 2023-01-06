@@ -124,7 +124,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace go.uber.org/atomic => github.com/uber-go/atomic v1.9.0
+replace (
+	github.com/kserve/kserve => github.com/kserve/kserve v0.10.0-rc0
 
-// Update prometheus client to avoid CVE-2022-21698
-replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
+	// Update prometheus client to avoid CVE-2022-21698
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
+
+	go.uber.org/atomic => github.com/uber-go/atomic v1.9.0
+)
