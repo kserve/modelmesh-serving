@@ -1,0 +1,12 @@
+{
+        "inputs": [{
+                "name": "Input3",
+                "datatype": "FP32",
+                "shape": [1, 1, 28,28]
+        }],
+        "outputs": [{
+                "name": "Plus214_Output_0",
+                "datatype": "FP32",
+                "shape": [1,10]
+        }]
+}
