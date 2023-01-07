@@ -33,7 +33,7 @@ It's generally a good idea to search the repo or `control`-`shift`-`f` for strin
 The steps below should be performed at least twice -- once for the release candidate(s) (`v0.10.0-rc0`,
 `v0.10.0-rc1`, ...) and once more for the actual release (`v0.10.0`).
 
-1. Create new (pre-)release tags (v...`-rc0`) in the `modelmesh` and `modelmesh-runtime-adapter` repositories on the newly created release branches. This can be done by creating a draft release using the GitHub web interface and checking the "Set as a pre-release" option. The newly created tag should trigger the GitHub action to push the respective (pre-)release container images to DockerHub which are needed in the next step.
+1. Create new (pre-)release tags (v...`-rc0`) in the [`modelmesh`](https://github.com/kserve/modelmesh/releases) and [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases) repositories on the newly created release branches. This can be done by creating a draft release using the GitHub web interface and checking the "Set as a pre-release" option. The newly created tag should trigger the GitHub action to push the respective (pre-)release container images to DockerHub which are needed in the next step.
 2. In this `modelmesh-serving` repository, update the container image tags for `modelmesh`, `modelmesh-runtime-adapter`, `modelmesh-controller`, and `rest-proxy` to the corresponding release version numbers:
    - Edit `newTag` in `config/manager/kustomization.yaml`.
    - Edit the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags in `config/default/config-defaults.yaml`.
@@ -42,7 +42,7 @@ The steps below should be performed at least twice -- once for the release candi
    - Edit the `docs/install/install-script.md` file, updating the `RELEASE` variable in the `Installation` section to the new release branch name.
    - Edit the `docs/quickstart.md` file, updating the `RELEASE` variable in the `Get the latest release` section to the new release branch name.
    - Edit the `scripts/setup_user_namespaces.sh` file, changing the `modelmesh_release` version.
-3. Submit your PR to the release branch that was created earlier and wait for it to merge.
+3. Submit your PR to the `release-*` branch that was created earlier and wait for it to merge.
 4. Update `docs/component-versions.md`, `docs/quickstart.md`, `docs/install/install-script.md`, and `scripts/setup_user_namespaces.sh` files in the main branch with the same versions as above, then submit this as a PR to `main`. Wait for this to merge.
 5. Generate release manifests:
    - `kustomize build config/default > modelmesh.yaml`
