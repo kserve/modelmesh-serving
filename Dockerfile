@@ -34,7 +34,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4 AS runtime
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7 AS runtime
 
 ARG USER=2000
 ARG IMAGE_VERSION
