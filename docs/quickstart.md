@@ -13,7 +13,7 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 ### Get the latest release
 
 ```shell
-RELEASE=release-0.9
+RELEASE=release-0.10
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
