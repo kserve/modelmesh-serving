@@ -22,7 +22,7 @@ cd modelmesh-serving
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
 ```
 
 This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
@@ -53,6 +53,7 @@ kubectl get servingruntimes
 NAME           DISABLED   MODELTYPE    CONTAINERS   AGE
 mlserver-0.x              sklearn      mlserver     5m
 ovms-1.x                  openvino_ir  ovms         5m
+torchserve-0.x            pytorch-mar  torchserve   5m
 triton-2.x                tensorflow   triton       5m
 ```
 
@@ -62,9 +63,10 @@ are:
 
 | ServingRuntime | Supported Frameworks                |
 | -------------- | ----------------------------------- |
-| triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
 | mlserver-0.x   | sklearn, xgboost, lightgbm          |
 | ovms-1.x       | openvino_ir, onnx                   |
+| torchserve-0.x | pytorch-mar                         |
+| triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
 
 ## 2. Deploy a model
 
