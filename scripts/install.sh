@@ -283,7 +283,8 @@ info "Installing ModelMesh Serving RBACs (namespace_scope_mode=$namespace_scope_
 if [[ $namespace_scope_mode == "true" ]]; then
   kustomize build rbac/namespace-scope | kubectl apply -f -
   # We don't install the ClusterServingRuntime CRD when in namespace scope mode, so comment it out first in the CRD manifest file
-  sed -i 's/- bases\/serving.kserve.io_clusterservingruntimes.yaml/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
+  sed -i.bak 's/- bases\/serving.kserve.io_clusterservingruntimes.yaml/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
+  rm crd/kustomization.yaml.bak
 else
   kustomize build rbac/cluster-scope | kubectl apply -f -
 fi
@@ -299,8 +300,9 @@ fi
 if [[ $namespace_scope_mode == "true" ]]; then
   info "Enabling namespace scope mode"
   kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=true
-  # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation 
-  sed -i 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
+  # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation
+  sed -i.bak 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
+  rm crd/kustomization.yaml.bak
 fi
 
 info "Waiting for ModelMesh Serving controller pod to be up..."
