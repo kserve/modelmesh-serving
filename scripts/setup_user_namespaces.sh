@@ -31,10 +31,10 @@ EOF
 
 ctrl_ns="modelmesh-serving"
 user_ns_array=()
-modelmesh_release="v0.10.0-rc0" # The latest release is the default
+modelmesh_release="v0.10.0"       # The latest release is the default
 create_storage_secret=false
 deploy_serving_runtimes=false
-dev_mode=false # When set to true, will use the locally cloned files instead of from a release
+dev_mode=false                    # Set to true to use locally cloned files instead of from a release
 
 while (($# > 0)); do
   case "$1" in
