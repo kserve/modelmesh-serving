@@ -1,12 +1,16 @@
 {
-	"inputs": [{
-		"name": "INPUT__0",
-		"datatype": "FP32",
-		"shape": [-1, 3, 32, 32]
-	}],
-	"outputs": [{
-		"name": "OUTPUT__0",
-		"datatype": "FP32",
-		"shape": [-1, 10]
-	}]
+  "inputs": [
+    {
+      "name": "INPUT__0",
+      "datatype": "FP32",
+      "shape": [-1, 3, 32, 32]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "OUTPUT__0",
+      "datatype": "FP32",
+      "shape": [-1, 10]
+    }
+  ]
 }

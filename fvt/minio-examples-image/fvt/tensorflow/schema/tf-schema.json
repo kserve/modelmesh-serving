@@ -1,12 +1,16 @@
 {
-        "inputs": [{
-                "name": "INPUT0",
-                "datatype": "TYPE_STRING",
-                "shape": [1, 28, 28]
-        }],
-        "outputs": [{
-                "name": "OUTPUT0",
-                "datatype": "TYPE_STRING",
-                "shape": [10]
-        }]
+  "inputs": [
+    {
+      "name": "INPUT0",
+      "datatype": "TYPE_STRING",
+      "shape": [1, 28, 28]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "OUTPUT0",
+      "datatype": "TYPE_STRING",
+      "shape": [10]
+    }
+  ]
 }
