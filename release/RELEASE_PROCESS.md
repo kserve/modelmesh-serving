@@ -68,15 +68,15 @@ Some of the steps below need to be performed at least twice:
    the corresponding release versions for:
 
    - `kserve/modelmesh`
-   - `kserve/modelmesh-runtime-adapter`
    - `kserve/modelmesh-controller`
+   - `kserve/modelmesh-runtime-adapter`
    - `kserve/rest-proxy`
 
    The version tags should be updated in the following files:
 
-   - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `config/default/config-defaults.yaml`: edit the `modelmesh`, `modelmesh-runtime-adapter`, and `rest-proxy` image tags
    - [ ] `config/dependencies/quickstart.yaml`: change the `kserve/modelmesh-minio-examples` image tag to use the pinned version
+   - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
    - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the `Installation` section to the new release branch name.
    - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the `Get the latest release` section to the new release branch name
