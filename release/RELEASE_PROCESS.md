@@ -107,12 +107,22 @@ Some of the steps below need to be performed at least twice:
    - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
    - `cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml`
 
-7. Generate config archive by running either one of the following commands depending
-   on what version of `tar` you have. Be sure to replace the `update-me` below with
-   the correct version:
+7. Generate config archive. The commands below automatically determines the release
+   version and chose the version of the `tar`command based for either Linux or macOS.
+   Verify the correct release version was found.
 
-   - GNU tar (Linux): `RELEASE=update-me; tar -zcvf config-${RELEASE}.tar.gz config/ --transform s/config/config-${RELEASE}/`
-   - BSD tar (MacOS): `RELEASE=update-me; tar -zcvf config-${RELEASE}.tar.gz -s /config/${RELEASE}/ config/`
+   ```Shell
+   RELEASE=$( grep -o -E "newTag: .*$" config/manager/kustomization.yaml | sed 's/newTag: //' )
+   TAR_FILE="config-${RELEASE}.tar.gz"
+   
+   echo "Release: ${RELEASE}"
+   
+   if $(tar --version | grep -q 'bsd'); then
+     tar -zcvf ${TAR_FILE} -s /config/${RELEASE}/ config/;
+   else
+     tar -zcvf ${TAR_FILE} config/ --transform s/config/config-${RELEASE}/;
+   fi
+   ```
 
 8. Once everything has settled, tag and push the release with `git tag $VERSION`
    and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
