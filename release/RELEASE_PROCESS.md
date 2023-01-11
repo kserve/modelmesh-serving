@@ -120,7 +120,7 @@ Some of the steps below need to be performed at least twice:
    echo "Release: ${VERSION}"
 
    if $(tar --version | grep -q 'bsd'); then
-     tar -zcvf ${TAR_FILE} -s /config/${VERSION}/ config/;
+     tar -zcvf ${TAR_FILE} -s /config/config-${VERSION}/ config/;
    else
      tar -zcvf ${TAR_FILE} config/ --transform s/config/config-${VERSION}/;
    fi
