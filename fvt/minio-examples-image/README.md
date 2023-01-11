@@ -1,6 +1,7 @@
-# Model examples image
+# ModelMesh MinIO Examples
 
-This MinIO docker image contains example models. When ModelMesh is deployed with `--quickstart`, example models are shared via this image.
+This MinIO Docker image contains example models. When ModelMesh is deployed with
+the `--quickstart` flag, the example models are deployed via this image.
 
 ## Build the image locally
 
