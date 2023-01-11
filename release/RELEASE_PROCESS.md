@@ -78,8 +78,8 @@ Some of the steps below need to be performed at least twice:
    - [ ] `config/dependencies/quickstart.yaml`: change the `kserve/modelmesh-minio-examples` image tag to use the pinned version
    - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
-   - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the `Installation` section to the new release branch name.
-   - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the `Get the latest release` section to the new release branch name
+   - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the `Installation` section to the new `release-*` branch name
+   - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the _"Get the latest release"_ section to the new `release-*` branch name
    - [ ] `scripts/setup_user_namespaces.sh`: change the `modelmesh_release` version
 
    You can copy the checklist above into the PR description in the next step.
