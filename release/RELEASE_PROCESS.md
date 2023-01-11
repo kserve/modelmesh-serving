@@ -75,12 +75,12 @@ Some of the steps below need to be performed at least twice:
 
    The version tags should be updated in the following files:
 
-   - [ ] `config/default/config-defaults.yaml`: edit the  image tags for ...
+   - [ ] `config/default/config-defaults.yaml`: edit the image tags for ...
 
      - [ ] `kserve/modelmesh`
      - [ ] `kserve/rest-proxy`
      - [ ] `kserve/modelmesh-runtime-adapter`
-         
+
    - [ ] `config/dependencies/quickstart.yaml`: change the `kserve/modelmesh-minio-examples` image tag to use the pinned version
    - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
@@ -101,35 +101,45 @@ Some of the steps below need to be performed at least twice:
    - [ ] `docs/install/install-script.md`
    - [ ] `scripts/setup_user_namespaces.sh`
 
-6. Generate the release manifests:
-
-   - `kustomize build config/default > modelmesh.yaml`
-   - `kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml`
-   - `cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml`
-
-7. Generate config archive. The commands below automatically determines the release
-   version and chose the version of the `tar`command based for either Linux or macOS.
-   Verify the correct release version was found.
+6. Generate the release manifests on the `release-*` branch:
 
    ```Shell
-   RELEASE=$( grep -o -E "newTag: .*$" config/manager/kustomization.yaml | sed 's/newTag: //' )
-   TAR_FILE="config-${RELEASE}.tar.gz"
-   
-   echo "Release: ${RELEASE}"
-   
+   kustomize build config/default > modelmesh.yaml
+   kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml
+   cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml
+   ```
+
+7. Generate config archive on the `release-*` branch. The scriptlet below automatically
+   determines the release version and chooses the version of the `tar` command for
+   either Linux or macOS. Verify the correct release `VERSION` was found.
+
+   ```Shell
+   VERSION=$( grep -o -E "newTag: .*$" config/manager/kustomization.yaml | sed 's/newTag: //' )
+   TAR_FILE="config-${VERSION}.tar.gz"
+
+   echo "Release: ${VERSION}"
+
    if $(tar --version | grep -q 'bsd'); then
-     tar -zcvf ${TAR_FILE} -s /config/${RELEASE}/ config/;
+     tar -zcvf ${TAR_FILE} -s /config/${VERSION}/ config/;
    else
-     tar -zcvf ${TAR_FILE} config/ --transform s/config/config-${RELEASE}/;
+     tar -zcvf ${TAR_FILE} config/ --transform s/config/config-${VERSION}/;
    fi
    ```
 
-8. Once everything has settled, tag and push the release with `git tag $VERSION`
-   and `git push upstream $VERSION`. You can also tag the release in the GitHub UI.
-   The `modelmesh-controller` image will be published via GitHub Actions.
+8. Create a new tag on the `release-*` branch and push it to GitHub using the commands
+   below, or, create a new tag in the next step using the GitHub UI. The new
+   `kserve/modelmesh-controller` image will be published via GitHub Actions.
 
-9. Create the new release in the GitHub UI and upload the generated install manifests
-   to GitHub release assets: https://github.com/kserve/modelmesh-serving/releases/new
+   ```Shell
+   git tag $VERSION
+   git push upstream $VERSION
+   ```
+
+9. Create the new release in the GitHub UI from the `release-*` branch (or from the
+   tag created in the previous step) and upload the generated install manifests as
+   release assets:
+
+   https://github.com/kserve/modelmesh-serving/releases/new
 
 10. Compare the release and release artifacts to those of previous releases to make
     sure nothing was missed
