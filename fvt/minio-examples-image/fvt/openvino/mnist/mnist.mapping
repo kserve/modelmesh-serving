@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<mapping>
+	<map>
+		<framework name="Input3" output_port_id="Input3" />
+		<IR name="Input3" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Parameter5" output_port_id="Parameter5" />
+		<IR name="Parameter5" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Convolution28" output_port_id="Convolution28_Output_0" />
+		<IR name="Convolution28" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Parameter6" output_port_id="Parameter6" />
+		<IR name="Parameter6" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Plus30" output_port_id="Plus30_Output_0" />
+		<IR name="Plus30" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="ReLU32" output_port_id="ReLU32_Output_0" />
+		<IR name="ReLU32" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="Pooling66" output_port_id="Pooling66_Output_0" />
+		<IR name="Pooling66" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="Parameter87" output_port_id="Parameter87" />
+		<IR name="Parameter87" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Convolution110" output_port_id="Convolution110_Output_0" />
+		<IR name="Convolution110" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Parameter88" output_port_id="Parameter88" />
+		<IR name="Parameter88" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Plus112" output_port_id="Plus112_Output_0" />
+		<IR name="Plus112" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="ReLU114" output_port_id="ReLU114_Output_0" />
+		<IR name="ReLU114" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="Pooling160" output_port_id="Pooling160_Output_0" />
+		<IR name="Pooling160" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="Pooling160_Output_0_reshape0_shape" output_port_id="Pooling160_Output_0_reshape0_shape" />
+		<IR name="Pooling160_Output_0_reshape0_shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Times212_reshape0" output_port_id="Pooling160_Output_0_reshape0" />
+		<IR name="Times212_reshape0" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Times212_reshape1" output_port_id="Parameter193_reshape1" />
+		<IR name="Times212_reshape1" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Times212" output_port_id="Times212_Output_0" />
+		<IR name="Times212" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Parameter194" output_port_id="Parameter194" />
+		<IR name="Parameter194" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Plus214_Output_0" output_port_id="Plus214_Output_0" />
+		<IR name="Plus214_Output_0" output_port_id="2" />
+	</map>
+</mapping>

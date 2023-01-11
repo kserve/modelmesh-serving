@@ -1,0 +1,12 @@
+{
+	"inputs": [{
+		"name": "inputs",
+		"datatype": "FP32",
+		"shape": [1, 784]
+	}],
+	"outputs": [{
+		"name": "classes",
+		"datatype": "INT64",
+		"shape": [1]
+	}]
+}

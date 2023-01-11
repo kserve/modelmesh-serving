@@ -4,7 +4,14 @@ This MinIO docker image contains example models. When ModelMesh is deployed with
 
 ## Build the image locally
 
-`docker build -t docker.io/kserve/modelmesh-minio-examples:latest .`
+```sh
+docker build -t docker.io/kserve/modelmesh-minio-examples:latest .
+```
+
+Building the dev image for using with `--fvt` flag
+```sh
+docker build -f Dockerfile.dev -t kserve/modelmesh-minio-dev-examples:latest .
+```
 
 ## Usage examples
 

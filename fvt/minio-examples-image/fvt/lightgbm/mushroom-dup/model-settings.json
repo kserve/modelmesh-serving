@@ -1,0 +1,3 @@
+{
+    "implementation": "mlserver_lightgbm.LightGBMModel"
+}

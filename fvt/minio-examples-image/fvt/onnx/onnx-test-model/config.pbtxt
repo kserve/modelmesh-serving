@@ -1,0 +1,23 @@
+platform: "onnxruntime_onnx"
+max_batch_size: 32
+input [
+  {
+    name: "input"
+    data_type: TYPE_FP32
+    dims: [3, 224, 224]
+  }
+]
+output [
+  {
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [3]
+    label_filename: "test_labels.txt"
+  }
+]
+instance_group [
+  {
+    kind: KIND_AUTO
+    count: 1
+  }
+]
