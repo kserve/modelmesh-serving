@@ -27,11 +27,10 @@ Release branches serve several purposes:
 
 These 4 repositories need a (new) `release-*` branch:
 
-- [`modelmesh`](https://github.com/kserve/modelmesh/branches)
-- [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/branches)
-- [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches)
-- [`rest-proxy`](https://github.com/kserve/rest-proxy/branches)
-
+- [ ] [`modelmesh`](https://github.com/kserve/modelmesh/branches)
+- [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/branches)
+- [ ] [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches)
+- [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/branches)
 
 ## Publish the release
 
@@ -46,9 +45,9 @@ Some of the steps below need to be performed at least twice:
 
 1. Create new (pre-)release tags (v...`-rc0`) in these repositories:
 
-   - [`modelmesh`](https://github.com/kserve/modelmesh/releases)
-   - [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
-   - [`rest-proxy`](https://github.com/kserve/rest-proxy/releases)
+   - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/releases)
+   - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
+   - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/releases)
 
    using the newly created `release-*` branches as target. This can be done by
    creating a draft release using the GitHub web interface and checking the
@@ -68,10 +67,10 @@ Some of the steps below need to be performed at least twice:
 3. In this `modelmesh-serving` repository, update the container image tags to
    the corresponding release versions for:
 
-    - `kserve/modelmesh`
-    - `kserve/modelmesh-runtime-adapter`
-    - `kserve/modelmesh-controller`
-    - `kserve/rest-proxy`
+   - `kserve/modelmesh`
+   - `kserve/modelmesh-runtime-adapter`
+   - `kserve/modelmesh-controller`
+   - `kserve/rest-proxy`
 
    The version tags should be updated in the following files:
 
@@ -83,16 +82,18 @@ Some of the steps below need to be performed at least twice:
    - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the `Get the latest release` section to the new release branch name
    - [ ] `scripts/setup_user_namespaces.sh`: change the `modelmesh_release` version
 
+   You can copy the checklist above into the PR description in the next step.
+
 4. Submit your PR to the `release-*` branch that was created earlier and wait for
    it to merge.
 
 5. Update the following files in the `main` branch with the same versions as in the
    steps above, submit them in a PR to `main`, and wait for that PR to be merged:
 
-   - `docs/component-versions.md`
-   - `docs/quickstart.md`
-   - `docs/install/install-script.md`
-   - `scripts/setup_user_namespaces.sh`
+   - [ ] `docs/component-versions.md`
+   - [ ] `docs/quickstart.md`
+   - [ ] `docs/install/install-script.md`
+   - [ ] `scripts/setup_user_namespaces.sh`
 
 6. Generate the release manifests:
 
@@ -113,3 +114,6 @@ Some of the steps below need to be performed at least twice:
 
 9. Create the new release in the GitHub UI and upload the generated install manifests
    to GitHub release assets: https://github.com/kserve/modelmesh-serving/releases/new
+
+10. Compare the release and release artifacts to those of previous releases to make
+    sure nothing was missed
