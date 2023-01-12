@@ -142,7 +142,7 @@ Some of the steps below need to be performed at least twice:
    ```Shell
    git tag $VERSION
    git push upstream $VERSION
-   
+
    echo https://github.com/kserve/modelmesh-serving/releases/new?tag=${VERSION}
    ```
 
@@ -153,9 +153,11 @@ Some of the steps below need to be performed at least twice:
     will generate the release description.
 
     **Note**, if you generated a pre-release (i.e. `v0.10.0-rc0`) then copy the release
-    notes from that and remove them from the pre-release description.
+    notes from that and remove them from the pre-release description and revise accordingly.
 
     https://github.com/kserve/modelmesh-serving/releases/new
 
 11. Compare the release and release artifacts to those of previous releases to make
-    sure nothing was missed
+    sure nothing was missed. Verify that the newly released version of the
+    [`modelmesh-controller`](https://hub.docker.com/r/kserve/modelmesh-controller/tags)
+    was pushed to DockerHub.
