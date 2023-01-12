@@ -147,8 +147,13 @@ Some of the steps below need to be performed at least twice:
    ```
 
 10. Create the new release in the GitHub UI from the `release-*` branch (or from the
-    tag created in the previous step) and upload the generated install manifests as
-    release assets:
+    tag created in the previous step). Enter the release tag value (i.e. `v0.10.0`) in
+    the "Release title" field and upload the generated install manifests ("Release assets")
+    in the "Atach binaries ..." section. Click the "Generate release notes" button which
+    will generate the release description.
+
+    **Note**, if you generated a pre-release (i.e. `v0.10.0-rc0`) then copy the release
+    notes from that and remove them from the pre-release description.
 
     https://github.com/kserve/modelmesh-serving/releases/new
 
