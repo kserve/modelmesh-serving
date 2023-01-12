@@ -66,10 +66,10 @@ Some of the steps below need to be performed at least twice:
 
 3. Verify image tags got pushed to [DockerHub](https://hub.docker.com/u/kserve):
 
-   - [x] [kserve/modelmesh](https://hub.docker.com/r/kserve/modelmesh/tags)
-   - [x] [kserve/modelmesh-minio-examples](https://hub.docker.com/r/kserve/modelmesh-minio-examples/tags)
-   - [x] [kserve/modelmesh-runtime-adapter](https://hub.docker.com/r/kserve/modelmesh-runtime-adapter/tags)
-   - [x] [kserve/rest-proxy](https://hub.docker.com/r/kserve/rest-proxy/tags)
+   - [ ] [kserve/modelmesh](https://hub.docker.com/r/kserve/modelmesh/tags)
+   - [ ] [kserve/modelmesh-minio-examples](https://hub.docker.com/r/kserve/modelmesh-minio-examples/tags)
+   - [ ] [kserve/modelmesh-runtime-adapter](https://hub.docker.com/r/kserve/modelmesh-runtime-adapter/tags)
+   - [ ] [kserve/rest-proxy](https://hub.docker.com/r/kserve/rest-proxy/tags)
 
 4. In this `modelmesh-serving` repository, update the container image tags to
    the corresponding release versions for:
