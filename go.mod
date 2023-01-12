@@ -125,7 +125,7 @@ require (
 )
 
 replace (
-	github.com/kserve/kserve => github.com/kserve/kserve v0.10.0-rc0
+	github.com/kserve/kserve => github.com/kserve/kserve v0.10.0-rc1
 
 	// Update prometheus client to avoid CVE-2022-21698
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
