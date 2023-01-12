@@ -19,19 +19,17 @@ EXPOSE 9000
 
 USER root
 
-RUN mkdir -p /data1/modelmesh-example-models
-
-COPY sklearn /data1/modelmesh-example-models/sklearn/
-COPY lightgbm /data1/modelmesh-example-models/lightgbm/
-COPY onnx /data1/modelmesh-example-models/onnx/
-COPY pytorch /data1/modelmesh-example-models/pytorch/
-COPY xgboost /data1/modelmesh-example-models/xgboost/
-COPY tensorflow /data1/modelmesh-example-models/tensorflow/
-COPY keras /data1/modelmesh-example-models/keras/
-
 RUN useradd -u 1000 -g 0 modelmesh
-
+RUN mkdir -p /data1/modelmesh-example-models
 RUN chown -R 1000:0 /data1
+
+COPY --chown=1000:0 sklearn /data1/modelmesh-example-models/sklearn/
+COPY --chown=1000:0 lightgbm /data1/modelmesh-example-models/lightgbm/
+COPY --chown=1000:0 onnx /data1/modelmesh-example-models/onnx/
+COPY --chown=1000:0 pytorch /data1/modelmesh-example-models/pytorch/
+COPY --chown=1000:0 xgboost /data1/modelmesh-example-models/xgboost/
+COPY --chown=1000:0 tensorflow /data1/modelmesh-example-models/tensorflow/
+COPY --chown=1000:0 keras /data1/modelmesh-example-models/keras/
 
 USER modelmesh
 
@@ -39,4 +37,8 @@ USER modelmesh
 # Image with additional models used in the FVTs
 FROM minio-examples as minio-fvt
 
-COPY fvt /data1/modelmesh-example-models/fvt/
+USER root
+
+COPY --chown=1000:0 fvt /data1/modelmesh-example-models/fvt/
+
+USER modelmesh

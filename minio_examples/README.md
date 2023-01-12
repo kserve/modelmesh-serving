@@ -20,7 +20,7 @@ docker build --target minio-fvt -t kserve/modelmesh-minio-dev-examples:latest .
 Start a "modelmesh-minio-examples" instance of image locally:
 
 ```sh
-docker run --name "modelmesh-minio-examples" \
+docker run --rm --name "modelmesh-minio-examples" \
   -u "1000" \
   -p "9000:9000" \
   -e "MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE" \
