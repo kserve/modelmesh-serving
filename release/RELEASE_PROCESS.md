@@ -2,11 +2,11 @@
 
 ## Create an issue for release tracking
 
-- Create an issue in [kserve/modelmesh-serving](https://github.com/kserve/modelmesh-serving)
+- Create an issue in [kserve/modelmesh-serving](https://github.com/kserve/modelmesh-serving/issues/new?title=release:)
 - Label the issue with `priority p0`
 - Label the issue with `kind process`
 
-## Releasing KServe components
+## Releasing ModelMesh components
 
 A release branch should be substantially _feature complete_ with respect to the
 intended release. Code that is committed to `main` may be merged or cherry-picked
