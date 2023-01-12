@@ -116,6 +116,8 @@ Some of the steps below need to be performed at least twice:
    cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml
    ```
 
+   If you see `Error: unknown flag: --load-restrictor` upgrade your `kustomize` version to 4.x.
+
 8. Generate config archive on the `release-*` branch. The scriptlet below automatically
    determines the release version and chooses the version of the `tar` command for
    either Linux or macOS. Verify the correct release `VERSION` was found.
