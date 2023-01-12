@@ -142,6 +142,8 @@ Some of the steps below need to be performed at least twice:
    ```Shell
    git tag $VERSION
    git push upstream $VERSION
+   
+   echo https://github.com/kserve/modelmesh-serving/releases/new?tag=${VERSION}
    ```
 
 10. Create the new release in the GitHub UI from the `release-*` branch (or from the
