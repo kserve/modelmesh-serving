@@ -12,13 +12,12 @@ on:
       - '.tekton/**'
     tags:
       - v*
+  pull_request:
 
 jobs:
-  # Ensure that tests pass before publishing a new image.
-  build:
+  test:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: kserve/modelmesh-controller
       CI: true
     steps:
       - uses: actions/checkout@v2
@@ -26,25 +25,55 @@ jobs:
         run: make build.develop
       - name: Run lint
         run: ./scripts/develop.sh make fmt
-      - name: Run unit tests
+      - name: Run unit test
         run: ./scripts/develop.sh make test
-      - name: Build runtime image
-        run: make build
-      - name: Log in to Docker Hub
-        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
-      - name: Push to Docker Hub
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    env:
+      IMAGE_NAME: modelmesh-controller
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: export version variables
         run: |
+          IMAGE_ID=kserve/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          echo $VERSION
 
-          # Currently, we rely on nightly builds for pushing images, so exit if
-          # not a tag version for now.
-          if [ "$VERSION" == "main" ]; then
-            echo "Skipping image push"
-            VERSION=latest
-            exit 0
-          fi
+          # Strip "v" prefix from tag name
+          # [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-          docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.IMAGE_NAME }}:$VERSION
-          docker push ${{ env.IMAGE_NAME }}:$VERSION
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.IMAGE_ID }}:${{ env.VERSION }}
+          target: runtime
