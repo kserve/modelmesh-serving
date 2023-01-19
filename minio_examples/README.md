@@ -9,15 +9,15 @@ the `--quickstart` flag, the example models are deployed via this image.
 docker build --target minio-examples -t kserve/modelmesh-minio-examples:latest .
 ```
 
-Building the dev image for using with `--fvt` flag
+To build the `dev` image, use the `--fvt` flag:
 
 ```sh
 docker build --target minio-fvt -t kserve/modelmesh-minio-dev-examples:latest .
 ```
 
-## Usage examples
+## Image usage examples
 
-Start a "modelmesh-minio-examples" instance of image locally:
+Start an instance of the image named `modelmesh-minio-examples` locally:
 
 ```sh
 docker run --rm --name "modelmesh-minio-examples" \
@@ -28,23 +28,27 @@ docker run --rm --name "modelmesh-minio-examples" \
   kserve/modelmesh-minio-examples:latest server /data1
 ```
 
-After the instance started, create an alias to the instance:
-
-```sh
-mc alias set localminio http://localhost:9000 AKIAIOSFODNN7EXAMPLE wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-```
-
-List objects in the bucket in the instance:
-
-```sh
-mc ls -r localminio/modelmesh-example-models/
-```
-
-Instruction to [install MinIO client (mc)](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart).
-
 Shutdown the "modelmesh-minio-examples" docker container:
 
 ```sh
 docker stop "modelmesh-minio-examples"
 docker rm "modelmesh-minio-examples"
 ```
+
+### MinIO client usage examples
+
+Install the [MinIO client](https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart), `mc`.
+
+Create an alias `localminio` for an local instance:
+
+```sh
+mc alias set localminio http://localhost:9000 AKIAIOSFODNN7EXAMPLE wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+```
+
+List objects in the instance's bucket:
+
+```sh
+mc ls -r localminio/modelmesh-example-models/
+```
+
+
