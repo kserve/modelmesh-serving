@@ -104,14 +104,14 @@ var predictorsArray = []FVTPredictor{
 		differentPredictorName:     "onnx",
 		differentPredictorFilename: "onnx-predictor.yaml",
 	},
-	{
-		predictorName:              "openvino",
-		predictorFilename:          "openvino-mnist-predictor.yaml",
-		currentModelPath:           "fvt/openvino/mnist",
-		updatedModelPath:           "fvt/openvino/mnist-dup",
-		differentPredictorName:     "xgboost",
-		differentPredictorFilename: "xgboost-predictor.yaml",
-	},
+	// {
+	// 	predictorName:              "openvino",
+	// 	predictorFilename:          "openvino-mnist-predictor.yaml",
+	// 	currentModelPath:           "fvt/openvino/mnist",
+	// 	updatedModelPath:           "fvt/openvino/mnist-dup",
+	// 	differentPredictorName:     "xgboost",
+	// 	differentPredictorFilename: "xgboost-predictor.yaml",
+	// },
 	{
 		predictorName:              "pytorch-mar",
 		predictorFilename:          "pytorch-mar-predictor.yaml",
@@ -535,7 +535,7 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = Describe("OVMS Inference", Ordered, func() {
+	var _ = XDescribe("OVMS Inference", Ordered, func() {
 		var openvinoPredictorObject *unstructured.Unstructured
 		var openvinoPredictorName string
 

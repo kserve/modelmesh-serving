@@ -43,14 +43,14 @@ jobs:
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-0.x.yaml \
             config/runtimes/triton-2.x.yaml \
-            config/runtimes/ovms-1.x.yaml
+            config/runtimes/torchserve-0.x.yaml
           sed -i 's/memory:.*$/memory: 512Mi/g' \
             config/runtimes/mlserver-0.x.yaml \
             config/runtimes/triton-2.x.yaml \
-            config/runtimes/ovms-1.x.yaml
+            config/runtimes/torchserve-0.x.yaml
           sed -i 's/maxSurge:.*$/maxSurge: 0/' config/internal/base/deployment.yaml.tmpl
           sed -i 's/maxUnavailable:.*$/maxUnavailable: 100%/' config/internal/base/deployment.yaml.tmpl
-          echo -e '\n  disabled: true' >> config/runtimes/torchserve-0.x.yaml
+          echo -e '\n  disabled: true' >> config/runtimes/ovms-1.x.yaml
       - name: Build Controller image
         run: |
           make build.develop
@@ -69,7 +69,7 @@ jobs:
         run: |
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
-          docker pull openvino/model_server:2022.1
+          # docker pull openvino/model_server:2022.1
           docker pull kserve/modelmesh-runtime-adapter
           docker pull kserve/rest-proxy
           docker pull kserve/modelmesh
