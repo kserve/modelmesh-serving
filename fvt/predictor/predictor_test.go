@@ -104,22 +104,23 @@ var predictorsArray = []FVTPredictor{
 		differentPredictorName:     "onnx",
 		differentPredictorFilename: "onnx-predictor.yaml",
 	},
-	// {
-	// 	predictorName:              "openvino",
-	// 	predictorFilename:          "openvino-mnist-predictor.yaml",
-	// 	currentModelPath:           "fvt/openvino/mnist",
-	// 	updatedModelPath:           "fvt/openvino/mnist-dup",
-	// 	differentPredictorName:     "xgboost",
-	// 	differentPredictorFilename: "xgboost-predictor.yaml",
-	// },
 	{
-		predictorName:              "pytorch-mar",
-		predictorFilename:          "pytorch-mar-predictor.yaml",
-		currentModelPath:           "fvt/pytorch/pytorch-mar/mnist.mar",
-		updatedModelPath:           "fvt/pytorch/pytorch-mar-dup/mnist.mar",
-		differentPredictorName:     "pytorch",
-		differentPredictorFilename: "pytorch-predictor.yaml",
+		predictorName:              "openvino",
+		predictorFilename:          "openvino-mnist-predictor.yaml",
+		currentModelPath:           "fvt/openvino/mnist",
+		updatedModelPath:           "fvt/openvino/mnist-dup",
+		differentPredictorName:     "xgboost",
+		differentPredictorFilename: "xgboost-predictor.yaml",
 	},
+	// TorchServe test is currently disabled
+	// {
+	// 	predictorName:              "pytorch-mar",
+	// 	predictorFilename:          "pytorch-mar-predictor.yaml",
+	// 	currentModelPath:           "fvt/pytorch/pytorch-mar/mnist.mar",
+	// 	updatedModelPath:           "fvt/pytorch/pytorch-mar-dup/mnist.mar",
+	// 	differentPredictorName:     "pytorch",
+	// 	differentPredictorFilename: "pytorch-predictor.yaml",
+	// },
 }
 
 var _ = Describe("Predictor", func() {
@@ -535,7 +536,7 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	var _ = XDescribe("OVMS Inference", Ordered, func() {
+	var _ = Describe("OVMS Inference", Ordered, func() {
 		var openvinoPredictorObject *unstructured.Unstructured
 		var openvinoPredictorName string
 
@@ -583,8 +584,8 @@ var _ = Describe("Predictor", func() {
 			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: Invalid number of shape dimensions"))
 		})
 	})
-
-	var _ = Describe("TorchServe Inference", Ordered, func() {
+	// TorchServe test is currently disabled
+	var _ = XDescribe("TorchServe Inference", Ordered, func() {
 		var torchservePredictorObject *unstructured.Unstructured
 		var torchservePredictorName string
 
