@@ -1,12 +1,34 @@
 # Release Process
 
-## Create an issue for release tracking
+## Release Tracking
 
-- Create an issue in [kserve/modelmesh-serving](https://github.com/kserve/modelmesh-serving/issues/new?title=release:)
-- Label the issue with `priority p0`
-- Label the issue with `kind process`
+To better coordinate the release process create an issue in the
+[kserve/modelmesh-serving](https://github.com/kserve/modelmesh-serving/issues/new?title=release:)
+to keep track of all the steps that need to be done. Many of the checklists below
+are intended to be copied into the issue description so that the completed steps
+can be checked of while the release process is moving forward.
 
-## Releasing ModelMesh components
+## Release Preparation
+
+Before starting the actual release process, make sure that the features and bug
+fixes that were designated to be part of the release are completed and fully tested.
+
+Update the `go` dependency to `github.com/kserve/kserve` in `go.mod` and run
+`go mod tidy`. Since the KServe and ModelMesh releases are aligned, there should
+already be a `v...-rc0` (or `-rc1`) of KServe before the ModelMesh release process
+is started. Use this opportunity to update other `go` dependencies as well.
+The dependencies should be updated on the `main` branch, before creating a new
+release branch.
+
+Update the CRDs under `config/crd/bases` with the CRDs from the `kserve/kserve`
+repository (`https://github.com/kserve/kserve/tree/master/config/crd`) using their
+latest pre-release version:
+
+- [ ] `config/crd/bases/serving.kserve.io_inferenceservices.yaml`
+- [ ] `config/crd/bases/serving.kserve.io_clusterservingruntimes.yaml`
+- [ ] `config/crd/bases/serving.kserve.io_servingruntimes.yaml`
+
+## Release Branches
 
 A release branch should be substantially _feature complete_ with respect to the
 intended release. Code that is committed to `main` may be merged or cherry-picked
@@ -16,23 +38,26 @@ should be solely applicable to that release (and should not be committed back to
 stream (for example, temporary hotfixes, backported security fixes, or image hashes),
 you should commit to `main` and then merge or cherry-pick to the release branch.
 
-## Create a release branch
-
 Create a _release branch_ from `main` in the form of `release-${MAJOR}.${MINOR}`.
 Release branches serve several purposes:
 
-1. They allow a release wrangler or other developers to focus on a release without interrupting development on `main`,
-2. They allow developers to track the development of a release before a release candidate is declared,
-3. They simplify back porting critical bug fixes to a patch level release for a particular release stream (e.g., producing a `v0.6.1` from `release-0.6`), when appropriate.
+1. They allow a release wrangler or other developers to focus on a release without
+   interrupting development on `main`,
+2. They allow developers to track the development of a release before a release
+   candidate is declared,
+3. They simplify back porting critical bug fixes to a patch level release for a
+   particular release stream (e.g., producing a `v0.6.1` from `release-0.6`),
+   when appropriate.
 
-These 4 repositories need a (new) `release-*` branch:
+These 5 repositories need a (new) `release-*` branch:
 
 - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/branches)
+- [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-minio-examples/branches)
 - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/branches)
 - [ ] [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches)
 - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/branches)
 
-## Publish the release
+## Release Process
 
 It's generally a good idea to search the repo or `control`-`shift`-`f` for strings
 of the old version number and replace them with the new, keeping in mind conflicts
@@ -40,12 +65,13 @@ with other library version numbers.
 
 Some of the steps below need to be performed at least twice:
 
-- once for the release candidate(s) (`v0.10.0-rc0`, `v0.10.0-rc1`, ...) and
+- at least once for the release candidate(s) (`v0.10.0-rc0`, `v0.10.0-rc1`, ...) and
 - once more for the actual release (`v0.10.0`).
 
-1. Create new (pre-)release tags (v...`-rc0`) in these repositories:
+1. Create new (pre-)release tags (`v...-rc0`) in these repositories:
 
    - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/releases)
+   - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
    - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
    - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/releases)
 
@@ -55,23 +81,14 @@ Some of the steps below need to be performed at least twice:
    action to push the respective (pre-)release container images to DockerHub which
    are needed in the next step.
 
-2. Build and push a new tag for the `kserve/modelmesh-minio-examples` image. If
-   there have been no changes since the last release, you can create a new tag
-   from the previous release, e.g. creating a new `v0.10.0` tag from `latest`:
-
-   ```shell
-   docker manifest create kserve/modelmesh-minio-examples:v0.10.0 kserve/modelmesh-minio-examples:latest
-   docker manifest push kserve/modelmesh-minio-examples:v0.10.0
-   ```
-
-3. Verify image tags got pushed to [DockerHub](https://hub.docker.com/u/kserve):
+2. Verify image tags got pushed to [DockerHub](https://hub.docker.com/u/kserve):
 
    - [ ] [kserve/modelmesh](https://hub.docker.com/r/kserve/modelmesh/tags)
    - [ ] [kserve/modelmesh-minio-examples](https://hub.docker.com/r/kserve/modelmesh-minio-examples/tags)
    - [ ] [kserve/modelmesh-runtime-adapter](https://hub.docker.com/r/kserve/modelmesh-runtime-adapter/tags)
    - [ ] [kserve/rest-proxy](https://hub.docker.com/r/kserve/rest-proxy/tags)
 
-4. In this `modelmesh-serving` repository, update the container image tags to
+3. In this `modelmesh-serving` repository, update the container image tags to
    the corresponding release versions for:
 
    - `kserve/modelmesh`
@@ -90,16 +107,18 @@ Some of the steps below need to be performed at least twice:
      - [ ] `kserve/modelmesh-minio-examples`
    - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
-   - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the `Installation` section to the new `release-*` branch name
-   - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the _"Get the latest release"_ section to the new `release-*` branch name
+   - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the
+         `Installation` section to the new `release-*` branch name
+   - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the
+         _"Get the latest release"_ section to the new `release-*` branch name
    - [ ] `scripts/setup_user_namespaces.sh`: change the `modelmesh_release` version
 
    You can copy the checklist above into the PR description in the next step.
 
-5. Submit your PR to the `release-*` branch that was created earlier and wait for
+4. Submit your PR to the `release-*` branch that was created earlier and wait for
    it to merge.
 
-6. Update the following files in the `main` branch with the same versions as in the
+5. Update the following files in the `main` branch with the same versions as in the
    steps above, submit them in a PR to `main`, and wait for that PR to be merged:
 
    - [ ] `docs/component-versions.md`
@@ -107,7 +126,7 @@ Some of the steps below need to be performed at least twice:
    - [ ] `docs/install/install-script.md`
    - [ ] `scripts/setup_user_namespaces.sh`
 
-7. Generate the release manifests on the `release-*` branch:
+6. Generate the release manifests on the `release-*` branch:
 
    ```Shell
    kustomize build config/default > modelmesh.yaml
@@ -117,7 +136,7 @@ Some of the steps below need to be performed at least twice:
 
    If you see `Error: unknown flag: --load-restrictor` upgrade your `kustomize` version to 4.x.
 
-8. Generate config archive on the `release-*` branch. The scriptlet below automatically
+7. Generate config archive on the `release-*` branch. The scriptlet below automatically
    determines the release version and chooses the version of the `tar` command for
    either Linux or macOS. Verify the correct release `VERSION` was found.
 
@@ -134,7 +153,7 @@ Some of the steps below need to be performed at least twice:
    fi
    ```
 
-9. Create a new tag on the `release-*` branch and push it to GitHub using the commands
+8. Create a new tag on the `release-*` branch and push it to GitHub using the commands
    below, or, create a new tag in the next step using the GitHub UI. The new
    `kserve/modelmesh-controller` image will be published via GitHub Actions.
 
@@ -145,18 +164,18 @@ Some of the steps below need to be performed at least twice:
    echo https://github.com/kserve/modelmesh-serving/releases/new?tag=${VERSION}
    ```
 
-10. Create the new release in the GitHub UI from the `release-*` branch (or from the
-    tag created in the previous step). Enter the release tag value (e.g. `v0.10.0`) in
-    the "Release title" field and upload the generated install manifests ("Release assets")
-    in the "Attach binaries ..." section. Click the "Generate release notes" button which
-    will generate the release description.
+9. Create the new release in the GitHub UI from the `release-*` branch (or from the
+   tag created in the previous step). Enter the release tag value (e.g. `v0.10.0`) in
+   the "Release title" field and upload the generated installation manifests ("Release assets")
+   in the "Attach binaries ..." section. Click the "Generate release notes" button which
+   will generate the release description.
 
-    **Note**, if you generated a pre-release (e.g. `v0.10.0-rc0`) then copy the release
-    notes from that and remove them from the pre-release description and revise accordingly.
+   **Note**, if you generated a pre-release (e.g. `v0.10.0-rc0`) then copy the release
+   notes from that and remove them from the pre-release description and revise accordingly.
 
-    https://github.com/kserve/modelmesh-serving/releases/new
+   https://github.com/kserve/modelmesh-serving/releases/new
 
-11. Compare the release and release artifacts to those of previous releases to make
+10. Compare the release and release artifacts to those of previous releases to make
     sure nothing was missed. Verify that the newly released version of the
     [`modelmesh-controller`](https://hub.docker.com/r/kserve/modelmesh-controller/tags)
     was pushed to DockerHub.
