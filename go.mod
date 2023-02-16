@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.8
-	github.com/kserve/kserve v0.9.1-0.20221013012311-335dfbcc461a
+	github.com/kserve/kserve v0.10.0
 	github.com/manifestival/controller-runtime-client v0.4.0
 	github.com/manifestival/manifestival v0.7.1
 	github.com/moverest/mnist v0.0.0-20160628192128-ec5d9d203b59
@@ -16,7 +16,7 @@ require (
 	github.com/operator-framework/operator-lib v0.10.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.0
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 	github.com/tommy351/goldga v0.5.0
 	go.etcd.io/etcd/api/v3 v3.5.3
 	go.etcd.io/etcd/client/v3 v3.5.3
@@ -76,17 +76,17 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.1 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.32.1 // indirect
-	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/prometheus/client_golang v1.14.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/common v0.39.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
@@ -97,13 +97,13 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
-	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/oauth2 v0.3.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/term v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
-	golang.org/x/tools v0.1.9 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.93.0 // indirect
@@ -125,10 +125,9 @@ require (
 )
 
 replace (
-	github.com/kserve/kserve => github.com/kserve/kserve v0.10.0-rc0
+	// Update go-restful library to avoid CVE-2022-1996
+	github.com/emicklei/go-restful => github.com/emicklei/go-restful v2.16.0+incompatible
 
 	// Update prometheus client to avoid CVE-2022-21698
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
-
-	go.uber.org/atomic => github.com/uber-go/atomic v1.9.0
 )
