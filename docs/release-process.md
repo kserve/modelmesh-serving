@@ -82,13 +82,12 @@ Some of the steps below need to be performed at least twice:
 
    The version tags should be updated in the following files:
 
-   - [ ] `config/default/config-defaults.yaml`: edit the image tags for ...
-
+   - [ ] `config/default/config-defaults.yaml`:
      - [ ] `kserve/modelmesh`
      - [ ] `kserve/rest-proxy`
      - [ ] `kserve/modelmesh-runtime-adapter`
-
-   - [ ] `config/dependencies/quickstart.yaml`: change the `kserve/modelmesh-minio-examples` image tag to use the pinned version
+   - [ ] `config/dependencies/quickstart.yaml`:
+     - [ ] `kserve/modelmesh-minio-examples`
    - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
    - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the `Installation` section to the new `release-*` branch name
@@ -147,12 +146,12 @@ Some of the steps below need to be performed at least twice:
    ```
 
 10. Create the new release in the GitHub UI from the `release-*` branch (or from the
-    tag created in the previous step). Enter the release tag value (i.e. `v0.10.0`) in
+    tag created in the previous step). Enter the release tag value (e.g. `v0.10.0`) in
     the "Release title" field and upload the generated install manifests ("Release assets")
-    in the "Atach binaries ..." section. Click the "Generate release notes" button which
+    in the "Attach binaries ..." section. Click the "Generate release notes" button which
     will generate the release description.
 
-    **Note**, if you generated a pre-release (i.e. `v0.10.0-rc0`) then copy the release
+    **Note**, if you generated a pre-release (e.g. `v0.10.0-rc0`) then copy the release
     notes from that and remove them from the pre-release description and revise accordingly.
 
     https://github.com/kserve/modelmesh-serving/releases/new
