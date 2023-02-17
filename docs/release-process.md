@@ -203,8 +203,8 @@ release the following files needed to be [updated](https://github.com/kserve/kse
 
 Furthermore, the `helm` charts under `charts/kserve-resources/templates` which are
 used to install ModelMesh as part of KServe need to be updated with the changes
-in the respective manifests from the `kserve/modelmesh-serving` repository under
-found under the `config` folder.
+in the respective manifests from the `kserve/modelmesh-serving` repository found
+in the `config` folder.
 
 For reference, for the `v0.10.0` release the following charts in the `kserve` repo
 had to be [updated](https://github.com/kserve/kserve/pull/2645):
