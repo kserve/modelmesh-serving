@@ -72,6 +72,11 @@ Some of the steps below need to be performed at least twice:
 - at least once for the release candidate(s) (`v0.10.0-rc0`, `v0.10.0-rc1`, ...) and
 - once more for the actual release (`v0.10.0`).
 
+Creating a pre-release is not technically required, but it is a good practice to
+other stakeholder to deploy and test the designated release, especially in conjunction
+with KServe, while keep the door open to iron out any kinks before publishing a
+final release.
+
 1. Create new (pre-)release tags (`v...-rc0`) in these repositories:
 
    - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/releases)
