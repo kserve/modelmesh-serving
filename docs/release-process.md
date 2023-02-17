@@ -73,7 +73,7 @@ Some of the steps below need to be performed at least twice:
 - once more for the actual release (`v0.10.0`).
 
 While creating a pre-release is not technically required, it is considered good
-practice. It allows other stakeholder to deploy and test the designated release,
+practice. It allows other stakeholders to deploy and test the designated release,
 while keeping the door open to address any bugs before publishing a final release.
 This is especially useful when testing the new ModelMesh release in conjunction
 with KServe.
@@ -91,7 +91,7 @@ with KServe.
    action to push the respective (pre-)release container images to DockerHub which
    are needed in the next step.
 
-2. Verify image tags got pushed to [DockerHub](https://hub.docker.com/u/kserve):
+2. Verify image tags were pushed to [DockerHub](https://hub.docker.com/u/kserve):
 
    - [ ] [kserve/modelmesh](https://hub.docker.com/r/kserve/modelmesh/tags)
    - [ ] [kserve/modelmesh-minio-examples](https://hub.docker.com/r/kserve/modelmesh-minio-examples/tags)
@@ -232,18 +232,18 @@ For the `v0.9.0` release the following charts had to be [updated](https://github
 
 ## Update the KServe Website
 
-In the `kserve/website` repository update all reference to the previous ModelMesh
+In the `kserve/website` repository, update all reference to the previous ModelMesh
 release. As of `v0.10.0`, `docs/admin/modelmesh.md` was the only Markdown file to
 be [updated](https://github.com/kserve/website/pull/214).
 
 ## Release Blog
 
-If possible work with [Dan Sun](https://kubeflow.slack.com/archives/D04PVPHMN8K)
-on a release blog.
+Work with [Dan Sun](https://kubeflow.slack.com/archives/D04PVPHMN8K) on a joint
+release blog.
 
-For reference, here are a few examples of previous release blogs
-featuring ModelMesh:
+For reference, here are a few examples of previous release blogs featuring ModelMesh:
 
 - [v0.7.0](https://kserve.github.io/website/blog/articles/2021-10-11-KServe-0.7-release)
 - [v0.8.0](https://kserve.github.io/website/0.8/blog/articles/2022-02-18-KServe-0.8-release/#modelmesh-updates)
 - [v0.9.0](https://kserve.github.io/website/0.9/blog/articles/2022-07-21-KServe-0.9-release/#inferenceservice-api-for-modelmesh)
+- [v0.10.0 draft](https://github.com/kserve/website/pull/227#discussion_r1098917277)
