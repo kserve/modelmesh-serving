@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"io/ioutil"
 	"math"
 	"os"
 
@@ -29,6 +30,7 @@ import (
 
 	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
 // Used for checking if floats are sufficiently close enough.
@@ -101,6 +103,20 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 	}
 	Expect(maxI).To(Equal(7))
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func ExpectSuccessfulInference_torchserveMARPredict(predictorName string) {
+	imageBytes, err := ioutil.ReadFile(TestDataPath("0.png"))
+	Expect(err).ToNot(HaveOccurred())
+
+	inferRequest := &torchserveapi.PredictionsRequest{
+		ModelName: predictorName,
+		Input:     map[string][]byte{"data": imageBytes},
+	}
+
+	inferResponse, err := FVTClientInstance.RunTorchserveInference(inferRequest)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
 }
 
 // PyTorch CIFAR
