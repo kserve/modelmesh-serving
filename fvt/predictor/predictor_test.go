@@ -1042,20 +1042,6 @@ var _ = Describe("Invalid Predictors", func() {
 				// TODO can we check for a more detailed error message?
 			})
 
-			It("predictor should fail to load with unsupported storage type", func() {
-				// modify the object with a PVC storage type, which isn't yet supported
-				err := unstructured.SetNestedField(predictorObject.Object, map[string]interface{}{
-					"claimName": "not-yet-supported",
-				}, "spec", "storage", "persistentVolumeClaim")
-				Expect(err).ToNot(HaveOccurred())
-
-				obj := CreatePredictorAndWaitAndExpectInvalidSpec(predictorObject)
-
-				By("Asserting on the predictor state")
-				ExpectPredictorFailureInfo(obj, "InvalidPredictorSpec", false, false,
-					"spec.storage.PersistentVolumeClaim is not supported")
-			})
-
 			It("predictor should fail to load with unrecognized model type", func() {
 				// modify the object with an unrecognized model type
 				SetString(predictorObject, "invalidModelType", "spec", "modelType", "name")

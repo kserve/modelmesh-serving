@@ -78,8 +78,10 @@ const (
 	LeaderForLifeLockName             = "modelmesh-controller-leader-for-life-lock"
 	EnableInferenceServiceEnvVar      = "ENABLE_ISVC_WATCH"
 	EnableClusterServingRuntimeEnvVar = "ENABLE_CSR_WATCH"
+	EnableSecretEnvVar                = "ENABLE_SECRET_WATCH"
 	NamespaceScopeEnvVar              = "NAMESPACE_SCOPE"
 	TrueString                        = "true"
+	FalseString                       = "false"
 )
 
 func init() {
@@ -313,7 +315,7 @@ func main() {
 		registryKey string, registryValue predictor_source.PredictorRegistry) bool {
 
 		envVarVal, _ := os.LookupEnv(envVar)
-		if envVarVal != "false" {
+		if envVarVal != FalseString {
 			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
 			if err == nil || errors.IsNotFound(err) {
 				registryMap[registryKey] = registryValue
@@ -336,9 +338,9 @@ func main() {
 		controllers.InferenceServiceCRSourceId, predictor_source.InferenceServiceRegistry{Client: mgr.GetClient()})
 
 	checkCSRVar := func(envVar string, resourceName string, resourceObject client.Object) bool {
-
+		// default is true
 		envVarVal, _ := os.LookupEnv(envVar)
-		if envVarVal != "false" {
+		if envVarVal != FalseString {
 			err = cl.Get(context.Background(), client.ObjectKey{Name: "foo", Namespace: ControllerNamespace}, resourceObject)
 			if err == nil || errors.IsNotFound(err) {
 				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
@@ -356,6 +358,26 @@ func main() {
 		return false
 	}
 	enableCSRWatch := checkCSRVar(EnableClusterServingRuntimeEnvVar, "ClusterServingRuntime", &v1alpha1.ClusterServingRuntime{})
+
+	checkSecretVar := func(envVar string, resourceName string, resourceObject client.Object) bool {
+		// default is true
+		envVarVal, _ := os.LookupEnv(envVar)
+		if envVarVal != FalseString {
+			err = cl.Get(context.Background(), client.ObjectKey{Name: "storage-config", Namespace: ControllerNamespace}, resourceObject)
+			if err == nil || errors.IsNotFound(err) {
+				setupLog.Info(fmt.Sprintf("Reconciliation of %s is enabled", resourceName))
+				return true
+			} else if envVarVal == TrueString {
+				// If env var is explicitly true, require that specified CRD is present
+				setupLog.Error(err, fmt.Sprintf("Unable to access %s resource", resourceName))
+				os.Exit(1)
+			} else {
+				setupLog.Error(err, fmt.Sprintf("%s CRD not accessible, will not reconcile", resourceName))
+			}
+		}
+		return false
+	}
+	enableSecretWatch := checkSecretVar(EnableSecretEnvVar, "Secret", &corev1.Secret{})
 
 	var predictorControllerEvents, runtimeControllerEvents chan event.GenericEvent
 	if len(sources) != 0 {
@@ -420,6 +442,7 @@ func main() {
 		ControllerName:      controllerDeploymentName,
 		ClusterScope:        clusterScopeMode,
 		EnableCSRWatch:      enableCSRWatch,
+		EnableSecretWatch:   enableSecretWatch,
 		RegistryMap:         registryMap,
 	}).SetupWithManager(mgr, enableIsvcWatch, runtimeControllerEvents); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServingRuntime")

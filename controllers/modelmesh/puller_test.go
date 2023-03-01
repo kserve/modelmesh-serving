@@ -30,7 +30,7 @@ func TestPuller(t *testing.T) {
 	}
 	deployment := &appsv1.Deployment{}
 
-	err := addPullerSidecar(&rt.Spec, deployment, "", nil, &corev1.ResourceRequirements{})
+	err := addPullerSidecar(&rt.Spec, deployment, "", nil, &corev1.ResourceRequirements{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

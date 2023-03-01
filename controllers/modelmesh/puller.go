@@ -14,6 +14,7 @@
 package modelmesh
 
 import (
+	"path/filepath"
 	"strconv"
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
@@ -25,14 +26,14 @@ import (
 
 var StorageSecretName string
 
-func addPullerTransform(rts *kserveapi.ServingRuntimeSpec, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) func(*unstructured.Unstructured) error {
+func addPullerTransform(rts *kserveapi.ServingRuntimeSpec, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements, pvcs []string) func(*unstructured.Unstructured) error {
 	return func(resource *unstructured.Unstructured) error {
 		var deployment = &appsv1.Deployment{}
 		if err := scheme.Scheme.Convert(resource, deployment, nil); err != nil {
 			return err
 		}
 
-		err := addPullerSidecar(rts, deployment, pullerImage, pullerImageCommand, pullerResources)
+		err := addPullerSidecar(rts, deployment, pullerImage, pullerImageCommand, pullerResources, pvcs)
 		if err != nil {
 			return err
 		}
@@ -41,7 +42,7 @@ func addPullerTransform(rts *kserveapi.ServingRuntimeSpec, pullerImage string, p
 	}
 }
 
-func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements) error {
+func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Deployment, pullerImage string, pullerImageCommand []string, pullerResources *corev1.ResourceRequirements, pvcs []string) error {
 	endpoint, err := ValidateEndpoint(*rts.GrpcMultiModelManagementEndpoint)
 	if err != nil {
 		return err
@@ -67,6 +68,9 @@ func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Depl
 			}, {
 				Name:  PullerEnvStorageConfigDir,
 				Value: PullerConfigPath,
+			}, {
+				Name:  PullerEnvPVCDir,
+				Value: DefaultPVCMountsDir,
 			},
 		},
 		Image:   pullerImage,
@@ -96,6 +100,13 @@ func addPullerSidecar(rts *kserveapi.ServingRuntimeSpec, deployment *appsv1.Depl
 		cspec.VolumeMounts = append(cspec.VolumeMounts, corev1.VolumeMount{
 			Name:      udsVolMountName,
 			MountPath: udsParentPath,
+		})
+	}
+	for _, pvcName := range pvcs {
+		cspec.VolumeMounts = append(cspec.VolumeMounts, corev1.VolumeMount{
+			Name:      pvcName,
+			MountPath: DefaultPVCMountsDir + string(filepath.Separator) + pvcName,
+			ReadOnly:  true,
 		})
 	}
 
