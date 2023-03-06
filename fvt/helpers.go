@@ -77,7 +77,7 @@ func CreateIsvcAndWaitAndExpectReady(isvcManifest *unstructured.Unstructured, ti
 	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
 	By("Waiting for inference service " + isvcName + " to be 'Ready' and model is 'Loaded'")
 	// ISVC does not have the status field set initially.
-	resultingIsvc := WaitForIsvcState(watcher, api.Loaded, isvcName, timeout)
+	resultingIsvc := WaitForIsvcState(watcher, []api.ModelState{api.Standby, api.Loaded}, isvcName, timeout)
 	return resultingIsvc
 }
 
@@ -105,7 +105,7 @@ func CreateIsvcAndWaitAndExpectFailed(isvcManifest *unstructured.Unstructured) *
 	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
 	By("Waiting for inference service " + isvcName + " to fail")
 	// ISVC does not have the status field set initially.
-	resultingIsvc := WaitForIsvcState(watcher, api.FailedToLoad, isvcName, PredictorTimeout)
+	resultingIsvc := WaitForIsvcState(watcher, []api.ModelState{api.FailedToLoad}, isvcName, PredictorTimeout)
 	return resultingIsvc
 }
 
@@ -249,7 +249,7 @@ func ExpectIsvcFailureInfo(obj *unstructured.Unstructured, reason string, hasLoc
 	}
 }
 
-func WaitForIsvcState(watcher watch.Interface, desiredState api.ModelState, name string, timeout time.Duration) *unstructured.Unstructured {
+func WaitForIsvcState(watcher watch.Interface, anyOfDesiredStates []api.ModelState, name string, timeout time.Duration) *unstructured.Unstructured {
 	ch := watcher.ResultChan()
 	reachedDesiredState := false
 	var obj *unstructured.Unstructured
@@ -280,17 +280,20 @@ func WaitForIsvcState(watcher watch.Interface, desiredState api.ModelState, name
 				continue
 			}
 			// Note: first status.conditions[{"Type": "Ready", "Status": "True"}] can
-			//   occur before status.conditions[{"Type": "Ready", "Status": "False"}] !!!
+			//  occur before status.conditions[{"Type": "Ready", "Status": "False"}]
+			//  so we check for "activeModelState" instead
 			activeModelState := GetString(obj, "status", "modelStatus", "states", "activeModelState")
-			if activeModelState == string(desiredState) {
-				reachedDesiredState = true
-				done = true
-			} else {
-				time.Sleep(time.Second)
+			for _, desiredState := range anyOfDesiredStates {
+				if activeModelState == string(desiredState) {
+					reachedDesiredState = true
+					done = true
+					break
+				}
 			}
+			time.Sleep(time.Second)
 		}
 	}
-	Expect(reachedDesiredState).To(BeTrue(), "Timeout before InferenceService '%s' reached state '%s'", isvcName, desiredState)
+	Expect(reachedDesiredState).To(BeTrue(), "Timeout before InferenceService '%s' reached an of the activeModelStates %s", isvcName, anyOfDesiredStates)
 	return obj
 }
 
