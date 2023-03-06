@@ -60,6 +60,9 @@ spec:
             - name: MM_SERVICE_NAME
               value: {{.ServiceName}}
               # External gRPC port of the service, should match ports.containerPort
+            - name: MM_PAYLOAD_PROCESSOR
+              value: {{.PayloadProcessor}}
+              # External endpoint for a payload processing service
             - name: MM_SVC_GRPC_PORT
               value: "{{.Port}}"
             - name: WKUBE_POD_NAME
