@@ -270,7 +270,8 @@ To see more detailed instructions and information, click [here](./predictors/run
 
 ## 4. (Optional) Deleting your ModelMesh Serving installation
 
-To delete all ModelMesh Serving resources that were installed, run the following from the root of the project:
+To delete all ModelMesh Serving resources that were installed, run the following
+command from the root of the project:
 
 ```shell
 ./scripts/delete.sh --namespace modelmesh-serving

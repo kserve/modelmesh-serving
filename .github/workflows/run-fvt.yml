@@ -79,7 +79,7 @@ jobs:
         run: |
           docker images
           kubectl get pods
-          kubectl get servingruntimes
+          kubectl get clusterservingruntimes
       - name: Run FVTs
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo

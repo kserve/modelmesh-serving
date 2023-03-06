@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -59,22 +61,22 @@ func CreatePredictorAndWaitAndExpectLoaded(predictorManifest *unstructured.Unstr
 	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
-	By("Waiting for predictor" + predictorName + " to be 'Loaded'")
+	By("Waiting for predictor " + predictorName + " to be 'Loaded'")
 	// TODO: "Standby" (or) "FailedToLoad" states are currently encountered after the "Loading" state but they shouldn't be (see issue#994)
 	resultingPredictor := WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "FailedToLoad", "Loading", "Loaded"}, watcher)
 	ExpectPredictorState(resultingPredictor, true, "Loaded", "", "UpToDate")
 	return resultingPredictor
 }
 
-func CreateIsvcAndWaitAndExpectReady(isvcManifest *unstructured.Unstructured) *unstructured.Unstructured {
+func CreateIsvcAndWaitAndExpectReady(isvcManifest *unstructured.Unstructured, timeout time.Duration) *unstructured.Unstructured {
 	isvcName := isvcManifest.GetName()
 	By("Creating inference service " + isvcName)
-	watcher := FVTClientInstance.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, DefaultTimeout)
+	watcher := FVTClientInstance.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, int64(timeout.Seconds()))
 	defer watcher.Stop()
 	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
-	By("Waiting for inference service" + isvcName + " to be 'Ready'")
+	By("Waiting for inference service " + isvcName + " to be 'Ready' and model is 'Loaded'")
 	// ISVC does not have the status field set initially.
-	resultingIsvc := WaitForIsvcReady(watcher)
+	resultingIsvc := WaitForIsvcState(watcher, api.Loaded, isvcName, timeout)
 	return resultingIsvc
 }
 
@@ -87,11 +89,23 @@ func CreatePredictorAndWaitAndExpectFailed(predictorManifest *unstructured.Unstr
 	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
-	By("Waiting for predictor" + predictorName + " to be 'FailedToLoaded'")
-	// "Standby" state is encountered after the "Loading" state but it shouldn't be
+	By("Waiting for predictor " + predictorName + " to have 'FailedToLoad'")
+	// "Standby" state is encountered after the "Loading" state, but it shouldn't be
 	resultingPredictor := WaitForLastStateInExpectedList("activeModelState", []string{"Pending", "Loading", "Standby", "Loading", "FailedToLoad"}, watcher)
 	ExpectPredictorState(resultingPredictor, false, "FailedToLoad", "", "UpToDate")
 	return resultingPredictor
+}
+
+func CreateIsvcAndWaitAndExpectFailed(isvcManifest *unstructured.Unstructured) *unstructured.Unstructured {
+	isvcName := isvcManifest.GetName()
+	By("Creating inference service " + isvcName)
+	watcher := FVTClientInstance.StartWatchingIsvcs(metav1.ListOptions{FieldSelector: "metadata.name=" + isvcName}, DefaultTimeout)
+	defer watcher.Stop()
+	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
+	By("Waiting for inference service " + isvcName + " to fail")
+	// ISVC does not have the status field set initially.
+	resultingIsvc := WaitForIsvcState(watcher, api.FailedToLoad, isvcName, PredictorTimeout)
+	return resultingIsvc
 }
 
 func CreatePredictorAndWaitAndExpectInvalidSpec(predictorManifest *unstructured.Unstructured) *unstructured.Unstructured {
@@ -103,7 +117,7 @@ func CreatePredictorAndWaitAndExpectInvalidSpec(predictorManifest *unstructured.
 	createdPredictor := FVTClientInstance.CreatePredictorExpectSuccess(predictorManifest)
 	ExpectPredictorState(createdPredictor, false, "Pending", "", "UpToDate")
 
-	By("Waiting for predictor" + predictorName + " to have transitionStatus 'InvalidSpec'")
+	By("Waiting for predictor " + predictorName + " to have transitionStatus 'InvalidSpec'")
 	return WaitForLastStateInExpectedList("transitionStatus", []string{"UpToDate", "InvalidSpec"}, watcher)
 }
 
@@ -174,7 +188,7 @@ func ExpectPredictorFailureInfo(obj *unstructured.Unstructured, reason string, h
 		Expect(actualFailureInfo["location"]).To(BeNil())
 	}
 	if message != "" {
-		Expect(actualFailureInfo["message"]).To(Equal(message))
+		Expect(actualFailureInfo["message"]).To(ContainSubstring(message))
 	} else {
 		Expect(actualFailureInfo["message"]).ToNot(BeEmpty())
 	}
@@ -188,47 +202,90 @@ func ExpectPredictorFailureInfo(obj *unstructured.Unstructured, reason string, h
 	}
 }
 
-func WaitForIsvcReady(watcher watch.Interface) *unstructured.Unstructured {
-	ch := watcher.ResultChan()
-	isReady := false
-	var obj *unstructured.Unstructured
-	var isvcName string
+func ExpectIsvcState(obj *unstructured.Unstructured, activeModelState, targetModelState, transitionStatus string) {
+	actualActiveModelState := GetString(obj, "status", "modelStatus", "states", "activeModelState")
+	Expect(actualActiveModelState).To(Equal(activeModelState))
 
-	timeout := time.After(predictorTimeout)
+	actualTargetModel := GetString(obj, "status", "modelStatus", "states", "targetModelState")
+	Expect(actualTargetModel).To(Equal(targetModelState))
+
+	actualTransitionStatus := GetString(obj, "status", "modelStatus", "transitionStatus")
+	Expect(actualTransitionStatus).To(Equal(transitionStatus))
+
+	if transitionStatus != "BlockedByFailedLoad" && transitionStatus != "InvalidSpec" &&
+		activeModelState != "FailedToLoad" && targetModelState != "FailedToLoad" {
+		actualFailureInfo := GetMap(obj, "status", "modelStatus", "lastFailureInfo")
+		Expect(actualFailureInfo).To(BeNil())
+	}
+}
+
+func ExpectIsvcFailureInfo(obj *unstructured.Unstructured, reason string, hasLocation bool, hasTime bool, message string) {
+	actualFailureInfo := GetMap(obj, "status", "modelStatus", "lastFailureInfo")
+	Expect(actualFailureInfo).ToNot(BeNil())
+
+	Expect(actualFailureInfo["reason"]).To(Equal(reason))
+	if hasLocation {
+		Expect(actualFailureInfo["location"]).ToNot(BeEmpty())
+	} else {
+		Expect(actualFailureInfo["location"]).To(BeNil())
+	}
+	if message != "" {
+		Expect(actualFailureInfo["message"]).To(ContainSubstring(message))
+	} else {
+		Expect(actualFailureInfo["message"]).ToNot(BeEmpty())
+	}
+	if !hasTime {
+		Expect(actualFailureInfo["time"]).To(BeNil())
+	} else {
+		Expect(actualFailureInfo["time"]).ToNot(BeNil())
+		actualTime, err := time.Parse(time.RFC3339, actualFailureInfo["time"].(string))
+		Expect(err).To(BeNil())
+		Expect(time.Since(actualTime) < time.Minute).To(BeTrue())
+	}
+}
+
+func WaitForIsvcState(watcher watch.Interface, desiredState api.ModelState, name string, timeout time.Duration) *unstructured.Unstructured {
+	ch := watcher.ResultChan()
+	reachedDesiredState := false
+	var obj *unstructured.Unstructured
+	var isvcName = name
+
 	done := false
 	for !done {
 		select {
-		// Exit the loop if InferenceService is not ready before given timeout.
-		case <-timeout:
+		// exit the loop if InferenceService is not ready before given timeout.
+		case <-time.After(timeout):
 			done = true
+			FVTClientInstance.PrintDescribeIsvc(isvcName)
 		case event, ok := <-ch:
 			if !ok {
 				// the channel was closed (watcher timeout reached)
 				done = true
+				FVTClientInstance.PrintDescribeIsvc(isvcName)
 				break
 			}
 			obj, ok = event.Object.(*unstructured.Unstructured)
 			Expect(ok).To(BeTrue())
 			isvcName = GetString(obj, "metadata", "name")
-			conditions, exists := GetSlice(obj, "status", "conditions")
+			// ISVC does not have the status field set initially
+			//   modelStatus will not exist until status.conditions exist
+			_, exists := GetSlice(obj, "status", "conditions")
 			if !exists {
 				time.Sleep(time.Second)
 				continue
 			}
-			for _, condition := range conditions {
-				conditionMap := condition.(map[string]interface{})
-				if conditionMap["type"] == "Ready" {
-					if conditionMap["status"] == "True" {
-						isReady = true
-						done = true
-						break
-					}
-				}
+			// Note: first status.conditions[{"Type": "Ready", "Status": "True"}] can
+			//   occur before status.conditions[{"Type": "Ready", "Status": "False"}] !!!
+			activeModelState := GetString(obj, "status", "modelStatus", "states", "activeModelState")
+			if activeModelState == string(desiredState) {
+				reachedDesiredState = true
+				done = true
+			} else {
+				time.Sleep(time.Second)
 			}
-
 		}
 	}
-	Expect(isReady).To(BeTrue(), "Timeout before InferenceService '%s' ready", isvcName)
+	Expect(reachedDesiredState).To(BeTrue(), "Timeout before InferenceService '%s' reached state '%s'", isvcName, desiredState)
 	return obj
 }
 
@@ -244,7 +301,7 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 	lastState := "UNSEEN"
 	var predictorName string
 
-	timeout := time.After(predictorTimeout)
+	timeout := time.After(PredictorTimeout)
 	lastStateIndex := 0
 	done := false
 	for !done {

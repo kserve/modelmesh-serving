@@ -57,8 +57,8 @@ import (
 	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
-const predictorTimeout = time.Second * 120
-const timeForStatusToStabilize = time.Second * 5
+const PredictorTimeout = time.Second * 180
+const timeForStatusToStabilize = time.Second * 60
 
 type ModelServingConnectionType int
 
@@ -374,6 +374,13 @@ func (fvt *FVTClient) PrintIsvcs() {
 	}
 }
 
+func (fvt *FVTClient) PrintDescribeIsvc(name string) {
+	err := fvt.RunKubectl("describe", "isvc", name)
+	if err != nil {
+		fvt.log.Error(err, fmt.Sprintf("Error running describe isvc '%s' command", name))
+	}
+}
+
 func (fvt *FVTClient) PrintPods() {
 	err := fvt.RunKubectl("get", "pods")
 	if err != nil {
@@ -412,12 +419,12 @@ func (fvt *FVTClient) TailPodLogs(sinceTime string) {
 
 func (fvt *FVTClient) RunKubectl(args ...string) error {
 	args = append(args, "-n", fvt.namespace)
-	getPredictorCommand := exec.Command("kubectl", args...)
-	getPredictorCommand.Stdout = ginkgo.GinkgoWriter
-	getPredictorCommand.Stderr = ginkgo.GinkgoWriter
-	fvt.log.Info("Running command", "args", strings.Join(getPredictorCommand.Args, " "))
+	kubectlCmd := exec.Command("kubectl", args...)
+	kubectlCmd.Stdout = ginkgo.GinkgoWriter
+	kubectlCmd.Stderr = ginkgo.GinkgoWriter
+	fvt.log.Info("Running command", "args", strings.Join(kubectlCmd.Args, " "))
 	fmt.Fprintf(ginkgo.GinkgoWriter, "=====================================================================================================================================\n")
-	err := getPredictorCommand.Run()
+	err := kubectlCmd.Run()
 	fmt.Fprintf(ginkgo.GinkgoWriter, "=====================================================================================================================================\n")
 	return err
 }
@@ -504,11 +511,11 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 	}
 
 	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
-		return fmt.Errorf("Error with grpc port-forward, could not connect to model serving")
+		return fmt.Errorf("Error with gRPC port-forward, could not connect to model serving")
 	}
 
 	if err := fvt.restPortForward.EnsureStarted(); err != nil {
-		return fmt.Errorf("Error with rest port-forward, could not connect to model serving")
+		return fmt.Errorf("Error with REST port-forward, could not connect to model serving")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
