@@ -231,7 +231,7 @@ func getPayloadProcessingConfig() (*config2.Config, error) {
 }
 
 // set config to the payload processing config
-func resetToPayloadConfig(){
+func resetToPayloadConfig() {
 	config, err := getPayloadProcessingConfig()
 	Expect(err).ToNot(HaveOccurred())
 
