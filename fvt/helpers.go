@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package fvt
 
 import (
@@ -170,8 +171,10 @@ func ExpectPredictorState(obj *unstructured.Unstructured, available bool, active
 	actualTransitionStatus := GetString(obj, "status", "transitionStatus")
 	Expect(actualTransitionStatus).To(Equal(transitionStatus))
 
-	if transitionStatus != "BlockedByFailedLoad" && transitionStatus != "InvalidSpec" &&
-		activeModelState != "FailedToLoad" && targetModelState != "FailedToLoad" {
+	if transitionStatus != string(api.BlockedByFailedLoad) &&
+		transitionStatus != string(api.InvalidSpec) &&
+		activeModelState != string(api.FailedToLoad) &&
+		targetModelState != string(api.FailedToLoad) {
 		actualFailureInfo := GetMap(obj, "status", "lastFailureInfo")
 		Expect(actualFailureInfo).To(BeNil())
 	}
@@ -212,8 +215,10 @@ func ExpectIsvcState(obj *unstructured.Unstructured, activeModelState, targetMod
 	actualTransitionStatus := GetString(obj, "status", "modelStatus", "transitionStatus")
 	Expect(actualTransitionStatus).To(Equal(transitionStatus))
 
-	if transitionStatus != "BlockedByFailedLoad" && transitionStatus != "InvalidSpec" &&
-		activeModelState != "FailedToLoad" && targetModelState != "FailedToLoad" {
+	if transitionStatus != "BlockedByFailedLoad" &&
+		transitionStatus != "InvalidSpec" &&
+		activeModelState != string(api.FailedToLoad) &&
+		targetModelState != string(api.FailedToLoad) {
 		actualFailureInfo := GetMap(obj, "status", "modelStatus", "lastFailureInfo")
 		Expect(actualFailureInfo).To(BeNil())
 	}
