@@ -365,15 +365,26 @@ func WaitForStableActiveDeployState() {
 
 func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration) {
 	ch := watcher.ResultChan()
-	targetStateReached := false
 	var obj *unstructured.Unstructured
 	var replicas, updatedReplicas, availableReplicas int64
 	var deployName string
-	deployStatusesReady := make(map[string]bool)
+	deploymentReady := make(map[string]bool)
 
+	// Get a list of ServingRuntime deployments
+	runtimeDeploys := FVTClientInstance.ListDeploys()
+	for _, deploy := range runtimeDeploys.Items {
+		// initialize all deployment statuses as not ready
+		deploymentReady[deploy.Name] = false
+	}
+
+	allReady := false
 	done := false
 	for !done {
 		select {
+		case <-time.After(timeToStabilize):
+			// no events are received during the timeToStabilize duration
+			done = true
+			break
 		case event, ok := <-ch:
 			if !ok {
 				// the channel was closed (watcher timeout reached)
@@ -390,35 +401,26 @@ func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration)
 
 			Log.Info("Watcher got event with object",
 				"name", deployName,
-				"status.replicas", replicas,
-				"status.availableReplicas", availableReplicas,
-				"status.updatedReplicas", updatedReplicas)
+				"replicas", replicas,
+				"available", availableReplicas,
+				"updated", updatedReplicas)
 
 			if (updatedReplicas == replicas) && (availableReplicas == updatedReplicas) {
-				deployStatusesReady[deployName] = true
-				Log.Info(fmt.Sprintf("deployStatusesReady: %v", deployStatusesReady))
-			} else {
-				deployStatusesReady[deployName] = false
-			}
-
-		// this case executes if no events are received during the timeToStabilize duration
-		case <-time.After(timeToStabilize):
-			// check if all deployments are ready
-			stable := true
-			for _, status := range deployStatusesReady {
-				if !status {
-					stable = false
-					break
+				deploymentReady[deployName] = true
+				Log.Info(fmt.Sprintf("deployStatusesReady: %v", deploymentReady))
+				// check if all deployments are ready
+				allReady = true
+				for _, thisReady := range deploymentReady {
+					allReady = allReady && thisReady
 				}
-			}
-			if stable {
-				targetStateReached = true
-				done = true
+				done = allReady
+			} else {
+				deploymentReady[deployName] = false
 			}
 		}
 	}
-	Expect(targetStateReached).To(BeTrue(), "Timeout before deploy '%s' ready(last state was replicas: '%v' updatedReplicas: '%v' availableReplicas: '%v')",
-		deployName, replicas, updatedReplicas, availableReplicas)
+
+	Expect(allReady).To(BeTrue(), fmt.Sprintf("Timed out before deployments were ready: %v", deploymentReady))
 }
 
 func logPredictorStatus(obj *unstructured.Unstructured) []interface{} {

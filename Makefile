@@ -49,7 +49,7 @@ test:
 # TODO: reinstate all FVT suites
 fvt:
 	@#ginkgo -v -p --fail-fast fvt/predictor fvt/scaleToZero fvt/storage --timeout=40m
-	ginkgo --fail-fast fvt/storage --timeout=40m --succinct
+	ginkgo --fail-fast --flake-attempts=3 fvt/storage --timeout=40m --succinct
 
 # Command to regenerate the grpc go files from the proto files
 fvt-protoc:

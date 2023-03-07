@@ -75,6 +75,12 @@ var applyPatchOptions = metav1.PatchOptions{
 	Force: func() *bool { t := true; return &t }(),
 }
 
+// list option for serving runtime deployments
+var deploymentListOptions = metav1.ListOptions{
+	LabelSelector:  "modelmesh-service",
+	TimeoutSeconds: &DefaultTimeout,
+}
+
 type FVTClient struct {
 	dynamic.Interface
 	namespace           string
@@ -676,11 +682,7 @@ func (fvt *FVTClient) UpdateConfigMapTLS(tlsConfig map[string]interface{}) {
 }
 
 func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
-	listOptions := metav1.ListOptions{
-		LabelSelector:  "modelmesh-service",
-		TimeoutSeconds: &DefaultTimeout,
-	}
-	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), listOptions)
+	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), deploymentListOptions)
 	Expect(err).ToNot(HaveOccurred())
 	return deployWatcher
 }
@@ -689,8 +691,7 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	var err error
 
 	// query for UnstructuredList using the dynamic client
-	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &DefaultTimeout}
-	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), listOptions)
+	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), deploymentListOptions)
 	Expect(err).ToNot(HaveOccurred())
 
 	// convert elements from Unstructured to Deployment

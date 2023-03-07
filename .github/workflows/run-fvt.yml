@@ -68,11 +68,12 @@ jobs:
           docker system df
           df -h
       - name: Pre-pull runtime images
-        # TODO: uncomment triton and openvino
+        # TODO: re-enable pull for triton and openvino image, not torchserve
         run: |
           # docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
-          # docker pull openvino/model_server:2022.1
+          # docker pull openvino/model_server:2022.2
+          # docker pull pytorch/torchserve:0.6.0-cpu
           docker pull kserve/modelmesh-runtime-adapter
           docker pull kserve/rest-proxy
           docker pull kserve/modelmesh

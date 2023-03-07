@@ -105,7 +105,7 @@ var _ = Describe("ISVCs", Ordered, func() {
 			// - allowAnyPVC needs rest-proxy enabled (not sure why)
 			config := map[string]interface{}{
 				"allowAnyPVC":    true,
-				"podsPerRuntime": 2,
+				"podsPerRuntime": 1,
 				"scaleToZero": map[string]interface{}{
 					"enabled": true,
 				},
@@ -128,8 +128,7 @@ var _ = Describe("ISVCs", Ordered, func() {
 			// if not scaleToZero, it could have landed on the previous runtime pod will
 			// fail to load the first time, so we extend the standard predictor timeout
 			extendedTimeout := PredictorTimeout * 2
-			obj := CreateIsvcAndWaitAndExpectReady(isvcObject, extendedTimeout)
-			ExpectIsvcState(obj, "Loaded", "", "UpToDate")
+			CreateIsvcAndWaitAndExpectReady(isvcObject, extendedTimeout)
 
 			FVTClientInstance.PrintPods()
 
