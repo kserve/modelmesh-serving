@@ -58,7 +58,7 @@ import (
 )
 
 const PredictorTimeout = time.Second * 300
-const timeForStatusToStabilize = time.Second * 180
+const timeForStatusToStabilize = time.Second * 30
 
 type ModelServingConnectionType int
 
@@ -361,6 +361,7 @@ func (fvt *FVTClient) GetRandomReadyRuntimePodNameFromEndpoints() string {
 	Expect(err).ToNot(HaveOccurred())
 
 	addresses := endpoints.Subsets[0].Addresses
+	Expect(len(addresses)).ToNot(BeZero(), "No endpoints available")
 	randomAddress := addresses[rand.Intn(len(addresses))]
 
 	return randomAddress.TargetRef.Name

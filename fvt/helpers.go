@@ -361,10 +361,10 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 func WaitForStableActiveDeployState() {
 	watcher := FVTClientInstance.StartWatchingDeploys()
 	defer watcher.Stop()
-	WaitForDeployStatus(watcher, timeForStatusToStabilize)
+	WaitForRuntimeDeploymentsToBeStable(watcher)
 }
 
-func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration) {
+func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 	ch := watcher.ResultChan()
 	var obj *unstructured.Unstructured
 	var replicas, updatedReplicas, availableReplicas int64
@@ -382,8 +382,8 @@ func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration)
 	done := false
 	for !done {
 		select {
-		case <-time.After(timeToStabilize):
-			// no events are received during the timeToStabilize duration
+		case <-time.After(timeForStatusToStabilize):
+			// time to stabilize is up before watcher timed out or deploys became stable
 			done = true
 			break
 		case event, ok := <-ch:

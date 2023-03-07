@@ -30,9 +30,7 @@ var isvcFiles = map[string]string{
 }
 
 // ISVCs using PVCs from the FVT `storage-config` Secret (config/dependencies/fvt.yaml)
-// var isvcWithPvcInStorageConfig = []string{"isvc-pvc-storage-uri", "isvc-pvc-storage-path", "isvc-pvc2"}
-// TODO: uncomment line above, remove line below
-var isvcWithPvcInStorageConfig = []string{"isvc-pvc2"}
+var isvcWithPvcInStorageConfig = []string{"isvc-pvc-storage-uri", "isvc-pvc-storage-path", "isvc-pvc2"}
 
 // ISVC using PVC not in the FVT `storage-config` Secret (config/dependencies/fvt.yaml)
 // this should work only after setting allowAnyPVC = true
@@ -58,9 +56,16 @@ var _ = Describe("ISVCs", Ordered, func() {
 				})
 
 				It("should successfully run inference", func() {
+					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
+				})
+
+				BeforeEach(func() {
+					WaitForStableActiveDeployState()
+				})
+
+				BeforeAll(func() {
 					err := FVTClientInstance.ConnectToModelServing(Insecure)
 					Expect(err).ToNot(HaveOccurred())
-					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
 
 				AfterAll(func() {
