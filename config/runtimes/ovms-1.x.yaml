@@ -57,3 +57,6 @@ spec:
     runtimeManagementPort: 8888
     memBufferBytes: 134217728
     modelLoadingTimeoutMillis: 90000
+
+  # TODO: re-enable OpenVino runtime
+  disabled: true
