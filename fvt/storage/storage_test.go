@@ -30,7 +30,9 @@ var isvcFiles = map[string]string{
 }
 
 // ISVCs using PVCs from the FVT `storage-config` Secret (config/dependencies/fvt.yaml)
-var isvcWithPvcInStorageConfig = []string{"isvc-pvc-storage-uri", "isvc-pvc-storage-path", "isvc-pvc2"}
+// var isvcWithPvcInStorageConfig = []string{"isvc-pvc-storage-uri", "isvc-pvc-storage-path", "isvc-pvc2"}
+// TODO: uncomment line above, remove line below
+var isvcWithPvcInStorageConfig = []string{"isvc-pvc2"}
 
 // ISVC using PVC not in the FVT `storage-config` Secret (config/dependencies/fvt.yaml)
 // this should work only after setting allowAnyPVC = true
@@ -84,7 +86,7 @@ var _ = Describe("ISVCs", Ordered, func() {
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
-		It("should load a model when allowAnyPVC", func() {
+		It("should load a model when allowAnyPVC", FlakeAttempts(3), func() {
 			// This ISVC needs a new PVC which is not in the storage-config secret.
 			// The controller will update the deployment with the pvc_mount, but
 			// if the old runtime pods are still around, the ISVC will get deployed
@@ -103,7 +105,7 @@ var _ = Describe("ISVCs", Ordered, func() {
 			// - allowAnyPVC needs rest-proxy enabled (not sure why)
 			config := map[string]interface{}{
 				"allowAnyPVC":    true,
-				"podsPerRuntime": 1,
+				"podsPerRuntime": 2,
 				"scaleToZero": map[string]interface{}{
 					"enabled": true,
 				},

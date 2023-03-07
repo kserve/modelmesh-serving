@@ -14,7 +14,7 @@ on:
       - '.github/workflows/run-fvt.yml'
 
 jobs:
-  test:
+  fvt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

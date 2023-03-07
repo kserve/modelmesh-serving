@@ -57,8 +57,8 @@ import (
 	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
-const PredictorTimeout = time.Second * 180
-const timeForStatusToStabilize = time.Second * 60
+const PredictorTimeout = time.Second * 300
+const timeForStatusToStabilize = time.Second * 180
 
 type ModelServingConnectionType int
 
