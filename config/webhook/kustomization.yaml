@@ -1,0 +1,10 @@
+---
+resources:
+  - manifests.yaml
+  - service.yaml
+
+# Adds namespace to all resources.
+namespace: modelmesh-serving
+
+configurations:
+  - kustomizeconfig.yaml

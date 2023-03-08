@@ -352,6 +352,7 @@ func WaitForDeployStatus(watcher watch.Interface, timeToStabilize time.Duration)
 			}
 		}
 	}
+
 	Expect(targetStateReached).To(BeTrue(), "Timeout before deploy '%s' ready(last state was replicas: '%v' updatedReplicas: '%v' availableReplicas: '%v')",
 		deployName, replicas, updatedReplicas, availableReplicas)
 }

@@ -4,7 +4,7 @@ Functional Verification Test (FVT) suite for ModelMesh Serving using [Ginkgo](ht
 
 ## How the tests are structured
 
-- The entry points for FVT suite are located in `predictor/predictor_suite_test.go` and `scaleToZero/scaleToZero_suite_test.go`.
+- The entry points for FVT suite are located in `predictor/predictor_suite_test.go`, `scaleToZero/scaleToZero_suite_test.go` and `hpa/hpa_suite_test.go`.
 - Framework, utility, and helper functions for all suites are in the `fvt` package in this directory.
 - Manifests used to create predictors, inference services, and runtimes are in the `testdata` folder.
 

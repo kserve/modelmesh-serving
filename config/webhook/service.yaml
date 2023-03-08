@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelmesh-webhook-server-service
+  namespace: system
+spec:
+  ports:
+    - port: 9443
+      protocol: TCP
+      targetPort: webhook
+  selector:
+    control-plane: modelmesh-controller

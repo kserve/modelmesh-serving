@@ -14,3 +14,35 @@ Increasing the number of runtime replicas has two important effects:
 If a given `ServingRuntime` has no `InferenceService`s that it supports, the `Deployment` for that runtime can safely be scaled to 0 replicas to save on resources. By enabling `ScaleToZero` in the configuration, ModelMesh Serving will perform this scaling automatically. If an `InferenceService` is later added that requires the runtime, it will be scaled back up.
 
 To prevent unnecessary churn, the `ScaleToZero` behavior has a grace period that delays scaling down after the last `InferenceService` required by the runtime is deleted. If a new `InferenceService` is created in that window there will be no change to the scale.
+
+### Autoscaler
+
+In addition to the Scale to Zero feature, runtime pods can be autoscaled through HPA. This feature is disabled by default, but it can be enabled at any time by annotating each ServingRuntime/ClusterServingRuntime.
+To enable Autoscaler feature, add the following annotation.
+
+```shell
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  annotations:
+    serving.kserve.io/autoscalerClass: hpa
+```
+
+Additional annotations:
+
+```shell
+metadata:
+  annotations:
+    serving.kserve.io/autoscalerClass: hpa
+    serving.kserve.io/targetUtilizationPercentage: "75"
+    serving.kserve.io/metrics: "cpu"
+    autoscaling.knative.dev/min-scale: "2"
+    autoscaling.knative.dev/max-scale: "3"
+```
+
+You can disable the Autoscaler feature even if a runtime pod created based on that ServingRuntime is running.
+
+**NOTE**
+
+- If `serving.kserve.io/autoscalerClass: hpa` is not set, the other annotations would be ignored.
+- If `ScaleToZero` is enabled and there are no `InferenceService`, HPA will be deleted and the ServingRuntime deployment will be scaled down to 0.

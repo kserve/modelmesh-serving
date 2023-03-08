@@ -8,6 +8,28 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
 - At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
+## Recommendation
+
+- [cert-manager](https://github.com/cert-manager/cert-manager)
+
+  ```shell
+  CERT_MANAGER_VERSION="v1.11.0"
+
+  echo "Installing cert manager ..."
+  kubectl create namespace cert-manager
+  sleep 2
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+
+  echo "Waiting for cert manager started ..."
+  kubectl wait --for=condition=ready pod -l 'app in (cert-manager,webhook)' --timeout=180s -n cert-manager
+  ```
+
+  - Modelmesh controller is using webhook that requires certificate. We suggest using [cert manager](https://github.com/cert-manager/cert-manager) for provisioning the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert manager documentation](https://cert-manager.io/docs/installation/) to install it.
+
+If you don't want to install cert manager, you can set the `--enable-self-signed-ca`. It will execute a script to create a self-signed CA and patch it to the webhook config.
+
+_(Note)_ The `--fvt` option automatically sets `--enable-self-signed-ca`, so you do not need to set it explicitly.
+
 ## 1. Install ModelMesh Serving
 
 ### Get the latest release
@@ -22,7 +44,7 @@ cd modelmesh-serving
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart --enable-self-signed-ca
 ```
 
 This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.

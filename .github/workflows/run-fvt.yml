@@ -20,14 +20,16 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.18.7'
-      - name: Setup Minikube
-        run: |
-          wget --no-verbose https://github.com/kubernetes/minikube/releases/download/v1.25.1/minikube-linux-amd64
-          sudo cp minikube-linux-amd64 /usr/local/bin/minikube
-          sudo chmod 755 /usr/local/bin/minikube
-          sudo apt-get install -y conntrack socat
-          minikube start --driver=none --kubernetes-version v1.22.10
+          go-version: '1.18.7'            
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@v0.0.11
+        id: minikube
+        with:
+          minikube-version: 1.27.1
+          container-runtime: docker
+          kubernetes-version: v1.25.2
+          cpus: max
+          memory: max
       - name: Check pods
         run: |
           sleep 30
@@ -55,6 +57,7 @@ jobs:
           echo -e '\n  disabled: true' >> config/runtimes/torchserve-0.x.yaml
       - name: Build Controller image
         run: |
+          eval $(minikube -p minikube docker-env)
           make build.develop
           ./scripts/build_docker.sh --target runtime --tag ${{ env.IMAGE_TAG }}
       - name: Install ModelMesh Serving
@@ -69,6 +72,7 @@ jobs:
           df -h
       - name: Pre-pull runtime images
         run: |
+          eval $(minikube -p minikube docker-env)
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
           docker pull openvino/model_server:2022.1

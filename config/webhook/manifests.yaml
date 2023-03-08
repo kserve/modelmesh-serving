@@ -1,0 +1,28 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: servingruntime.serving.kserve.io
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: Cg==
+      service:
+        name: modelmesh-webhook-server-service
+        namespace: system
+        path: /validate-serving-modelmesh-io-v1alpha1-servingruntime
+        port: 9443
+    failurePolicy: Fail
+    name: servingruntime.modelmesh-webhook-server.default
+    rules:
+      - apiGroups:
+          - serving.kserve.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - clusterservingruntimes
+          - servingruntimes
+    sideEffects: None

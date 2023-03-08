@@ -57,7 +57,7 @@ The `--quickstart` option can be specified to install and configure supporting d
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace modelmesh-serving --quickstart  --enable-self-signed-ca
 ```
 
 See the installation help below for detail:
@@ -72,9 +72,11 @@ Flags:
   -d, --delete                   Delete any existing instances of ModelMesh Serving in Kube namespace before running install, including CRDs, RBACs, controller, older CRD with serving.kserve.io api group name, etc.
   -u, --user-namespaces          Kubernetes namespaces to enable for ModelMesh Serving
   --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development
-  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for development with fvt enabled
+  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) and also sets enable-self-signed-ca - for development with fvt enabled
   -dev, --dev-mode-logging       Enable dev mode logging (stacktraces on warning and no sampling)
   --namespace-scope-mode         Run ModelMesh Serving in namespace scope mode
+  --modelmesh-serving-image      Set a custom modelmesh serving image
+  --enable-self-signed-ca        Enable self-signed-ca, if you don't have cert-manager in the cluster
 
 Installs ModelMesh Serving CRDs, controller, and built-in runtimes into specified
 Kubernetes namespaces.
@@ -90,6 +92,10 @@ You can also optionally use `--delete` to delete any existing instances of Model
 The installation will create a secret named `storage-config` if it does not already exist. If the `--quickstart` option was chosen, this will be populated with the connection details for the example models bucket in IBM Cloud Object Storage and the local MinIO; otherwise, it will be empty and ready for you to add your own entries.
 
 The `--namespace-scope-mode` will deploy `ServingRuntime`s confined to the same namespace, instead of the default cluster-scoped runtimes `ClusterServingRuntime`s. These serving runtimes are accessible to any user/namespace in the cluster.
+
+You can optionally provide a custom modelmesh serving image url with `--modelmesh-serving-image`. If not specified, it will pull the latest modelmesh image.
+
+Modelmesh controller is using webhook that requires certificates. We suggest using [cert manager](https://github.com/cert-manager/cert-manager) for provisioning the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert manager documentation](https://cert-manager.io/docs/installation/) to install it. If you don't want to install cert manager, you can set the `--enable-self-signed-ca`. It will execute a script to create a self-signed CA and patch it to the webhook config.
 
 ## Setup additional namespaces
 

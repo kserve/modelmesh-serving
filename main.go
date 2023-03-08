@@ -55,6 +55,8 @@ import (
 	"github.com/kserve/modelmesh-serving/controllers"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
+
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -258,6 +260,15 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	// Setup servingruntime validating webhook
+	hookServer := mgr.GetWebhookServer()
+	servingRuntimeWebhook := &webhook.Admission{
+		Handler: &servingv1alpha1.ServingRuntimeWebhook{
+			Client: mgr.GetClient(),
+		},
+	}
+	hookServer.Register("/validate-serving-modelmesh-io-v1alpha1-servingruntime", servingRuntimeWebhook)
 
 	_, err = mmesh.InitGrpcResolver(ControllerNamespace, mgr)
 	if err != nil {

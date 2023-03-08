@@ -1,4 +1,4 @@
-# Copyright 2022 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,10 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-resources:
-  - ../common
-  - role.yaml
-  - role_binding.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: modelmesh-serving
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: modelmesh-webhook
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: modelmesh-controller
+      control-plane: modelmesh-controller
+  ingress:
+    # exposed for webhook
+    - ports:
+        - port: 9443
+          protocol: TCP
+  policyTypes:
+    - Ingress
