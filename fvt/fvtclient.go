@@ -150,8 +150,12 @@ func (pf *ModelMeshPortForward) EnsureStopped() {
 
 func NewModelMeshPortForward(namespace string, podName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
 	portMap := fmt.Sprintf("%d:%d", localPort, targetPort)
-	cmdArgs := []string{"port-forward", "--namespace", namespace, "--address", "0.0.0.0",
-		"pod/" + podName, portMap}
+	var cmdArgs []string
+	if podName != "" {
+		cmdArgs = []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "pod/" + podName, portMap}
+	} else {
+		cmdArgs = []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "svc/modelmesh-serving", portMap}
+	}
 
 	return &ModelMeshPortForward{nil, cmdArgs, nil, log}
 }
@@ -507,14 +511,30 @@ func (fvt *FVTClient) RunTorchserveInference(req *torchserveapi.PredictionsReque
 	return grpcClient.Predictions(ctx, req)
 }
 
-func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
+func (fvt *FVTClient) ConnectToModelServingService(connectionType ModelServingConnectionType) error {
+	return fvt.ConnectToModelServing(connectionType, true)
+}
+
+func (fvt *FVTClient) ConnectToModelServingPod(connectionType ModelServingConnectionType) error {
+	return fvt.ConnectToModelServing(connectionType, false)
+}
+
+func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType, useServiceInsteadOfPods bool) error {
 	if fvt.grpcPortForward == nil {
-		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
-		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
+		if useServiceInsteadOfPods {
+			fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, "", fvt.grpcPort, 8033, fvt.log)
+		} else {
+			podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+			fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
+		}
 	}
 	if fvt.restPortForward == nil {
-		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
-		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
+		if useServiceInsteadOfPods {
+			fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, "", fvt.restPort, 8008, fvt.log)
+		} else {
+			podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
+			fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
+		}
 	}
 
 	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {

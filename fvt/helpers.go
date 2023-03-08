@@ -259,8 +259,8 @@ func WaitForIsvcState(watcher watch.Interface, anyOfDesiredStates []api.ModelSta
 	done := false
 	for !done {
 		select {
-		// exit the loop if InferenceService is not ready before given timeout.
 		case <-time.After(timeout):
+			// exit the loop if no events came in for as long as given timeout period
 			done = true
 			FVTClientInstance.PrintDescribeIsvc(isvcName)
 		case event, ok := <-ch:
@@ -274,7 +274,7 @@ func WaitForIsvcState(watcher watch.Interface, anyOfDesiredStates []api.ModelSta
 			Expect(ok).To(BeTrue())
 			isvcName = GetString(obj, "metadata", "name")
 			// ISVC does not have the status field set initially
-			//   modelStatus will not exist until status.conditions exist
+			//  modelStatus will not exist until status.conditions exist
 			_, exists := GetSlice(obj, "status", "conditions")
 			if !exists {
 				time.Sleep(time.Second)
@@ -383,7 +383,7 @@ func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 	for !done {
 		select {
 		case <-time.After(timeForStatusToStabilize):
-			// time to stabilize is up before watcher timed out or deploys became stable
+			// exit loop if no watcher events came in for the given lenght of time
 			done = true
 			break
 		case event, ok := <-ch:

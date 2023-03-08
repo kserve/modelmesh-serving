@@ -91,6 +91,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		createFVTClient()
 	}
+	// connect to model serving service once for all tests
+	FVTClientInstance.ConnectToModelServingService(Insecure)
 	Log.Info("Setup completed")
 })
 

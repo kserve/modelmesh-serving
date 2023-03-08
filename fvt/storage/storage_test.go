@@ -39,7 +39,7 @@ var isvcWithPvcNotInStorageConfig = "isvc-pvc3"
 // ISVC using a PVC that does not exist at all, this ISVC should fail to load
 var isvcWithNonExistentPvc = "isvc-pvc4"
 
-var _ = Describe("ISVCs", Ordered, func() {
+var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 
 	Describe("with PVC in storage-config", Ordered, func() {
 
@@ -59,18 +59,8 @@ var _ = Describe("ISVCs", Ordered, func() {
 					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
 
-				BeforeEach(func() {
-					WaitForStableActiveDeployState()
-				})
-
-				BeforeAll(func() {
-					err := FVTClientInstance.ConnectToModelServing(Insecure)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
 				AfterAll(func() {
 					FVTClientInstance.DeleteIsvc(isvcName)
-					FVTClientInstance.DisconnectFromModelServing()
 				})
 
 			})
@@ -91,7 +81,7 @@ var _ = Describe("ISVCs", Ordered, func() {
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
-		It("should load a model when allowAnyPVC", FlakeAttempts(3), func() {
+		It("should load a model when allowAnyPVC", func() {
 			// This ISVC needs a new PVC which is not in the storage-config secret.
 			// The controller will update the deployment with the pvc_mount, but
 			// if the old runtime pods are still around, the ISVC will get deployed
@@ -142,13 +132,13 @@ var _ = Describe("ISVCs", Ordered, func() {
 			// after applying configmap, the runtime pod(s) restart, wait for stability
 			WaitForStableActiveDeployState()
 
-			err := FVTClientInstance.ConnectToModelServing(Insecure)
+			// after scaling to 0, port-forward got killed and now needs to be re-established
+			err := FVTClientInstance.ConnectToModelServingService(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 
 			isvcName := isvcObject.GetName()
 			ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 
-			FVTClientInstance.DisconnectFromModelServing()
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
