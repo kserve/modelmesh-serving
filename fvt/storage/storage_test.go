@@ -56,6 +56,9 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 				})
 
 				It("should successfully run inference", func() {
+					WaitForStableActiveDeployState()
+					err := FVTClientInstance.ConnectToModelServingService(Insecure)
+					Expect(err).ToNot(HaveOccurred())
 					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
 
@@ -130,13 +133,16 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			// since the runtime pod(s) restarted twice, but (some of) the old runtime pods
 			// are lingering around (Terminating) we may have gotten a defunct connection
 			// after applying configmap, the runtime pod(s) restart, wait for stability
+			By("Waiting for stable deploy state")
 			WaitForStableActiveDeployState()
 
 			// after scaling to 0, port-forward got killed and now needs to be re-established
+			By("Connecting to model serving service")
 			err := FVTClientInstance.ConnectToModelServingService(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 
 			isvcName := isvcObject.GetName()
+			By("Running an inference request")
 			ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
