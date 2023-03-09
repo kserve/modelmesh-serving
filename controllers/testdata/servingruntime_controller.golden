@@ -132,7 +132,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
           value: example:8080/consumer/kserve/v2
         - name: MM_SVC_GRPC_PORT
           value: "1234"
@@ -385,7 +385,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -660,7 +660,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -907,7 +907,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -1146,7 +1146,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -1388,7 +1388,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -1645,7 +1645,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME
@@ -1835,7 +1835,7 @@ spec:
       - env:
         - name: MM_SERVICE_NAME
           value: modelmesh-serving
-        - name: MM_PAYLOAD_PROCESSOR
+        - name: MM_PAYLOAD_PROCESSORS
         - name: MM_SVC_GRPC_PORT
           value: "1234"
         - name: WKUBE_POD_NAME

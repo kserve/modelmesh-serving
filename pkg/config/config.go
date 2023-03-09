@@ -76,7 +76,7 @@ type Config struct {
 	StorageSecretName      string
 	EnableAccessLogging    bool
 	BuiltInServerTypes     []string
-	PayloadProcessor       string
+	PayloadProcessors      string
 
 	ServiceAccountName string
 
@@ -336,7 +336,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("PodsPerRuntime", 2)
 	v.SetDefault("StorageSecretName", "storage-config")
 	v.SetDefault("ServiceAccountName", "")
-	v.SetDefault("PayloadProcessor", "")
+	v.SetDefault("PayloadProcessors", "")
 	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Port"}), 2112)
 	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Scheme"}), "https")
 	v.SetDefault(concatStringsWithDelimiter([]string{"ScaleToZero", "Enabled"}), true)
