@@ -383,7 +383,8 @@ func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 	for !done {
 		select {
 		case <-time.After(timeForStatusToStabilize):
-			// exit loop if no watcher events came in for the given lenght of time
+			// if no watcher events came in for the given length of time we assume
+			// the deployment status has stabilized, exit the loop
 			done = true
 			break
 		case event, ok := <-ch:
@@ -414,7 +415,12 @@ func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 				for _, thisReady := range deploymentReady {
 					allReady = allReady && thisReady
 				}
-				done = allReady
+				// do not exit the loop yet (done=true), deployment my become unstable again,
+				// wait for timeForStatusToStabilize (see above)
+				//done = allReady
+				if allReady {
+					Log.Info(fmt.Sprintf("All deployments are ready: %v", deploymentReady))
+				}
 			} else {
 				deploymentReady[deployName] = false
 			}

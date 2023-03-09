@@ -64,6 +64,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 
 				AfterAll(func() {
 					FVTClientInstance.DeleteIsvc(isvcName)
+					FVTClientInstance.DisconnectFromModelServing()
 				})
 
 			})
@@ -145,6 +146,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			By("Running an inference request")
 			ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 
+			FVTClientInstance.DisconnectFromModelServing()
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
