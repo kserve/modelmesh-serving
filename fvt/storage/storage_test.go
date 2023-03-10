@@ -57,7 +57,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 
 				It("should successfully run inference", func() {
 					WaitForStableActiveDeployState()
-					err := FVTClientInstance.ConnectToModelServingService(Insecure)
+					err := FVTClientInstance.ConnectToModelServing(Insecure)
 					Expect(err).ToNot(HaveOccurred())
 					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
@@ -139,7 +139,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 
 			// after scaling to 0, port-forward got killed and now needs to be re-established
 			By("Connecting to model serving service")
-			err := FVTClientInstance.ConnectToModelServingService(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 
 			isvcName := isvcObject.GetName()

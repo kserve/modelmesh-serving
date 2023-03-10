@@ -81,6 +81,13 @@ var deploymentListOptions = metav1.ListOptions{
 	TimeoutSeconds: &DefaultTimeout,
 }
 
+// list option for serving runtime pods
+var runtimePodListOptions = metav1.ListOptions{
+	LabelSelector:  "modelmesh-service=modelmesh-serving",
+	FieldSelector:  "status.phase=Running",
+	TimeoutSeconds: &DefaultTimeout,
+}
+
 type FVTClient struct {
 	dynamic.Interface
 	namespace           string
@@ -240,6 +247,11 @@ var (
 		Version:  "v1",
 		Resource: "endpoints", // this must be the plural form
 	}
+	gvrPods = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "pods", // this must be the plural form
+	}
 )
 
 func (fvt *FVTClient) CreatePredictorExpectSuccess(resource *unstructured.Unstructured) *unstructured.Unstructured {
@@ -290,6 +302,7 @@ func (fvt *FVTClient) ListServingRuntimes(options metav1.ListOptions) (*unstruct
 func (fvt *FVTClient) ListClusterServingRuntimes(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return fvt.Resource(gvrCRuntime).List(context.TODO(), options)
 }
+
 func (fvt *FVTClient) GetPredictor(name string) *unstructured.Unstructured {
 	obj, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred())
@@ -356,7 +369,18 @@ func (fvt *FVTClient) WatchPredictorsAsync(c chan *unstructured.Unstructured, op
 
 }
 
-func (fvt *FVTClient) GetRandomReadyRuntimePodNameFromEndpoints() string {
+func (fvt *FVTClient) GetRandomReadyRuntimePod() string {
+	runtimePods := fvt.ListReadyRuntimePods()
+	numPods := len(runtimePods.Items)
+	Expect(numPods).ToNot(BeZero(), "There are no 'Ready' runtime pods")
+
+	i := rand.Intn(numPods)
+	name := runtimePods.Items[i].Name
+
+	return name
+}
+
+func (fvt *FVTClient) GetRandomRuntimePodNameFromEndpoints() string {
 	obj, err := fvt.Resource(gvrEndpoints).Namespace(fvt.namespace).Get(context.TODO(), fvt.serviceName, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -511,30 +535,16 @@ func (fvt *FVTClient) RunTorchserveInference(req *torchserveapi.PredictionsReque
 	return grpcClient.Predictions(ctx, req)
 }
 
-func (fvt *FVTClient) ConnectToModelServingService(connectionType ModelServingConnectionType) error {
-	return fvt.ConnectToModelServing(connectionType, true)
-}
-
-func (fvt *FVTClient) ConnectToModelServingPod(connectionType ModelServingConnectionType) error {
-	return fvt.ConnectToModelServing(connectionType, false)
-}
-
-func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType, useServiceInsteadOfPods bool) error {
+func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
 	if fvt.grpcPortForward == nil {
-		if useServiceInsteadOfPods {
-			fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, "", fvt.grpcPort, 8033, fvt.log)
-		} else {
-			podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
-			fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
-		}
+		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
+		podName := fvt.GetRandomReadyRuntimePod()
+		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
 	}
 	if fvt.restPortForward == nil {
-		if useServiceInsteadOfPods {
-			fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, "", fvt.restPort, 8008, fvt.log)
-		} else {
-			podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
-			fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
-		}
+		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
+		podName := fvt.GetRandomReadyRuntimePod()
+		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
 	}
 
 	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
@@ -725,6 +735,32 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	}
 
 	return deployments
+}
+
+func (fvt *FVTClient) ListReadyRuntimePods() corev1.PodList {
+	var err error
+
+	// query for UnstructuredList using the dynamic client
+	u, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).List(context.TODO(), runtimePodListOptions)
+	Expect(err).ToNot(HaveOccurred())
+
+	// convert elements from Unstructured to Pod
+	var pods corev1.PodList
+	for _, up := range u.Items {
+		var p corev1.Pod
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(up.Object, &p)
+		Expect(err).ToNot(HaveOccurred())
+
+		// make sure to only return pods that are 'Ready'
+		// https://github.com/knative-sandbox/eventing-kafka-broker/pull/2523/files#diff-a9f3c3b
+		for _, c := range p.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				pods.Items = append(pods.Items, p)
+			}
+		}
+	}
+
+	return pods
 }
 
 func (fvt *FVTClient) RestartDeploys() {

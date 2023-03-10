@@ -274,7 +274,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(predictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -335,7 +335,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(tfPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -410,7 +410,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(kerasPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -484,7 +484,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(onnxPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -547,7 +547,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(openvinoPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -596,7 +596,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(torchservePredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -620,7 +620,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(mlsPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -681,7 +681,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -725,7 +725,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(ptPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -793,7 +793,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(ptPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -839,7 +839,7 @@ var _ = Describe("Predictor", func() {
 
 			CreatePredictorAndWaitAndExpectLoaded(lightGBMPredictorObject)
 
-			err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -898,7 +898,7 @@ var _ = Describe("Predictor", func() {
 			var timeAsleep int
 			var mmeshErr error
 			for timeAsleep <= 30 {
-				mmeshErr = FVTClientInstance.ConnectToModelServingPod(TLS)
+				mmeshErr = FVTClientInstance.ConnectToModelServing(TLS)
 
 				if mmeshErr == nil {
 					Log.Info("Successfully connected to model mesh tls")
@@ -944,7 +944,7 @@ var _ = Describe("Predictor", func() {
 			var timeAsleep int
 			var mmeshErr error
 			for timeAsleep <= 30 {
-				mmeshErr = FVTClientInstance.ConnectToModelServingPod(MutualTLS)
+				mmeshErr = FVTClientInstance.ConnectToModelServing(MutualTLS)
 
 				if mmeshErr == nil {
 					Log.Info("Successfully connected to model mesh tls")
@@ -979,7 +979,7 @@ var _ = Describe("Predictor", func() {
 			FVTClientInstance.DisconnectFromModelServing()
 			// this test is expected to fail to connect due to the TLS cert, so we
 			// don't retry if it fails
-			mmeshErr := FVTClientInstance.ConnectToModelServingPod(TLS)
+			mmeshErr := FVTClientInstance.ConnectToModelServing(TLS)
 			Expect(mmeshErr).To(HaveOccurred())
 		})
 	})

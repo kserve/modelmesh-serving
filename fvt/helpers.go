@@ -382,14 +382,16 @@ func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 	done := false
 	for !done {
 		select {
+		// The select statement is only used with channels to let a goroutine wait on multiple communication operations.
+		// The select blocks until one of its cases can run, then it executes that case. It chooses one at random if multiple are ready.
 		case <-time.After(timeForStatusToStabilize):
-			// if no watcher events came in for the given length of time we assume
-			// the deployment status has stabilized, exit the loop
+			// if no watcher events came in for the given length of timeForStatusToStabilize
+			// then we assume the deployment status has stabilized and exit the loop
 			done = true
 			break
 		case event, ok := <-ch:
 			if !ok {
-				// the channel was closed (watcher timeout reached)
+				// the channel was closed (watcher timeout reached, see DefaultTimeout)
 				done = true
 				break
 			}
