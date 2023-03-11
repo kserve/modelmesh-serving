@@ -46,7 +46,7 @@ var _ = Describe("Inference service", Ordered, func() {
 				isvcName = isvcObject.GetName()
 				CreateIsvcAndWaitAndExpectReady(isvcObject, PredictorTimeout)
 
-				err := FVTClientInstance.ConnectToModelServingPod(Insecure)
+				err := FVTClientInstance.ConnectToModelServing(Insecure)
 				Expect(err).ToNot(HaveOccurred())
 			})
 

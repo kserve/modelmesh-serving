@@ -20,7 +20,7 @@ import (
 var Log logr.Logger
 var FVTClientInstance *FVTClient
 
-var DefaultTimeout = int64(180)
+var DefaultTimeout = int64(180) // absolute timeout for watcher event channels
 var NameSpaceScopeMode = false
 
 var DefaultConfig = map[string]interface{}{

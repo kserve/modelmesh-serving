@@ -108,6 +108,7 @@ type ModelMeshPortForward struct {
 	cmdArgs []string
 	done    chan struct{}
 	log     logr.Logger
+	podName string
 }
 
 func (pf *ModelMeshPortForward) EnsureStarted() error {
@@ -155,16 +156,15 @@ func (pf *ModelMeshPortForward) EnsureStopped() {
 	<-pf.done
 }
 
+// NewModelMeshPortForward switched to port-forwarding to a pod instead of the
+// service, since, when port-forwarding to a Service, it just picks any pod to
+// port-forward to without any guardrails against selecting a Terminating pod.
+// It doesn't use readiness checks for pod selection, it seems to actually select
+// the oldest pod which ends up being most likely to be terminated soon
 func NewModelMeshPortForward(namespace string, podName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
 	portMap := fmt.Sprintf("%d:%d", localPort, targetPort)
-	var cmdArgs []string
-	if podName != "" {
-		cmdArgs = []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "pod/" + podName, portMap}
-	} else {
-		cmdArgs = []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "svc/modelmesh-serving", portMap}
-	}
-
-	return &ModelMeshPortForward{nil, cmdArgs, nil, log}
+	cmdArgs := []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "pod/" + podName, portMap}
+	return &ModelMeshPortForward{nil, cmdArgs, nil, log, podName}
 }
 
 func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace string) (*FVTClient, error) {
@@ -536,6 +536,28 @@ func (fvt *FVTClient) RunTorchserveInference(req *torchserveapi.PredictionsReque
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
+	// check if the gRPC and REST connection runtime pods are still around
+	if fvt.grpcPortForward != nil {
+		podName := fvt.grpcPortForward.podName
+		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		if err != nil {
+			fvt.log.Info("Lost gRPC connection to pod", podName, obj)
+			fvt.disconnectGrpcConnection()
+		} else {
+			fvt.log.Info("Still gRPC connected to pod", podName, obj)
+		}
+	}
+	if fvt.restPortForward != nil {
+		podName := fvt.restPortForward.podName
+		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		if err != nil {
+			fvt.log.Info("Lost REST connection to pod", podName, obj)
+			fvt.disconnectRestConnection()
+		} else {
+			fvt.log.Info("Still REST connected to pod", podName, obj)
+		}
+	}
+	// (re-)create the gRPC and REST port-forwards if necessary
 	if fvt.grpcPortForward == nil {
 		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
 		podName := fvt.GetRandomReadyRuntimePod()
@@ -547,10 +569,10 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
 	}
 
+	// start the port-forwards
 	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
 		return fmt.Errorf("Error with gRPC port-forward, could not connect to model serving")
 	}
-
 	if err := fvt.restPortForward.EnsureStarted(); err != nil {
 		return fmt.Errorf("Error with REST port-forward, could not connect to model serving")
 	}
@@ -620,6 +642,11 @@ func (fvt *FVTClient) DisconnectFromModelServing() {
 	if fvt == nil {
 		return
 	}
+	fvt.disconnectGrpcConnection()
+	fvt.disconnectRestConnection()
+}
+
+func (fvt *FVTClient) disconnectGrpcConnection() {
 	if fvt.grpcConn != nil {
 		fvt.grpcConn.Close()
 		fvt.grpcConn = nil
@@ -628,7 +655,9 @@ func (fvt *FVTClient) DisconnectFromModelServing() {
 		fvt.grpcPortForward.EnsureStopped()
 		fvt.grpcPortForward = nil
 	}
+}
 
+func (fvt *FVTClient) disconnectRestConnection() {
 	if fvt.restConn != nil {
 		fvt.restConn.CloseIdleConnections()
 		fvt.restConn = nil
