@@ -93,6 +93,3 @@ spec:
     runtimeManagementPort: 8001
     memBufferBytes: 134217728
     modelLoadingTimeoutMillis: 90000
-
-  # TODO: re-enable Triton runtime
-  disabled: true
