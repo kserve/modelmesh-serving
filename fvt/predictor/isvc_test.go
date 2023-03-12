@@ -41,6 +41,10 @@ var _ = Describe("Inference service", Ordered, func() {
 		var _ = Describe("test "+i.name+" isvc", Ordered, func() {
 			var isvcName string
 
+			BeforeAll(func() {
+				WaitForStableActiveDeployState()
+			})
+
 			It("should successfully load a model", func() {
 				isvcObject := NewIsvcForFVT(i.inferenceServiceFileName)
 				isvcName = isvcObject.GetName()
