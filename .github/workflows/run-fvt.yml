@@ -1,4 +1,4 @@
-name: E2E Test
+name: FVTs
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ on:
       - '.github/workflows/run-fvt.yml'
 
 jobs:
-  fvt:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -71,8 +71,7 @@ jobs:
         run: |
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
-          docker pull openvino/model_server:2022.2
-          # docker pull pytorch/torchserve:0.6.0-cpu
+          docker pull openvino/model_server:2022.1
           docker pull kserve/modelmesh-runtime-adapter
           docker pull kserve/rest-proxy
           docker pull kserve/modelmesh
@@ -80,7 +79,7 @@ jobs:
         run: |
           docker images
           kubectl get pods
-          kubectl get clusterservingruntimes
+          kubectl get servingruntimes
       - name: Run FVTs
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo

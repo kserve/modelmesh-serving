@@ -57,8 +57,8 @@ import (
 	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
-const PredictorTimeout = time.Second * 300        // abs time to wait for predictor to become ready
-const timeForStatusToStabilize = time.Second * 30 // max time in between watcher events
+const predictorTimeout = time.Second * 120
+const timeForStatusToStabilize = time.Second * 5
 
 type ModelServingConnectionType int
 
@@ -73,19 +73,6 @@ var applyPatchOptions = metav1.PatchOptions{
 	FieldManager: "fvtclient",
 	// force the change (fvtclient should be the only manager)
 	Force: func() *bool { t := true; return &t }(),
-}
-
-// list option for serving runtime deployments
-var deploymentListOptions = metav1.ListOptions{
-	LabelSelector:  "modelmesh-service",
-	TimeoutSeconds: &DefaultTimeout,
-}
-
-// list option for serving runtime pods
-var runtimePodListOptions = metav1.ListOptions{
-	LabelSelector:  "modelmesh-service=modelmesh-serving",
-	FieldSelector:  "status.phase=Running",
-	TimeoutSeconds: &DefaultTimeout,
 }
 
 type FVTClient struct {
@@ -108,7 +95,6 @@ type ModelMeshPortForward struct {
 	cmdArgs []string
 	done    chan struct{}
 	log     logr.Logger
-	podName string
 }
 
 func (pf *ModelMeshPortForward) EnsureStarted() error {
@@ -156,15 +142,12 @@ func (pf *ModelMeshPortForward) EnsureStopped() {
 	<-pf.done
 }
 
-// NewModelMeshPortForward switched to port-forwarding to a pod instead of the
-// service, since, when port-forwarding to a Service, it just picks any pod to
-// port-forward to without any guardrails against selecting a Terminating pod.
-// It doesn't use readiness checks for pod selection, it seems to actually select
-// the oldest pod which ends up being most likely to be terminated soon
 func NewModelMeshPortForward(namespace string, podName string, localPort int, targetPort int, log logr.Logger) *ModelMeshPortForward {
 	portMap := fmt.Sprintf("%d:%d", localPort, targetPort)
-	cmdArgs := []string{"port-forward", "-n", namespace, "--address", "0.0.0.0", "pod/" + podName, portMap}
-	return &ModelMeshPortForward{nil, cmdArgs, nil, log, podName}
+	cmdArgs := []string{"port-forward", "--namespace", namespace, "--address", "0.0.0.0",
+		"pod/" + podName, portMap}
+
+	return &ModelMeshPortForward{nil, cmdArgs, nil, log}
 }
 
 func GetFVTClient(log logr.Logger, namespace, serviceName, controllerNamespace string) (*FVTClient, error) {
@@ -247,11 +230,6 @@ var (
 		Version:  "v1",
 		Resource: "endpoints", // this must be the plural form
 	}
-	gvrPods = schema.GroupVersionResource{
-		Group:    "",
-		Version:  "v1",
-		Resource: "pods", // this must be the plural form
-	}
 )
 
 func (fvt *FVTClient) CreatePredictorExpectSuccess(resource *unstructured.Unstructured) *unstructured.Unstructured {
@@ -302,7 +280,6 @@ func (fvt *FVTClient) ListServingRuntimes(options metav1.ListOptions) (*unstruct
 func (fvt *FVTClient) ListClusterServingRuntimes(options metav1.ListOptions) (*unstructured.UnstructuredList, error) {
 	return fvt.Resource(gvrCRuntime).List(context.TODO(), options)
 }
-
 func (fvt *FVTClient) GetPredictor(name string) *unstructured.Unstructured {
 	obj, err := fvt.Resource(gvrPredictor).Namespace(fvt.namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred())
@@ -369,18 +346,7 @@ func (fvt *FVTClient) WatchPredictorsAsync(c chan *unstructured.Unstructured, op
 
 }
 
-func (fvt *FVTClient) GetRandomReadyRuntimePod() string {
-	runtimePods := fvt.ListReadyRuntimePods()
-	numPods := len(runtimePods.Items)
-	Expect(numPods).ToNot(BeZero(), "There are no 'Ready' runtime pods")
-
-	i := rand.Intn(numPods)
-	name := runtimePods.Items[i].Name
-
-	return name
-}
-
-func (fvt *FVTClient) GetRandomRuntimePodNameFromEndpoints() string {
+func (fvt *FVTClient) GetRandomReadyRuntimePodNameFromEndpoints() string {
 	obj, err := fvt.Resource(gvrEndpoints).Namespace(fvt.namespace).Get(context.TODO(), fvt.serviceName, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -389,7 +355,6 @@ func (fvt *FVTClient) GetRandomRuntimePodNameFromEndpoints() string {
 	Expect(err).ToNot(HaveOccurred())
 
 	addresses := endpoints.Subsets[0].Addresses
-	Expect(len(addresses)).ToNot(BeZero(), "No endpoints available")
 	randomAddress := addresses[rand.Intn(len(addresses))]
 
 	return randomAddress.TargetRef.Name
@@ -406,13 +371,6 @@ func (fvt *FVTClient) PrintIsvcs() {
 	err := fvt.RunKubectl("get", "inferenceservices")
 	if err != nil {
 		fvt.log.Error(err, "Error running get inferenceservices command")
-	}
-}
-
-func (fvt *FVTClient) PrintDescribeIsvc(name string) {
-	err := fvt.RunKubectl("describe", "isvc", name)
-	if err != nil {
-		fvt.log.Error(err, fmt.Sprintf("Error running describe isvc '%s' command", name))
 	}
 }
 
@@ -454,12 +412,12 @@ func (fvt *FVTClient) TailPodLogs(sinceTime string) {
 
 func (fvt *FVTClient) RunKubectl(args ...string) error {
 	args = append(args, "-n", fvt.namespace)
-	kubectlCmd := exec.Command("kubectl", args...)
-	kubectlCmd.Stdout = ginkgo.GinkgoWriter
-	kubectlCmd.Stderr = ginkgo.GinkgoWriter
-	fvt.log.Info("Running command", "args", strings.Join(kubectlCmd.Args, " "))
+	getPredictorCommand := exec.Command("kubectl", args...)
+	getPredictorCommand.Stdout = ginkgo.GinkgoWriter
+	getPredictorCommand.Stderr = ginkgo.GinkgoWriter
+	fvt.log.Info("Running command", "args", strings.Join(getPredictorCommand.Args, " "))
 	fmt.Fprintf(ginkgo.GinkgoWriter, "=====================================================================================================================================\n")
-	err := kubectlCmd.Run()
+	err := getPredictorCommand.Run()
 	fmt.Fprintf(ginkgo.GinkgoWriter, "=====================================================================================================================================\n")
 	return err
 }
@@ -536,45 +494,21 @@ func (fvt *FVTClient) RunTorchserveInference(req *torchserveapi.PredictionsReque
 }
 
 func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectionType) error {
-	// check if the gRPC and REST connection runtime pods are still around
-	if fvt.grpcPortForward != nil {
-		podName := fvt.grpcPortForward.podName
-		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-		if err != nil {
-			fvt.log.Info("Lost gRPC connection to pod", podName, obj)
-			fvt.disconnectGrpcConnection()
-		} else {
-			fvt.log.Info("Still gRPC connected to pod", podName, obj)
-		}
-	}
-	if fvt.restPortForward != nil {
-		podName := fvt.restPortForward.podName
-		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-		if err != nil {
-			fvt.log.Info("Lost REST connection to pod", podName, obj)
-			fvt.disconnectRestConnection()
-		} else {
-			fvt.log.Info("Still REST connected to pod", podName, obj)
-		}
-	}
-	// (re-)create the gRPC and REST port-forwards if necessary
 	if fvt.grpcPortForward == nil {
-		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
-		podName := fvt.GetRandomReadyRuntimePod()
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
 		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
 	}
 	if fvt.restPortForward == nil {
-		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
-		podName := fvt.GetRandomReadyRuntimePod()
+		podName := fvt.GetRandomReadyRuntimePodNameFromEndpoints()
 		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
 	}
 
-	// start the port-forwards
 	if err := fvt.grpcPortForward.EnsureStarted(); err != nil {
-		return fmt.Errorf("Error with gRPC port-forward, could not connect to model serving")
+		return fmt.Errorf("Error with grpc port-forward, could not connect to model serving")
 	}
+
 	if err := fvt.restPortForward.EnsureStarted(); err != nil {
-		return fmt.Errorf("Error with REST port-forward, could not connect to model serving")
+		return fmt.Errorf("Error with rest port-forward, could not connect to model serving")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -642,11 +576,6 @@ func (fvt *FVTClient) DisconnectFromModelServing() {
 	if fvt == nil {
 		return
 	}
-	fvt.disconnectGrpcConnection()
-	fvt.disconnectRestConnection()
-}
-
-func (fvt *FVTClient) disconnectGrpcConnection() {
 	if fvt.grpcConn != nil {
 		fvt.grpcConn.Close()
 		fvt.grpcConn = nil
@@ -655,9 +584,7 @@ func (fvt *FVTClient) disconnectGrpcConnection() {
 		fvt.grpcPortForward.EnsureStopped()
 		fvt.grpcPortForward = nil
 	}
-}
 
-func (fvt *FVTClient) disconnectRestConnection() {
 	if fvt.restConn != nil {
 		fvt.restConn.CloseIdleConnections()
 		fvt.restConn = nil
@@ -742,7 +669,11 @@ func (fvt *FVTClient) UpdateConfigMapTLS(tlsConfig map[string]interface{}) {
 }
 
 func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
-	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), deploymentListOptions)
+	listOptions := metav1.ListOptions{
+		LabelSelector:  "modelmesh-service",
+		TimeoutSeconds: &DefaultTimeout,
+	}
+	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
 	return deployWatcher
 }
@@ -751,7 +682,8 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	var err error
 
 	// query for UnstructuredList using the dynamic client
-	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), deploymentListOptions)
+	listOptions := metav1.ListOptions{LabelSelector: "modelmesh-service", TimeoutSeconds: &DefaultTimeout}
+	u, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).List(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
 
 	// convert elements from Unstructured to Deployment
@@ -764,32 +696,6 @@ func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {
 	}
 
 	return deployments
-}
-
-func (fvt *FVTClient) ListReadyRuntimePods() corev1.PodList {
-	var err error
-
-	// query for UnstructuredList using the dynamic client
-	u, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).List(context.TODO(), runtimePodListOptions)
-	Expect(err).ToNot(HaveOccurred())
-
-	// convert elements from Unstructured to Pod
-	var pods corev1.PodList
-	for _, up := range u.Items {
-		var p corev1.Pod
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(up.Object, &p)
-		Expect(err).ToNot(HaveOccurred())
-
-		// make sure to only return pods that are 'Ready'
-		// https://github.com/knative-sandbox/eventing-kafka-broker/pull/2523/files#diff-a9f3c3b
-		for _, c := range p.Status.Conditions {
-			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
-				pods.Items = append(pods.Items, p)
-			}
-		}
-	}
-
-	return pods
 }
 
 func (fvt *FVTClient) RestartDeploys() {

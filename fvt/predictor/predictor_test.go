@@ -878,8 +878,6 @@ var _ = Describe("Predictor", func() {
 
 		AfterAll(func() {
 			FVTClientInstance.SetDefaultUserConfigMap()
-			By("Waiting for a stable deploy state after changing the user config")
-			WaitForStableActiveDeployState()
 		})
 
 		It("should successfully run an inference with basic TLS", func() {

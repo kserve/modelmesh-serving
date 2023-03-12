@@ -17,4 +17,5 @@ resources:
 images:
   - name: modelmesh-controller
     newName: kserve/modelmesh-controller
+    ## NOTE THIS SHOULD BE REPLACED WITH LATEST CONTROLLER IMAGE TAG
     newTag: latest
