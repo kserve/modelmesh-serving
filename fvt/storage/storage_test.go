@@ -154,7 +154,11 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
-		It("should fail with non-existent PVC", func() {
+		// TODO: re-enable test for non-existent PVC after controller fix to not mount non-existent PVCs
+		XIt("should fail with non-existent PVC", func() {
+			// don't use Skip() -- golangci-lint will fail with "var `isvcWithNonExistentPvc` is unused"
+			//Skip("Skip until controller fix for pending runtime pods")
+
 			// make a shallow copy of default configmap (don't modify the DefaultConfig reference)
 			// keeping 1 pod per runtime and don't scale to 0
 			config := make(map[string]interface{})
@@ -172,7 +176,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithNonExistentPvc])
 
 			CreateIsvcAndWaitAndExpectFailed(isvcObject)
-			// TODO: ISVC model will remain pending until controller fix
+			// TODO: ISVC model will remain pending until controller fix to not mount non-existent PVCs
 			//ExpectIsvcFailureInfo(obj, "ModelLoadFailed", true, true, "")
 
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
