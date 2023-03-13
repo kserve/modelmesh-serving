@@ -15,8 +15,6 @@
 package storage
 
 import (
-	"time"
-
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -58,6 +56,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 				})
 
 				It("should successfully run inference", func() {
+					WaitForStableActiveDeployState()
 					err := FVTClientInstance.ConnectToModelServing(Insecure)
 					Expect(err).ToNot(HaveOccurred())
 					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
@@ -131,8 +130,8 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			// after mounting the new PVC the runtime pod(s) restart again, but the ISVC
 			// if not scaleToZero, it could have landed on the previous runtime pod will
 			// fail to load the first time, so we extend the standard predictor timeout
-			//extendedTimeout := PredictorTimeout * 2
-			CreateIsvcAndWaitAndExpectReady(isvcObject, time.Second*30)
+			extendedTimeout := PredictorTimeout * 2
+			CreateIsvcAndWaitAndExpectReady(isvcObject, extendedTimeout)
 
 			FVTClientInstance.PrintPods()
 
