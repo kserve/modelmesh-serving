@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os/exec"
@@ -507,7 +507,7 @@ func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, tls boo
 		return "", fmt.Errorf("Request failed with code %d", response.StatusCode)
 	}
 
-	resp, err := ioutil.ReadAll(response.Body)
+	resp, err := io.ReadAll(response.Body)
 	return string(resp), err
 }
 

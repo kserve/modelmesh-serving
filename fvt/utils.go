@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -29,7 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-//Utility function to return the testdata directory
+// Utility function to return the testdata directory
 func TestDataPath(resourcePathWithinTestData string) string {
 	wd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
@@ -38,7 +37,7 @@ func TestDataPath(resourcePathWithinTestData string) string {
 }
 
 func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
-	content, err := ioutil.ReadFile(resourcePath)
+	content, err := os.ReadFile(resourcePath)
 	Expect(err).ToNot(HaveOccurred())
 
 	obj := &unstructured.Unstructured{}

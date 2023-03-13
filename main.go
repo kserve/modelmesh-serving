@@ -18,7 +18,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -106,7 +105,7 @@ func main() {
 	// ----- mmesh related envar setup -----
 	controllerNamespace := os.Getenv(ControllerNamespaceEnvVar)
 	if controllerNamespace == "" {
-		bytes, err := ioutil.ReadFile(KubeNamespaceFile)
+		bytes, err := os.ReadFile(KubeNamespaceFile)
 		if err != nil {
 			//TODO check kube context and retrieve namespace from there
 			setupLog.Info("Error reading Kube-mounted namespace file, reverting to default namespace",
