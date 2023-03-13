@@ -44,7 +44,7 @@ var _ = Describe("Inference service", Ordered, func() {
 			It("should successfully load a model", func() {
 				isvcObject := NewIsvcForFVT(i.inferenceServiceFileName)
 				isvcName = isvcObject.GetName()
-				CreateIsvcAndWaitAndExpectReady(isvcObject)
+				CreateIsvcAndWaitAndExpectReady(isvcObject, PredictorTimeout)
 
 				err := FVTClientInstance.ConnectToModelServing(Insecure)
 				Expect(err).ToNot(HaveOccurred())

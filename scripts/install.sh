@@ -132,7 +132,7 @@ wait_for_pods_ready() {
     fi
 
     wait_counter=$((wait_counter + 1))
-    echo " Waiting 10 secs..."
+    echo " Waiting 10 secs ..."
     sleep 10
   done
 }
@@ -254,7 +254,7 @@ if [[ $quickstart == "true" ]]; then
   info "Deploying quickstart resources for etcd and minio"
   kubectl apply -f quickstart.yaml
 
-  info "Waiting for dependent pods to be up..."
+  info "Waiting for dependent pods to be up ..."
   wait_for_pods_ready "-l app=etcd"
   wait_for_pods_ready "-l app=minio"
 fi
@@ -264,7 +264,7 @@ if [[ $fvt == "true" ]]; then
   info "Deploying fvt resources for etcd and minio"
   kubectl apply -f fvt.yaml
 
-  info "Waiting for dependent pods to be up..."
+  info "Waiting for dependent pods to be up ..."
   wait_for_pods_ready "-l app=etcd"
   wait_for_pods_ready "-l app=minio"
 fi
@@ -305,7 +305,7 @@ if [[ $namespace_scope_mode == "true" ]]; then
   rm crd/kustomization.yaml.bak
 fi
 
-info "Waiting for ModelMesh Serving controller pod to be up..."
+info "Waiting for ModelMesh Serving controller pod to be up ..."
 wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
 # Older versions of kustomize have different load restrictor flag formats.

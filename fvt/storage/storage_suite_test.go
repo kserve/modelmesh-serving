@@ -1,22 +1,24 @@
-// Copyright 2022 IBM Corporation
+// Copyright 2023 IBM Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package predictor
+package storage
 
 import (
 	"os"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -24,12 +26,11 @@ import (
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestPredictorSuite(t *testing.T) {
+func TestStorage(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Predictor suite")
+	RunSpecs(t, "Storage Suite")
 }
 
 func createFVTClient() {
@@ -76,6 +77,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	FVTClientInstance.SetDefaultUserConfigMap()
 
+	// replace default storage-config secret for local Minio with PVC config
+	FVTClientInstance.DeleteStorageConfigSecret()
+	FVTClientInstance.CreateStorageConfigSecret(StorageConfigDataPVC)
+
 	// ensure that there are no predictors to start
 	FVTClientInstance.DeleteAllPredictors()
 	FVTClientInstance.DeleteAllIsvcs()
@@ -84,6 +89,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.CreateTLSSecrets()
 
 	// ensure a stable deploy state
+	Log.Info("Waiting for stable deploy state")
 	WaitForStableActiveDeployState()
 
 	return nil
@@ -93,6 +99,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		createFVTClient()
 	}
+	// don't connect to model serving service once for all tests, flaky runtime pods, broken connections
+	//FVTClientInstance.ConnectToModelServingService(Insecure)
 	Log.Info("Setup completed")
 })
 
@@ -103,6 +111,10 @@ var _ = SynchronizedAfterSuite(func() {
 }, func() {
 	// runs *only* on process #1
 	FVTClientInstance.DeleteTLSSecrets()
+	FVTClientInstance.SetDefaultUserConfigMap()
+	// reset default storage-config secret
+	FVTClientInstance.DeleteStorageConfigSecret()
+	FVTClientInstance.CreateStorageConfigSecret(StorageConfigDataMinio)
 	// restart pods to reset Bootstrap failure checks
 	FVTClientInstance.RestartDeploys()
 })

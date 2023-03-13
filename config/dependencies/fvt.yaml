@@ -123,11 +123,14 @@ stringData:
       "default_bucket": "modelmesh-example-models",
       "region": "us-south"
     }
-  pvc1: |
-    {
-      "type": "pvc",
-      "name": "models-pvc-1"
-    }
+
+
+# Do not add PVCs for all FVT test cases; it causes runtimes to become unstable
+#  pvc1: |
+#    {
+#      "type": "pvc",
+#      "name": "models-pvc-1"
+#    }
 #  pvc2: |
 #    {
 #      "type": "pvc",
