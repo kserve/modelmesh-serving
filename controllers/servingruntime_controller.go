@@ -299,40 +299,52 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec, cfg *config.Config) ([]string, error) {
+	// get the PVCs from the storage-config Secret
+	storageConfigPVCsMap := make(map[string]struct{})
 	s := &corev1.Secret{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      modelmesh.StorageSecretName,
 		Namespace: req.Namespace,
 	}, s); err != nil {
-		return nil, fmt.Errorf("Could not get the storage secret: %w", err)
-	}
-
-	pvcsMap := make(map[string]struct{})
-	var storageConfig map[string]string
-	for _, storageData := range s.Data {
-		if err := json.Unmarshal(storageData, &storageConfig); err != nil {
-			return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
-		}
-		if storageConfig["type"] == StoragePVCType {
-			if name := storageConfig["name"]; name != "" {
-				pvcsMap[name] = struct{}{}
-			} else {
-				r.Log.V(1).Info("Missing PVC name in storage configuration")
+		// do not fail with error if storage-config secret does not exist
+		// TODO: make sure storage-config secret does not get mounted to runtime pod
+		//   MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
+		r.Log.V(1).Info("Could not get the storage-config secret",
+			"name", modelmesh.StorageSecretName,
+			"namespace", req.Namespace)
+	} else {
+		var storageConfig map[string]string
+		for _, storageData := range s.Data {
+			if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+				return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
+			}
+			if storageConfig["type"] == StoragePVCType {
+				if name := storageConfig["name"]; name != "" {
+					storageConfigPVCsMap[name] = struct{}{}
+				} else {
+					r.Log.V(1).Info("Missing PVC name in storage configuration")
+				}
 			}
 		}
 	}
 
-	// add pvcs for predictors when the global config is enabled
+	// collect PVCs from Predictors when the global flag 'allowAnyPVC' is enabled
+	predictorPVCsMap := make(map[string]struct{})
 	if cfg.AllowAnyPVC {
 		restProxyEnabled := cfg.RESTProxy.Enabled
+
+		// use a predicate function to extract the PVCs from Predictors in the registry
 		f := func(p *api.Predictor) bool {
 			if runtimeSupportsPredictor(rt, p, restProxyEnabled, req.Name) &&
-				p.Spec.Storage != nil && p.Spec.Storage.Parameters != nil {
+				p.Spec.Storage != nil &&
+				p.Spec.Storage.Parameters != nil {
+
 				params := *p.Spec.Storage.Parameters
-				if stype := params["type"]; stype == "pvc" {
-					if name := params["name"]; name != "" {
-						pvcsMap[name] = struct{}{}
-					}
+				storageType := params["type"]
+				name := params["name"]
+
+				if storageType == "pvc" && name != "" {
+					predictorPVCsMap[name] = struct{}{}
 				}
 			}
 			return false
@@ -344,9 +356,40 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 			}
 		}
 	}
-	pvcs := make([]string, 0, len(pvcsMap))
-	for pvc := range pvcsMap {
-		pvcs = append(pvcs, pvc)
+
+	pvcs := make([]string, 0, len(storageConfigPVCsMap)+len(predictorPVCsMap))
+
+	// append all PVCs from the storage-config secret;
+	for claimName := range storageConfigPVCsMap {
+		r.Log.V(1).Info("Add PVC from storage-config to runtime",
+			"claimName", claimName,
+			"runtime", rt.BuiltInAdapter.ServerType)
+		pvcs = append(pvcs, claimName)
+	}
+
+	// for any PVCs not in the storage-config secret, we need to make sure the PVCs
+	// exists; if we mounted a non-existent PVC to a runtime pod, it would keep it
+	// in pending state, effectively shutting down inferencing on any and all other
+	// Predictors for that runtime
+	for claimName := range predictorPVCsMap {
+		if _, alreadyAdded := storageConfigPVCsMap[claimName]; alreadyAdded {
+			// don't add PVCs that we found in the storage-config secret already
+			continue
+		} else {
+			pvc := &corev1.PersistentVolumeClaim{}
+			if err := r.Client.Get(ctx, types.NamespacedName{
+				Name:      claimName,
+				Namespace: req.Namespace,
+			}, pvc); err != nil {
+				r.Log.Error(err, "Could not find PVC in namespace",
+					"claimName", claimName, "namespace", req.Namespace)
+			} else {
+				r.Log.V(1).Info("Add any PVC from predictors to runtime",
+					"claimName", claimName,
+					"runtime", rt.BuiltInAdapter.ServerType)
+				pvcs = append(pvcs, claimName)
+			}
+		}
 	}
 
 	return pvcs, nil
@@ -387,7 +430,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 	defer r.runtimeInfoMapMutex.Unlock()
 
 	// initialize runtime information map if it is nil
-	// eg. if this is the first reconcile for any runtime
+	// e.g. if this is the first reconcile for any runtime
 	if r.runtimeInfoMap == nil {
 		r.runtimeInfoMap = make(map[types.NamespacedName]*runtimeInfo)
 	}
@@ -405,14 +448,14 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 		r.runtimeInfoMap[runtimeInfoMapKey] = targetRuntimeInfo
 	}
 
-	// if the runtime has predictors, it shouldn't be scaled down
+	// * if the runtime has predictors, it shouldn't be scaled down
 	if hasPredictors {
 		// update runtime info to have transition time set to nil
 		targetRuntimeInfo.TimeTransitionedToNoPredictors = nil
 		return scaledUp, time.Duration(0), nil
 	}
 
-	// if this is the first time we see no predictors update the runtime info with
+	// if this is the first time we see no predictors, update the runtime info with
 	// this transition
 	if targetRuntimeInfo.TimeTransitionedToNoPredictors == nil {
 		log.Info("Runtime no longer has any predictors, will scale to zero after grace period",

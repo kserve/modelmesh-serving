@@ -115,8 +115,16 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			By("Updating the user config to allow any PVC")
 			FVTClientInstance.ApplyUserConfigMap(config)
 
+			// TODO: separate test case for not having storage secret at all, currently not working
+			// Events:
+			//  Type     Reason       Age                  From               Message
+			//  ----     ------       ----                 ----               -------
+			//  Normal   Scheduled    3m23s                default-scheduler  Successfully assigned modelmesh-serving/modelmesh-serving-mlserver-0.x-54685b95d5-6xmck to 10.87.76.74
+			//  Warning  FailedMount  80s                  kubelet            Unable to attach or mount volumes: unmounted volumes=[storage-config], unattached volumes=[models-dir models-pvc-3 storage-config tc-config etcd-config kube-api-access-pqz7t]: timed out waiting for the condition
+			//  Warning  FailedMount  75s (x9 over 3m22s)  kubelet            MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
 			By("Deleting any PVC entries from the storage-config secret")
 			FVTClientInstance.DeleteStorageConfigSecret()
+			// recreate the storage-config secret without the PVCs
 			FVTClientInstance.CreateStorageConfigSecret(StorageConfigDataMinio)
 
 			// after applying configmap, the runtime pod(s) restart, wait for stability
@@ -154,11 +162,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
-		// TODO: re-enable test for non-existent PVC after controller fix to not mount non-existent PVCs
-		XIt("should fail with non-existent PVC", func() {
-			// don't use Skip() -- golangci-lint will fail with "var `isvcWithNonExistentPvc` is unused"
-			//Skip("Skip until controller fix for pending runtime pods")
-
+		It("should fail with non-existent PVC", func() {
 			// make a shallow copy of default configmap (don't modify the DefaultConfig reference)
 			// keeping 1 pod per runtime and don't scale to 0
 			config := make(map[string]interface{})
@@ -169,15 +173,13 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			config["allowAnyPVC"] = true
 			FVTClientInstance.ApplyUserConfigMap(config)
 
-			// TODO: runtime pods will remain pending with unbound PVC, don't wait, need controller fix
-			//By("Waiting for stable deploy state")
-			//WaitForStableActiveDeployState()
+			By("Waiting for stable deploy state")
+			WaitForStableActiveDeployState()
 
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithNonExistentPvc])
 
-			CreateIsvcAndWaitAndExpectFailed(isvcObject)
-			// TODO: ISVC model will remain pending until controller fix to not mount non-existent PVCs
-			//ExpectIsvcFailureInfo(obj, "ModelLoadFailed", true, true, "")
+			obj := CreateIsvcAndWaitAndExpectFailed(isvcObject)
+			ExpectIsvcFailureInfo(obj, "ModelLoadFailed", true, true, "")
 
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})

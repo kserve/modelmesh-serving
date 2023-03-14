@@ -105,8 +105,7 @@ func CreateIsvcAndWaitAndExpectFailed(isvcManifest *unstructured.Unstructured) *
 	FVTClientInstance.CreateIsvcExpectSuccess(isvcManifest)
 	By("Waiting for inference service " + isvcName + " to fail")
 	// ISVC does not have the status field set initially.
-	// TODO: until allowAnyPVC no longer accepts non-existent PVC we may not get past "Pending"
-	resultingIsvc := WaitForIsvcState(watcher, []api.ModelState{api.FailedToLoad, api.Pending}, isvcName, PredictorTimeout)
+	resultingIsvc := WaitForIsvcState(watcher, []api.ModelState{api.FailedToLoad}, isvcName, PredictorTimeout)
 	return resultingIsvc
 }
 
