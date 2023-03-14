@@ -20,6 +20,8 @@ cd modelmesh-serving
 
 ### Run install script
 
+**Note**: This will not work on M1 Mac laptops until [issue 162](https://github.com/kserve/modelmesh-serving/issues/162) is closed. 
+
 ```shell
 kubectl create namespace modelmesh-serving
 ./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
