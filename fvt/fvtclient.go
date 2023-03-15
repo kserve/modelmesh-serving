@@ -541,20 +541,20 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 		podName := fvt.grpcPortForward.podName
 		_, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
-			fvt.log.Info("Lost gRPC connection to pod", podName)
+			fvt.log.Info("Lost gRPC connection to pod " + podName + ". Reconnecting ...")
 			fvt.disconnectGrpcConnection()
 		} else {
-			fvt.log.Info("Still gRPC connected to pod", podName)
+			fvt.log.V(2).Info("Still gRPC connected to pod " + podName)
 		}
 	}
 	if fvt.restPortForward != nil {
 		podName := fvt.restPortForward.podName
 		_, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
-			fvt.log.Info("Lost REST connection to pod", podName)
+			fvt.log.Info("Lost REST connection to pod " + podName + ". Reconnecting ...")
 			fvt.disconnectRestConnection()
 		} else {
-			fvt.log.Info("Still REST connected to pod", podName)
+			fvt.log.V(2).Info("Still REST connected to pod " + podName)
 		}
 	}
 
