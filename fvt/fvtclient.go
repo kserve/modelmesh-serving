@@ -58,7 +58,7 @@ import (
 )
 
 const PredictorTimeout = time.Second * 120        // abs time to wait for predictor to become ready
-const timeForStatusToStabilize = time.Second * 10 // max time in between watcher events
+const timeForStatusToStabilize = time.Second * 15 // max time in between watcher events
 
 type ModelServingConnectionType int
 
@@ -539,22 +539,22 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 	// check if the gRPC and REST connection runtime pods are still around
 	if fvt.grpcPortForward != nil {
 		podName := fvt.grpcPortForward.podName
-		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		_, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
-			fvt.log.Info("Lost gRPC connection to pod", podName, obj)
+			fvt.log.Info("Lost gRPC connection to pod", podName)
 			fvt.disconnectGrpcConnection()
 		} else {
-			fvt.log.Info("Still gRPC connected to pod", podName, obj)
+			fvt.log.Info("Still gRPC connected to pod", podName)
 		}
 	}
 	if fvt.restPortForward != nil {
 		podName := fvt.restPortForward.podName
-		obj, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		_, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
-			fvt.log.Info("Lost REST connection to pod", podName, obj)
+			fvt.log.Info("Lost REST connection to pod", podName)
 			fvt.disconnectRestConnection()
 		} else {
-			fvt.log.Info("Still REST connected to pod", podName, obj)
+			fvt.log.Info("Still REST connected to pod", podName)
 		}
 	}
 
