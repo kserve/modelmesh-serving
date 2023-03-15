@@ -58,7 +58,7 @@ import (
 )
 
 const PredictorTimeout = time.Second * 120        // abs time to wait for predictor to become ready
-const timeForStatusToStabilize = time.Second * 15 // max time in between watcher events
+const timeForStatusToStabilize = time.Second * 30 // max time in between watcher events
 
 type ModelServingConnectionType int
 
