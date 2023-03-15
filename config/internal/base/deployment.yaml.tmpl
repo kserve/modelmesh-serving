@@ -59,14 +59,6 @@ spec:
           env:
             - name: MM_SERVICE_NAME
               value: {{.ServiceName}}
-            # External endpoint for a payload processing service
-            {{if .PayloadProcessors}}
-            - name: MM_PAYLOAD_PROCESSORS
-              value: {{.PayloadProcessors}}
-            {{- else }}
-            - name: MM_PAYLOAD_PROCESSORS
-              value:
-            {{end}}
             # External gRPC port of the service, should match ports.containerPort
             - name: MM_SVC_GRPC_PORT
               value: "{{.Port}}"

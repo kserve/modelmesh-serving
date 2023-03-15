@@ -282,6 +282,12 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 		return err
 	}
 
+	if len(m.PayloadProcessors) > 0 {
+		if err := setEnvironmentVar(ModelMeshContainerName, "MM_PAYLOAD_PROCESSORS", m.PayloadProcessors, deployment); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

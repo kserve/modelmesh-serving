@@ -1,5 +1,6 @@
 inferenceServiceName: modelmesh-serving
-payloadProcessors: ["example:8080/consumer/kse rve/v2", "example2:8080/consumer/kserve/v2"]
+payloadProcessors:
+  ["example:8080/consumer/kse rve/v2", "example2:8080/consumer/kserve/v2"]
 inferenceServicePort: 1234
 modelMeshEndpoint: modelmesh-serving
 etcdSecretName: "secret"

@@ -224,7 +224,7 @@ func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
 		var err error
 		var testConfigFile string
 		if loadErrorFile {
-			testConfigFile = "./testdata/test-config-payload-processor0errpr.yaml"
+			testConfigFile = "./testdata/test-config-payload-processor-error.yaml"
 		} else {
 			testConfigFile = "./testdata/test-config-payload-processor.yaml"
 		}
@@ -237,6 +237,7 @@ func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
 
 // set config to the payload processing config
 func resetToPayloadConfig(loadErrorFile bool) {
+	payloadProcessingTestConfigFileContents = nil
 	config, err := getPayloadProcessingConfig(loadErrorFile)
 	if loadErrorFile {
 		Expect(err).To(HaveOccurred())
