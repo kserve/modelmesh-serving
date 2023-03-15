@@ -56,10 +56,12 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 				})
 
 				It("should successfully run inference", func() {
-					WaitForStableActiveDeployState()
+					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
+				})
+
+				BeforeAll(func() {
 					err := FVTClientInstance.ConnectToModelServing(Insecure)
 					Expect(err).ToNot(HaveOccurred())
-					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
 
 				AfterAll(func() {

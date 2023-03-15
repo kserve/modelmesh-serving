@@ -31,6 +31,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -361,7 +362,7 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 
 	// append all PVCs from the storage-config secret;
 	for claimName := range storageConfigPVCsMap {
-		r.Log.V(1).Info("Add PVC from storage-config to runtime",
+		r.Log.V(2).Info("Add PVC from storage-config to runtime",
 			"claimName", claimName,
 			"runtime", rt.BuiltInAdapter.ServerType)
 		pvcs = append(pvcs, claimName)
@@ -384,12 +385,22 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 				r.Log.Error(err, "Could not find PVC in namespace",
 					"claimName", claimName, "namespace", req.Namespace)
 			} else {
-				r.Log.V(1).Info("Add any PVC from predictors to runtime",
+				r.Log.V(2).Info("Add any PVC from predictors to runtime",
 					"claimName", claimName,
 					"runtime", rt.BuiltInAdapter.ServerType)
 				pvcs = append(pvcs, claimName)
 			}
 		}
+	}
+
+	// we must sort the PVCs to avoid that otherwise identical runtime deployment
+	// specs are treated as different by Kubernetes causing unwanted cycles of
+	// runtimes getting terminated again and again just because the reconciler
+	// ordered the same set of PVCs in a different way
+	if len(pvcs) > 0 {
+		sort.Strings(pvcs)
+		r.Log.V(1).Info("Adding PVCs to runtime",
+			"pvcs", pvcs, "runtime", rt.BuiltInAdapter.ServerType)
 	}
 
 	return pvcs, nil
