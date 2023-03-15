@@ -201,7 +201,7 @@ var _ = Describe("Add Payload Processor", func() {
 
 	It("deployment should contain Payload Processor", func() {
 		By("add payload processor to yaml config")
-		resetToPayloadConfig()
+		resetToPayloadConfig(false)
 
 		By("create a sample runtime")
 		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
@@ -219,6 +219,14 @@ var _ = Describe("Add Payload Processor", func() {
 		// discard objectmeta before snapshot compare to remove generated values
 		d.ObjectMeta = metav1.ObjectMeta{}
 		Expect(d).To(SnapshotMatcher())
+	})
+})
+
+var _ = Describe("Add Payload Processor", func() {
+	It("deployment should raise an error when the processor contains a space", func() {
+		By("try to parse a config yaml that contains a space in a processor")
+		// this function expects an error
+		resetToPayloadConfig(true)
 	})
 })
 

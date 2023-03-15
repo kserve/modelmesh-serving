@@ -219,10 +219,15 @@ func getDefaultConfig() (*config2.Config, error) {
 }
 
 // load the payload processing config
-func getPayloadProcessingConfig() (*config2.Config, error) {
+func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
 	if payloadProcessingTestConfigFileContents == nil {
 		var err error
-		var testConfigFile = "./testdata/test-config-payload-processor.yaml"
+		var testConfigFile string
+		if loadErrorFile {
+			testConfigFile = "./testdata/test-config-payload-processor0errpr.yaml"
+		} else {
+			testConfigFile = "./testdata/test-config-payload-processor.yaml"
+		}
 		if payloadProcessingTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
 			return nil, err
 		}
@@ -231,10 +236,14 @@ func getPayloadProcessingConfig() (*config2.Config, error) {
 }
 
 // set config to the payload processing config
-func resetToPayloadConfig() {
-	config, err := getPayloadProcessingConfig()
-	Expect(err).ToNot(HaveOccurred())
-
+func resetToPayloadConfig(loadErrorFile bool) {
+	config, err := getPayloadProcessingConfig(loadErrorFile)
+	if loadErrorFile {
+		Expect(err).To(HaveOccurred())
+		return
+	} else {
+		Expect(err).ToNot(HaveOccurred())
+	}
 	// re-assign the reference to the config
 	reconcilerConfig = config
 
