@@ -69,6 +69,7 @@ func (m *Deployment) addVolumesToDeployment(deployment *appsv1.Deployment) error
 	}
 
 	// need to mount storage config for built-in adapters and the scenarios where StorageHelper is not disabled
+	// TODO: what about allowAnyPVC only use case without MinIO
 	if rts.BuiltInAdapter != nil || useStorageHelper(rts) {
 		storageVolume := corev1.Volume{
 			Name: ConfigStorageMount,

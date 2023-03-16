@@ -148,7 +148,6 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 	} else if mmc != nil {
 		// This determines whether we should trigger an explicit load of the model
 		// as part of the update, e.g. if the predictor is new or transitioning
-		// TODO: should reload if allowAnyPVC was not mounted yet
 		loadNow := predictor.DeletionTimestamp == nil &&
 			(status.ActiveModelState == api.Pending ||
 				status.ActiveModelState == api.FailedToLoad ||

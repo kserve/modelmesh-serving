@@ -243,7 +243,7 @@ release blog.
 
 For reference, here are a few examples of previous release blogs featuring ModelMesh:
 
-- [v0.7.0](https://kserve.github.io/website/blog/articles/2021-10-11-KServe-0.7-release)
+- [v0.7.0](https://kserve.github.io/website/0.7/blog/articles/2021-10-11-KServe-0.7-release)
 - [v0.8.0](https://kserve.github.io/website/0.8/blog/articles/2022-02-18-KServe-0.8-release/#modelmesh-updates)
 - [v0.9.0](https://kserve.github.io/website/0.9/blog/articles/2022-07-21-KServe-0.9-release/#inferenceservice-api-for-modelmesh)
 - [v0.10.0 draft](https://github.com/kserve/website/pull/227#discussion_r1098917277)
