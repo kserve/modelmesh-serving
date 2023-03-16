@@ -227,7 +227,7 @@ func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
 		} else {
 			testConfigFile = "./testdata/test-config-payload-processor.yaml"
 		}
-		if payloadProcessingTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
+		if payloadProcessingTestConfigFileContents, err = os.ReadFile(testConfigFile); err != nil {
 			return nil, err
 		}
 	}
