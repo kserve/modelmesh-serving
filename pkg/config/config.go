@@ -76,6 +76,7 @@ type Config struct {
 	StorageSecretName      string
 	EnableAccessLogging    bool
 	BuiltInServerTypes     []string
+	PayloadProcessors      []string
 
 	ServiceAccountName string
 
@@ -335,6 +336,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("PodsPerRuntime", 2)
 	v.SetDefault("StorageSecretName", "storage-config")
 	v.SetDefault("ServiceAccountName", "")
+	v.SetDefault("PayloadProcessors", []string{})
 	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Port"}), 2112)
 	v.SetDefault(concatStringsWithDelimiter([]string{"Metrics", "Scheme"}), "https")
 	v.SetDefault(concatStringsWithDelimiter([]string{"ScaleToZero", "Enabled"}), true)
@@ -421,6 +423,12 @@ func NewMergedConfigFromString(configYaml string) (*Config, error) {
 		return nil, fmt.Errorf("Invalid config for 'StorageHelperResources': %s", err)
 	}
 
+	// check that none of the payload processors contains a space
+	for _, processor := range config.PayloadProcessors {
+		if strings.Contains(processor, " ") {
+			return nil, fmt.Errorf("Error parsing payload processor '%s': endpoint must not contain spaces.", processor)
+		}
+	}
 	return &config, nil
 }
 

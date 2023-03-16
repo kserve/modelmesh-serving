@@ -205,6 +205,7 @@ var _ = AfterEach(func() {
 })
 
 var defaultTestConfigFileContents []byte
+var payloadProcessingTestConfigFileContents []byte
 
 func getDefaultConfig() (*config2.Config, error) {
 	if defaultTestConfigFileContents == nil {
@@ -215,6 +216,40 @@ func getDefaultConfig() (*config2.Config, error) {
 		}
 	}
 	return config2.NewMergedConfigFromString(string(defaultTestConfigFileContents))
+}
+
+// load the payload processing config
+func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
+	if payloadProcessingTestConfigFileContents == nil {
+		var err error
+		var testConfigFile string
+		if loadErrorFile {
+			testConfigFile = "./testdata/test-config-payload-processor-error.yaml"
+		} else {
+			testConfigFile = "./testdata/test-config-payload-processor.yaml"
+		}
+		if payloadProcessingTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
+			return nil, err
+		}
+	}
+	return config2.NewMergedConfigFromString(string(payloadProcessingTestConfigFileContents))
+}
+
+// set config to the payload processing config
+func resetToPayloadConfig(loadErrorFile bool) {
+	payloadProcessingTestConfigFileContents = nil
+	config, err := getPayloadProcessingConfig(loadErrorFile)
+	if loadErrorFile {
+		Expect(err).To(HaveOccurred())
+		return
+	} else {
+		Expect(err).ToNot(HaveOccurred())
+	}
+	// re-assign the reference to the config
+	reconcilerConfig = config
+
+	// inject the reference into the provider used by the reconciler
+	config2.SetConfigForTest(configProvider, config)
 }
 
 func resetReconcilerConfig() {

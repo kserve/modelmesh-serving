@@ -248,6 +248,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Metrics:                    cfg.Metrics.Enabled,
 		PrometheusPort:             cfg.Metrics.Port,
 		PrometheusScheme:           cfg.Metrics.Scheme,
+		PayloadProcessors:          strings.Join(cfg.PayloadProcessors, " "),
 		ModelMeshImage:             cfg.ModelMeshImage.TaggedImage(),
 		ModelMeshResources:         cfg.ModelMeshResources.ToKubernetesType(),
 		ModelMeshAdditionalEnvVars: cfg.InternalModelMeshEnvVars.ToKubernetesType(),
