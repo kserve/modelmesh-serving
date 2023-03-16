@@ -47,6 +47,7 @@ type Deployment struct {
 	Metrics            bool
 	PrometheusPort     uint16
 	PrometheusScheme   string
+	PayloadProcessors  string
 	ModelMeshImage     string
 	ModelMeshResources *corev1.ResourceRequirements
 	RESTProxyEnabled   bool
@@ -279,6 +280,12 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 	// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L63
 	if err := setEnvironmentVar(ModelMeshContainerName, "MM_DEFAULT_VMODEL_OWNER", m.DefaultVModelOwner, deployment); err != nil {
 		return err
+	}
+
+	if len(m.PayloadProcessors) > 0 {
+		if err := setEnvironmentVar(ModelMeshContainerName, "MM_PAYLOAD_PROCESSORS", m.PayloadProcessors, deployment); err != nil {
+			return err
+		}
 	}
 
 	return nil

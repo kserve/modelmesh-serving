@@ -1,0 +1,50 @@
+inferenceServiceName: modelmesh-serving
+payloadProcessors:
+  ["example:8080/consumer/kse rve/v2", "example2:8080/consumer/kserve/v2"]
+inferenceServicePort: 1234
+modelMeshEndpoint: modelmesh-serving
+etcdSecretName: "secret"
+serviceAccountName: ""
+podsPerRuntime: 2
+headlessService: true
+modelMeshImage:
+  name: image
+  tag: tag
+modelMeshResources:
+  requests:
+    cpu: "300m"
+    memory: "448Mi"
+  limits:
+    cpu: "3"
+    memory: "448Mi"
+storageHelperImage:
+  name: image
+  tag: tag
+  command: ["/opt/app/puller"]
+storageHelperResources:
+  requests:
+    cpu: "50m"
+    memory: "96Mi"
+  limits:
+    cpu: "2"
+    memory: "512Mi"
+metrics:
+  enabled: false
+  port: 2222
+  scheme: http
+scaleToZero:
+  enabled: false
+  gracePeriodSeconds: 60
+restProxy:
+  enabled: false
+  port: 8008
+  image:
+    name: kserve/rest-proxy
+    tag: latest
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "96Mi"
+    limits:
+      cpu: "1"
+      memory: "512Mi"
