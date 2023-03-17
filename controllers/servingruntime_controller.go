@@ -460,7 +460,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 		r.runtimeInfoMap[runtimeInfoMapKey] = targetRuntimeInfo
 	}
 
-	// * if the runtime has predictors, it shouldn't be scaled down
+	// if the runtime has predictors, it shouldn't be scaled down
 	if hasPredictors {
 		// update runtime info to have transition time set to nil
 		targetRuntimeInfo.TimeTransitionedToNoPredictors = nil

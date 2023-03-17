@@ -2,7 +2,7 @@
 
 You will need access to an S3-compatible object storage, for example [MinIO](https://github.com/minio/minio). To configure access to the object storage, use the `storage-config` secret.
 
-Alternatively, models can be stored on a Kubernetes Persistent Volume. Persistent Volume Claims can either be pre-configured in the `storage-config` secret in order to be mounted to all serving runtime pods. Or, if the `allowAnyPVC` config flag is enabled, any PVC can be mounted dynamically at the time a predictor or inference service is deployed.
+Alternatively, models can be stored on a Kubernetes Persistent Volume. Persistent Volume Claims can either be pre-configured in the `storage-config` secret, or, the `allowAnyPVC` config flag can be enabled, so that any PVC can be mounted dynamically at the time a predictor or inference service is deployed.
 
 ## Deploy a model from your own S3 compatible object storage
 
@@ -100,19 +100,24 @@ Remember that after updating the storage config secret, there may be a delay of 
 
 ## Deploy a model stored on a Persistent Volume Claim
 
-Models can be stored on Kubernetes Persistent Volumes. The Persistent Volume Claims can either be pre-configured in the `storage-config` secret in order to be mounted to all serving runtime pods.
-Alternatively, if the `allowAnyPVC` config flag is enabled, the Modelmesh controller will dynamically mount the PVC to a runtime pod at the time a predictor or inference service requiring it is being deployed.
+Models can be stored on Kubernetes Persistent Volumes.
+
+There are two ways to enable PVC support in ModelMesh:
+
+1. The Persistent Volume Claims can be added in the `storage-config` secret. This way all PVCs will be mounted to all serving runtime pods.
+2. The `allowAnyPVC` configuration flag can be set to `true`. This way the Modelmesh controller will dynamically mount the PVC to a runtime pod at the time a predictor or inference service requiring it is being deployed.
+
+Follow the example instructions below to create a PVC, store a model on it, and configure ModelMesh to mount the PVC to the runtime serving pods so that the model can be loaded for inferencing.
 
 ### 1. Create a Persistent Volume Claim
 
-Persistent Volumes are namespace scoped so make sure to create it in the same
-namespace as the Modelmesh serving deployment. We are using namespace `modelmesh-serving` here.
+Persistent Volumes are namespace-scoped, so we have to create it in the same namespace as the ModelMesh serving deployment. We are using namespace `modelmesh-serving` here.
 
 ```shell
 kubectl config set-context --current --namespace=modelmesh-serving
 ```
 
-Now we create a Persistent Volume Claim `my-models-pvc` and along with it, we deploy a `pvc-access` pod in order to copy our model to the Persistent Volume later.
+Now we create the Persistent Volume Claim `my-models-pvc`. Along with it, we deploy a `pvc-access` pod in order to copy our model to the Persistent Volume later.
 
 ```shell
 kubectl apply -f - <<EOF
@@ -147,9 +152,9 @@ spec:
 EOF
 ```
 
-### 2. Add your model to the Persistent Volume
+### 2. Add the model to the Persistent Volume
 
-For this example we are using the MNIST SVM scikit-learn model from the kserve/modelmesh-minio-examples repo.
+For this example we are using the MNIST SVM scikit-learn model from the [kserve/modelmesh-minio-examples](https://github.com/kserve/modelmesh-minio-examples) repo.
 
 ```shell
 # create a temp directory and download the scikit-learn MNIST SVM model
@@ -184,11 +189,11 @@ kubectl exec -it pvc-access -- ls -alr /mnt/models/sklearn/
 # drwxr-xr-x 2 nobody 4294967294   4096 Mar 16 08:55 .
 ```
 
-### 3. (a) Add a storage entry to the `storage-config` secret
+### 3. (a) Add a PVC entry to the `storage-config` secret
 
-The `storage-config` secret is part of the ModelMesh Quickstart deployment. If not you can create it using the
-YAML spec outlined below. To configure ModelMesh to mount the PVC to the runtime serving pods, we need to add an PVC entry to the secres stringData. The chosen key `pvc1` is of no consequence. Note that
-the `localMinIO` and the `pvc2` entries are only for illustration.
+The `storage-config` secret is part of the ModelMesh [Quickstart](/docs/quickstart.md) deployment. If you deployed ModelMesh without it, you can create it using the YAML spec outlined below.
+
+To configure ModelMesh to mount the PVC to the runtime serving pods, we need to add an entry of type `pvc` to the secret's `stringData`. The chosen key `pvc1` is of no consequence. Note that the `localMinIO` and the `pvc2` entries are only for illustration.
 
 ```YAML
 apiVersion: v1
@@ -217,13 +222,13 @@ stringData:
 #    }
 ```
 
-After updating the `storage-config` secret, there may be a delay of up to 2 minutes until the change is effective.
+After updating or creating the `storage-config` secret, the `modelmesh-serving` deployment will get updated and the serving runtime pods will get restarted to mount the Persistent Volumes. Depending on the number of replicas and deployed predictors, this update may take a few minutes.
 
 ### 3. (b) Enable `allowAnyPVC` in the `model-serving-config` ConfigMap
 
-As an alternative to preconfiguring all allowed PVCs in the `storage-config` secret, you can enable the `allowAnyPVC` configuration flag so that users can deploy Predictors or InferenceService with models stored on any PVC in the model serving namespace.
+As an alternative to preconfiguring all _allowed_ PVCs in the `storage-config` secret, you can set the `allowAnyPVC` configuration flag to `true`. With `allowAnyPVC` enabled, users can deploy Predictors or InferenceService with models stored on _any_ PVC in the model serving namespace.
 
-For this we have to update or create the `model-serving-config` ConfigMap.
+Let's update (or create) the `model-serving-config` ConfigMap.
 
 Note, if you already have a `model-serving-config` ConfigMap, you might want to retain the existing config overrides. You can check you current config flags by running:
 
@@ -250,9 +255,11 @@ data:
 EOF
 ```
 
+After applying the new configuration, the `modelmesh-serving` deployment might get updated and the serving runtime pods may get restarted.
+
 ### 4. Deploy a new Inference Service
 
-In order to use the model from the PVC, we need to set the storage parameter of the predictor
+In order to use the model from the PVC, we need to set the `storage` `parameters` of the predictor
 as `type: pvc` and `name: my-models-pvc` like this:
 
 ```shell
@@ -277,7 +284,7 @@ spec:
 EOF
 ```
 
-After a few seconds the new InferenceService should be ready:
+After a few seconds the new InferenceService `sklearn-pvc-example` should be ready:
 
 ```shell
 kubectl get isvc
@@ -288,7 +295,7 @@ kubectl get isvc
 
 ### 5. Run an inference request
 
-You will need to port-forward a different port for REST.
+We need to set up a port-forward to facilitate REST requests.
 
 ```shell
 kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8008 &
@@ -297,16 +304,16 @@ kubectl port-forward --address 0.0.0.0 service/modelmesh-serving 8008 &
 # Forwarding from 0.0.0.0:8008 -> 8008
 ```
 
-With `curl`, a request can be sent to the SKLearn MNIST model like the following. Make sure that the `MODEL_NAME`
-variable below is set to the name of your `InferenceService`.
+With `curl` we can perform an inference request to the SKLearn MNIST model. Make sure the `MODEL_NAME`
+variable is set to the name of your `InferenceService`.
 
 ```shell
 MODEL_NAME="sklearn-pvc-example"
 
-curl -X POST -k http://localhost:8008/v2/models/${MODEL_NAME}/infer -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
+curl -X POST -k "http://localhost:8008/v2/models/${MODEL_NAME}/infer" -d '{"inputs": [{ "name": "predict", "shape": [1, 64], "datatype": "FP32", "data": [0.0, 0.0, 1.0, 11.0, 14.0, 15.0, 3.0, 0.0, 0.0, 1.0, 13.0, 16.0, 12.0, 16.0, 8.0, 0.0, 0.0, 8.0, 16.0, 4.0, 6.0, 16.0, 5.0, 0.0, 0.0, 5.0, 15.0, 11.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 2.0, 12.0, 16.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 16.0, 16.0, 6.0, 0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 7.0, 0.0, 0.0, 0.0, 0.0, 11.0, 13.0, 12.0, 1.0, 0.0]}]}'
 ```
 
-This should give you a response like the following:
+The response should look like the following:
 
 ```json
 {
@@ -317,7 +324,7 @@ This should give you a response like the following:
 }
 ```
 
-To see more detailed instructions and information, click [here](run-inference.md).
+You can find more detailed information about running inference requests [here](run-inference.md).
 
 To delete the resources created in this example, run the following commands:
 
