@@ -28,7 +28,7 @@ If you have an alternative solution to collect the metrics, you can disable the 
 
 We suggest using Grafana to visualize the Prometheus monitoring data. You can learn more about deploying/configuring both Prometheus and Grafana by checking out [this repo](https://github.com/prometheus-operator/kube-prometheus#quickstart). Also, check out [this page](https://github.com/kserve/modelmesh-performance/blob/main/docs/monitoring/README.md##Setup-Prometheus-Operator) for some tips on how to set it up.
 
-When a Grafana instance is installed and running in the cluster, [this JSON file](https://github.com/kserve/modelmesh-performance/blob/main/docs/monitoring/modelmesh_grafana_dashboard_1634165844916.json) containing our Grafana Dashboard with ModelMesh metrics is suggested to view the metrics below.
+When a Grafana instance is installed and running in the cluster, [this JSON file](/config/grafana/ModelMeshMetricsDashboard.json) containing our Grafana Dashboard with ModelMesh metrics is suggested to view the metrics below.
 
 ## Metrics
 
