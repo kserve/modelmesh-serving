@@ -2,7 +2,7 @@
 
 You will need access to an S3-compatible object storage, for example [MinIO](https://github.com/minio/minio). To configure access to the object storage, use the `storage-config` secret.
 
-Alternatively, models can be stored on a Kubernetes Persistent Volume. Persistent Volume Claims can either be pre-configured in the `storage-config` secret, or, the `allowAnyPVC` config flag can be enabled, so that any PVC can be mounted dynamically at the time a predictor or inference service is deployed.
+Alternatively, models can be stored on a Kubernetes Persistent Volume. Persistent Volume Claims can either be pre-configured in the `storage-config` secret, or, the `allowAnyPVC` configuration flag can be enabled, so that any PVC can be mounted dynamically at the time a predictor or inference service is deployed.
 
 ## Deploy a model from your own S3 compatible object storage
 
@@ -100,7 +100,7 @@ Remember that after updating the storage config secret, there may be a delay of 
 
 ## Deploy a model stored on a Persistent Volume Claim
 
-Models can be stored on Kubernetes Persistent Volumes.
+Models can be stored on [Kubernetes Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 
 There are two ways to enable PVC support in ModelMesh:
 
@@ -226,17 +226,17 @@ After updating or creating the `storage-config` secret, the `modelmesh-serving` 
 
 ### 3. (b) Enable `allowAnyPVC` in the `model-serving-config` ConfigMap
 
-As an alternative to preconfiguring all _allowed_ PVCs in the `storage-config` secret, you can set the `allowAnyPVC` configuration flag to `true`. With `allowAnyPVC` enabled, users can deploy Predictors or InferenceService with models stored on _any_ PVC in the model serving namespace.
+As an alternative to preconfiguring all _allowed_ PVCs in the `storage-config` secret, you can set the `allowAnyPVC` configuration flag to `true`. With `allowAnyPVC` enabled, users can deploy Predictors or InferenceServices with models stored on _any_ PVC in the model serving namespace.
 
 Let's update (or create) the `model-serving-config` ConfigMap.
 
-Note, if you already have a `model-serving-config` ConfigMap, you might want to retain the existing config overrides. You can check you current config flags by running:
+Note, if you already have a `model-serving-config` ConfigMap, you might want to retain the existing config overrides. You can check your current configuration flags by running:
 
 ```shell
 kubectl get cm "model-serving-config" -o jsonpath="{.data['config\.yaml']}"`
 ```
 
-The minimal `model-serving-config` for our example only needs the two settings `allowAnyPVC` and `restProxy` enabled true:
+The minimal `model-serving-config` for our example requires the settings `allowAnyPVC` and `restProxy` to be enabled:
 
 ```shell
 kubectl apply -f - <<EOF
@@ -284,7 +284,7 @@ spec:
 EOF
 ```
 
-After a few seconds the new InferenceService `sklearn-pvc-example` should be ready:
+After a few seconds, the new InferenceService `sklearn-pvc-example` should be ready:
 
 ```shell
 kubectl get isvc
