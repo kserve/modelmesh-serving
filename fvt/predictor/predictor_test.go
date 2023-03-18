@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -872,6 +872,10 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
+	// **************************************************************
+	// TODO: move below into separate suite not to be run in parallel
+	// **************************************************************
+
 	var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
@@ -879,14 +883,15 @@ var _ = Describe("Predictor", func() {
 		AfterAll(func() {
 			FVTClientInstance.SetDefaultUserConfigMap()
 			By("Waiting for a stable deploy state after changing the user config")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(time.Second * 30)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
+			By("Updating the user ConfigMap to for basic TLS")
 			FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
 
-			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
+			By("Waiting for stable deploy state after UpdateConfigMapTLS")
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
@@ -929,10 +934,11 @@ var _ = Describe("Predictor", func() {
 		})
 
 		It("should successfully run an inference with mutual TLS", func() {
+			By("Updating user config for Mutual TLS")
 			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
-			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
+			By("Waiting for stable deploy state after MutualTLSConfig")
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
@@ -974,7 +980,7 @@ var _ = Describe("Predictor", func() {
 			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 			By("Expect a new connection to fail")
 			// since the connection switches to TLS, ensure we are establishing a new connection
@@ -988,6 +994,11 @@ var _ = Describe("Predictor", func() {
 	// The TLS tests `Describe` block should be the last one in the list to
 	// improve efficiency of the tests. Any test after the TLS tests would need
 	// to wait for the configuration changes to roll out to all Deployments.
+
+	// **************************************************************
+	// TODO: move above into separate suite not to be run in parallel
+	// **************************************************************
+
 })
 
 // These tests verify that an invalid Predictor fails to load. These are in a
@@ -1085,7 +1096,7 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for the deployments replicas to be ready")
-		WaitForStableActiveDeployState()
+		WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 		By("Checking that new ServingRuntime resource exists")
 		FVTClientInstance.GetServingRuntime(runtimeName)

@@ -2,8 +2,6 @@ apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
   name: isvc-pvc3
-  labels:
-    name: isvc-pvc3
   annotations:
     serving.kserve.io/deploymentMode: ModelMesh
 spec:

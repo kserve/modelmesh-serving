@@ -11,19 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/*
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 
 package controllers
 
@@ -365,7 +352,7 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 	for claimName := range storageConfigPVCsMap {
 		r.Log.V(2).Info("Add PVC from storage-config to runtime",
 			"claimName", claimName,
-			"runtime", rt.BuiltInAdapter.ServerType)
+			"runtime", req.Name)
 		pvcs = append(pvcs, claimName)
 	}
 
@@ -388,7 +375,7 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 			} else {
 				r.Log.V(2).Info("Add any PVC from predictors to runtime",
 					"claimName", claimName,
-					"runtime", rt.BuiltInAdapter.ServerType)
+					"runtime", req.Name)
 				pvcs = append(pvcs, claimName)
 			}
 		}
@@ -401,7 +388,7 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 	if len(pvcs) > 0 {
 		sort.Strings(pvcs)
 		r.Log.V(1).Info("Adding PVCs to runtime",
-			"pvcs", pvcs, "runtime", rt.BuiltInAdapter.ServerType)
+			"pvcs", pvcs, "runtime", req.Name)
 	}
 
 	return pvcs, nil

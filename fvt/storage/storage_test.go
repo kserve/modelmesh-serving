@@ -15,6 +15,8 @@
 package storage
 
 import (
+	"time"
+
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -49,6 +51,10 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 				var isvcName = name
 				var fileName = isvcFiles[name]
 
+				AfterAll(func() {
+					FVTClientInstance.DeleteIsvc(isvcName)
+				})
+
 				It("should successfully load a model", func() {
 					isvcObject := NewIsvcForFVT(fileName)
 					isvcName = isvcObject.GetName()
@@ -58,17 +64,6 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 				It("should successfully run inference", func() {
 					ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 				})
-
-				BeforeAll(func() {
-					err := FVTClientInstance.ConnectToModelServing(Insecure)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				AfterAll(func() {
-					FVTClientInstance.DeleteIsvc(isvcName)
-					FVTClientInstance.DisconnectFromModelServing()
-				})
-
 			})
 		}
 	})
@@ -94,64 +89,63 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			// on an old runtime pod without the PVC mounted and keep failing
 			// until a new pod with the PVC is ready and the controller finally
 			// decides to move the ISVC onto the new pod that has the PVC mounted.
-			// However, this process can take a long time (how long?) so, we take
-			// some extra measures to increase our chances for quick success:
-			// - scale to 0 prohibits the new ISVC to land on an old runtime pod
-			//   that does not have the "any" PVC mounted yet
-			// - use more than 1 pod per runtime so controller will not kill new
+			// If this process takes a long time so, we may want to take some extra
+			// measures to increase our chances for quick success:
+			// - scale to 0 to prevent the new ISVC to land on an old runtime pod
+			//   that does not have the "any" PVC mounted yet?
+			// - use more than 1 pod per runtime? so controller will not kill new
 			//   pods that have the PVC mounted but because the ISVC is loaded on
-			//   the old pod (without the PVC) but the old pod gets kept around
-			//   instead of the new because the ISVC is still on there -- even
+			//   the old pod (without the PVC) the old pod gets kept around
+			//   instead of the new one because the ISVC is still on there -- even
 			//   though its failing
-			// - allowAnyPVC needs rest-proxy enabled (not sure why)
-			config := map[string]interface{}{
-				"allowAnyPVC":    true,
-				"podsPerRuntime": 1,
-				"scaleToZero": map[string]interface{}{
-					"enabled": true,
-				},
-				"restProxy": map[string]interface{}{
-					"enabled": true,
-				},
+
+			// make a shallow copy of default configmap (don't modify the DefaultConfig reference)
+			// keeping 1 pod per runtime and don't scale to 0
+			config := make(map[string]interface{})
+			for k, v := range DefaultConfig {
+				config[k] = v
 			}
+			// update the model-serving-config to allow any PVC
+			config["allowAnyPVC"] = true
+
 			By("Updating the user config to allow any PVC")
 			FVTClientInstance.ApplyUserConfigMap(config)
 
-			// TODO: separate test case for not having storage secret at all, currently not working
-			// Events:
-			//  Type     Reason       Age                  From               Message
-			//  ----     ------       ----                 ----               -------
-			//  Normal   Scheduled    3m23s                default-scheduler  Successfully assigned modelmesh-serving/modelmesh-serving-mlserver-0.x-54685b95d5-6xmck to 10.87.76.74
-			//  Warning  FailedMount  80s                  kubelet            Unable to attach or mount volumes: unmounted volumes=[storage-config], unattached volumes=[models-dir models-pvc-3 storage-config tc-config etcd-config kube-api-access-pqz7t]: timed out waiting for the condition
-			//  Warning  FailedMount  75s (x9 over 3m22s)  kubelet            MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
 			By("Deleting any PVC entries from the storage-config secret")
 			FVTClientInstance.DeleteStorageConfigSecret()
+
+			// TODO: create a separate test case for not having storage secret at all.
+			// Currently that is not working. Runtime pod events without it:
+			// ---
+			// TYPE     REASON       MESSAGE
+			// Normal   Scheduled    Successfully assigned modelmesh-serving/modelmesh-serving-mlserver-0.x-54685b95d5-6xmck to 10.87.76.74
+			// Warning  FailedMount  Unable to attach or mount volumes: unmounted volumes=[storage-config], unattached volumes=[models-dir models-pvc-3 storage-config tc-config etcd-config kube-api-access-pqz7t]: timed out waiting for the condition
+			// Warning  FailedMount  MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
+			// ---
 			// recreate the storage-config secret without the PVCs
 			FVTClientInstance.CreateStorageConfigSecret(StorageConfigDataMinio)
 
-			// after applying configmap, the runtime pod(s) restart, wait for stability
+			// after changing the storage-config, the runtime pod(s) restart with
+			// updated PVC mounts, wait for stability
 			By("Waiting for stable deploy state")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithPvcNotInStorageConfig])
 
+			// print pods before deploying the predictor for debugging purposes
 			FVTClientInstance.PrintPods()
 
-			// after mounting the new PVC the runtime pod(s) restart again, but the ISVC
-			// if not scaleToZero, it could have landed on the previous runtime pod will
-			// fail to load the first time, so we extend the standard predictor timeout
+			// after mounting the new PVC the runtime pod(s) restart again, but
+			// the ISVC could have landed on the previous runtime pod without the
+			// PVC mounted yet and hence will fail to load the first time.
+			// So we extend the standard predictor timeout to wait a bit longer
 			extendedTimeout := PredictorTimeout * 2
 			CreateIsvcAndWaitAndExpectReady(isvcObject, extendedTimeout)
 
+			// print pods after the predictor is ready for debugging purposes
 			FVTClientInstance.PrintPods()
 
-			// since the runtime pod(s) restarted twice, but (some of) the old runtime pods
-			// are lingering around (Terminating) we may have gotten a defunct connection
-			// after applying configmap, the runtime pod(s) restart, wait for stability
-			By("Waiting for stable deploy state")
-			WaitForStableActiveDeployState()
-
-			// after scaling to 0, port-forward got killed and now needs to be re-established
+			// after scaling to 0, port-forward got killed and needs to be re-established
 			By("Connecting to model serving service")
 			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
@@ -160,7 +154,6 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			By("Running an inference request")
 			ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
 
-			FVTClientInstance.DisconnectFromModelServing()
 			FVTClientInstance.DeleteIsvc(isvcObject.GetName())
 		})
 
@@ -176,7 +169,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 			FVTClientInstance.ApplyUserConfigMap(config)
 
 			By("Waiting for stable deploy state")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithNonExistentPvc])
 

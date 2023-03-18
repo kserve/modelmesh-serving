@@ -357,13 +357,13 @@ func WaitForLastStateInExpectedList(statusAttribute string, expectedStates []str
 	return obj
 }
 
-func WaitForStableActiveDeployState() {
+func WaitForStableActiveDeployState(timeToStabilize time.Duration) {
 	watcher := FVTClientInstance.StartWatchingDeploys()
 	defer watcher.Stop()
-	WaitForRuntimeDeploymentsToBeStable(watcher)
+	WaitForRuntimeDeploymentsToBeStable(timeToStabilize, watcher)
 }
 
-func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
+func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher watch.Interface) {
 	ch := watcher.ResultChan()
 	var obj *unstructured.Unstructured
 	var replicas, updatedReplicas, availableReplicas int64
@@ -383,7 +383,7 @@ func WaitForRuntimeDeploymentsToBeStable(watcher watch.Interface) {
 		select {
 		// The select statement is only used with channels to let a goroutine wait on multiple communication operations.
 		// The select blocks until one of its cases can run, then it executes that case. It chooses one at random if multiple are ready.
-		case <-time.After(timeForStatusToStabilize):
+		case <-time.After(timeToStabilize):
 			// if no watcher events came in for the given length of timeForStatusToStabilize
 			// then we assume the deployment status has stabilized and exit the loop
 			done = true
