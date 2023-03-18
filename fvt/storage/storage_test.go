@@ -41,7 +41,7 @@ var isvcWithPvcNotInStorageConfig = "isvc-pvc3"
 // ISVC using a PVC that does not exist at all, this ISVC should fail to load
 var isvcWithNonExistentPvc = "isvc-pvc4"
 
-var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
+var _ = Describe("ISVCs", func() {
 
 	Describe("with PVC in storage-config", Ordered, func() {
 
@@ -68,7 +68,7 @@ var _ = Describe("ISVCs", Ordered, FlakeAttempts(3), func() {
 		}
 	})
 
-	Describe("with PVC not in storage-config", Ordered, func() {
+	Describe("with PVC not in storage-config", Ordered, Serial, func() {
 		var isvcObject *unstructured.Unstructured
 
 		It("should fail with PVC not mounted", func() {

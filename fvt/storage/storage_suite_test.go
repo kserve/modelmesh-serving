@@ -55,13 +55,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.DeleteAllPredictors()
 	FVTClientInstance.DeleteAllIsvcs()
 
-	// ensure a stable deploy state
-	Log.Info("Waiting for stable deploy state")
-	WaitForStableActiveDeployState(time.Second * 15)
-
-	err = FVTClientInstance.ConnectToModelServing(Insecure)
-	Expect(err).ToNot(HaveOccurred())
-
 	return nil
 }, func(_ []byte) {
 	// runs on *all* processes
@@ -69,17 +62,23 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		InitializeFVTClient()
 	}
-	// don't connect to model serving service once for all tests, flaky runtime pods, broken connections
-	//FVTClientInstance.ConnectToModelServingService(Insecure)
+	// ensure a stable deploy state, on each process since we updated the storage config
+	Log.Info("Waiting for stable deploy state")
+	WaitForStableActiveDeployState(time.Second * 20)
+
+	// connect to model serving service once for all each process
+	err := FVTClientInstance.ConnectToModelServing(Insecure)
+	Expect(err).ToNot(HaveOccurred())
+
 	Log.Info("Setup completed")
 })
 
 var _ = SynchronizedAfterSuite(func() {
 	// runs on *all* processes
+	// ensure we clean up any port-forward for each process
+	FVTClientInstance.DisconnectFromModelServing()
 }, func() {
 	// runs *only* on process #1
-	// ensure we clean up any port-forward
-	FVTClientInstance.DisconnectFromModelServing()
 	// restore config defaults
 	FVTClientInstance.DeleteTLSSecrets()
 	FVTClientInstance.SetDefaultUserConfigMap()

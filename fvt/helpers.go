@@ -377,13 +377,14 @@ func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher 
 		deploymentReady[deploy.Name] = false
 	}
 
+	timeout := timeToStabilize
 	allReady := false
 	done := false
 	for !done {
 		select {
 		// The select statement is only used with channels to let a goroutine wait on multiple communication operations.
 		// The select blocks until one of its cases can run, then it executes that case. It chooses one at random if multiple are ready.
-		case <-time.After(timeToStabilize):
+		case <-time.After(timeout):
 			// if no watcher events came in for the given length of timeForStatusToStabilize
 			// then we assume the deployment status has stabilized and exit the loop
 			done = true
@@ -420,10 +421,16 @@ func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher 
 				// wait for timeForStatusToStabilize (see above)
 				//done = allReady
 				if allReady {
+					// once we are ready, shorten time to wait for next event
+					// if we are truly ready no more event will come in
+					// if we are not yet ready, new events will come in quickly
+					timeout = TimeForStatusToStabilize
 					Log.Info(fmt.Sprintf("All deployments are ready: %v", deploymentReady))
 				}
 			} else {
 				deploymentReady[deployName] = false
+				// restore the full time to wait in between watcher events
+				timeout = timeToStabilize
 			}
 		}
 	}

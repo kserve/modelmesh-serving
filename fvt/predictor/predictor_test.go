@@ -883,7 +883,7 @@ var _ = Describe("Predictor", func() {
 		AfterAll(func() {
 			FVTClientInstance.SetDefaultUserConfigMap()
 			By("Waiting for a stable deploy state after changing the user config")
-			WaitForStableActiveDeployState(time.Second * 30)
+			WaitForStableActiveDeployState(time.Second * 20)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
@@ -891,7 +891,7 @@ var _ = Describe("Predictor", func() {
 			FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
 
 			By("Waiting for stable deploy state after UpdateConfigMapTLS")
-			WaitForStableActiveDeployState(time.Second * 30)
+			WaitForStableActiveDeployState(time.Second * 20)
 
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
@@ -938,7 +938,7 @@ var _ = Describe("Predictor", func() {
 			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 			By("Waiting for stable deploy state after MutualTLSConfig")
-			WaitForStableActiveDeployState(time.Second * 30)
+			WaitForStableActiveDeployState(time.Second * 20)
 
 			// load the test predictor object
 			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
