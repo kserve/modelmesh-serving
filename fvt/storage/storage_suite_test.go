@@ -57,7 +57,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	// ensure a stable deploy state, on each process since we updated the storage config
 	Log.Info("Waiting for stable deploy state")
-	WaitForStableActiveDeployState(time.Second * 30)
+	WaitForStableActiveDeployState(time.Second * 60)
 
 	return nil
 }, func(_ []byte) {

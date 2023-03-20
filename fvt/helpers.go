@@ -387,11 +387,13 @@ func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher 
 		case <-time.After(timeout):
 			// if no watcher events came in for the given length of timeForStatusToStabilize
 			// then we assume the deployment status has stabilized and exit the loop
+			Log.Info(fmt.Sprintf("Timed out after %v without events", timeout))
 			done = true
 			break
 		case event, ok := <-ch:
 			if !ok {
 				// the channel was closed (watcher timeout reached, see DefaultTimeout)
+				Log.Info(fmt.Sprintf("Watcher timed out after %v seconds", DefaultTimeout))
 				done = true
 				break
 			}
@@ -419,7 +421,6 @@ func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher 
 				}
 				// do not exit the loop yet (done=true), deployment my become unstable again,
 				// wait for timeForStatusToStabilize (see above)
-				//done = allReady
 				if allReady {
 					// once we are ready, shorten time to wait for next event
 					// if we are truly ready no more event will come in
