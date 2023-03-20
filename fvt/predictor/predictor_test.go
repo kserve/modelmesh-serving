@@ -872,18 +872,12 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
-	// **************************************************************
-	// TODO: move below into separate suite not to be run in parallel
-	// **************************************************************
-
 	var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
 		var xgboostPredictorObject *unstructured.Unstructured
 		var xgboostPredictorName string
 
 		AfterAll(func() {
 			FVTClientInstance.SetDefaultUserConfigMap()
-			By("Waiting for a stable deploy state after changing the user config")
-			WaitForStableActiveDeployState(time.Second * 20)
 		})
 
 		It("should successfully run an inference with basic TLS", func() {
@@ -994,11 +988,6 @@ var _ = Describe("Predictor", func() {
 	// The TLS tests `Describe` block should be the last one in the list to
 	// improve efficiency of the tests. Any test after the TLS tests would need
 	// to wait for the configuration changes to roll out to all Deployments.
-
-	// **************************************************************
-	// TODO: move above into separate suite not to be run in parallel
-	// **************************************************************
-
 })
 
 // These tests verify that an invalid Predictor fails to load. These are in a

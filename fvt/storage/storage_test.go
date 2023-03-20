@@ -87,17 +87,19 @@ var _ = Describe("ISVCs", func() {
 			// The controller will update the deployment with the pvc_mount, but
 			// if the old runtime pods are still around, the ISVC will get deployed
 			// on an old runtime pod without the PVC mounted and keep failing
-			// until a new pod with the PVC is ready and the controller finally
-			// decides to move the ISVC onto the new pod that has the PVC mounted.
+			// until a new pod with the PVC is ready and the controller decides
+			// to move the ISVC onto the new pod that has the PVC mounted.
 			// If this process takes a long time so, we may want to take some extra
 			// measures to increase our chances for quick success:
-			// - scale to 0 to prevent the new ISVC to land on an old runtime pod
-			//   that does not have the "any" PVC mounted yet?
-			// - use more than 1 pod per runtime? so controller will not kill new
-			//   pods that have the PVC mounted but because the ISVC is loaded on
-			//   the old pod (without the PVC) the old pod gets kept around
-			//   instead of the new one because the ISVC is still on there -- even
-			//   though its failing
+			// - enable scale to zero? to prevent the new ISVC to land on an old
+			//   runtime pod that does not have the "any" PVC mounted yet
+			// - use more than 1 pod per runtime? assumption: controller keeps the
+			//   old runtime pod (without the PVC mounted) around (pre-stop hook,
+			//   terminationGracePeriodSeconds: 90 # to allow for model propagation)
+			//   since it still has the ISVC on it but no new pod yet to place it
+			//   on. With 2 runtime pods, one pod can get updated with the PVC mount
+			//   and the controller can "move" the ISVC without service interruption
+			//   from the old to the new pod
 
 			// make a shallow copy of default configmap (don't modify the DefaultConfig reference)
 			// keeping 1 pod per runtime and don't scale to 0
@@ -145,7 +147,12 @@ var _ = Describe("ISVCs", func() {
 			// print pods after the predictor is ready for debugging purposes
 			FVTClientInstance.PrintPods()
 
-			// after scaling to 0, port-forward got killed and needs to be re-established
+			// after adding predictor with allowAnyPVC, new pods get created with
+			// the new pvc mounts, so we want to wait for deployments to stabilize
+			// in order to avoid connecting to terminating pod which causes the
+			// port-forward got killed and needs to be re-established (rarely happens)
+			By("Waiting for stable deploy state before connecting gRPC connection")
+			WaitForStableActiveDeployState(time.Second * 10)
 			By("Connecting to model serving service")
 			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
@@ -169,7 +176,7 @@ var _ = Describe("ISVCs", func() {
 			FVTClientInstance.ApplyUserConfigMap(config)
 
 			By("Waiting for stable deploy state")
-			WaitForStableActiveDeployState(TimeForStatusToStabilize)
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithNonExistentPvc])
 

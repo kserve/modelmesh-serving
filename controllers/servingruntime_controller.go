@@ -357,7 +357,7 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 	}
 
 	// for any PVCs not in the storage-config secret, we need to make sure the PVCs
-	// exists; if we mounted a non-existent PVC to a runtime pod, it would keep it
+	// exists; if we did mount a non-existent PVC to a runtime pod, it would keep it
 	// in pending state, effectively shutting down inferencing on any and all other
 	// Predictors for that runtime
 	for claimName := range predictorPVCsMap {
