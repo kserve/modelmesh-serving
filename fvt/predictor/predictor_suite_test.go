@@ -54,6 +54,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// create TLS secrets before start of tests
 	FVTClientInstance.CreateTLSSecrets()
 
+	// ensure a stable deploy state
+	WaitForStableActiveDeployState(time.Second * 30)
+
 	return nil
 }, func(_ []byte) {
 	// runs on *all* processes
@@ -61,8 +64,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		InitializeFVTClient()
 	}
-	// ensure a stable deploy state
-	WaitForStableActiveDeployState(time.Second * 20)
 
 	Log.Info("Setup completed")
 })

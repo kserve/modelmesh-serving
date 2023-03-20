@@ -55,6 +55,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.DeleteAllPredictors()
 	FVTClientInstance.DeleteAllIsvcs()
 
+	// ensure a stable deploy state, on each process since we updated the storage config
+	Log.Info("Waiting for stable deploy state")
+	WaitForStableActiveDeployState(time.Second * 30)
+
 	return nil
 }, func(_ []byte) {
 	// runs on *all* processes
@@ -62,10 +66,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		InitializeFVTClient()
 	}
-	// ensure a stable deploy state, on each process since we updated the storage config
-	Log.Info("Waiting for stable deploy state")
-	WaitForStableActiveDeployState(time.Second * 20)
-
 	// connect to model serving service once for all each process
 	err := FVTClientInstance.ConnectToModelServing(Insecure)
 	Expect(err).ToNot(HaveOccurred())

@@ -57,6 +57,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.DeleteAllPredictors()
 	FVTClientInstance.DeleteAllIsvcs()
 
+	// ensure a stable deploy state
+	WaitForStableActiveDeployState(TimeForStatusToStabilize)
+
 	return nil
 }, func(_ []byte) {
 	// runs on *all* processes
@@ -64,8 +67,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	if FVTClientInstance == nil {
 		InitializeFVTClient()
 	}
-	// ensure a stable deploy state
-	WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 	Log.Info("Setup completed")
 })
