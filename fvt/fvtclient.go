@@ -242,11 +242,6 @@ var (
 		Version:  v1beta1.SchemeGroupVersion.Version,
 		Resource: "inferenceservices", // this must be the plural form
 	}
-	gvrEndpoints = schema.GroupVersionResource{
-		Group:    "",
-		Version:  "v1",
-		Resource: "endpoints", // this must be the plural form
-	}
 	gvrPods = schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
@@ -378,21 +373,6 @@ func (fvt *FVTClient) GetRandomReadyRuntimePod() string {
 	name := runtimePods.Items[i].Name
 
 	return name
-}
-
-func (fvt *FVTClient) GetRandomRuntimePodNameFromEndpoints() string {
-	obj, err := fvt.Resource(gvrEndpoints).Namespace(fvt.namespace).Get(context.TODO(), fvt.serviceName, metav1.GetOptions{})
-	Expect(err).ToNot(HaveOccurred())
-
-	var endpoints corev1.Endpoints
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &endpoints)
-	Expect(err).ToNot(HaveOccurred())
-
-	addresses := endpoints.Subsets[0].Addresses
-	Expect(len(addresses)).ToNot(BeZero(), "No endpoints available")
-	randomAddress := addresses[rand.Intn(len(addresses))]
-
-	return randomAddress.TargetRef.Name
 }
 
 func (fvt *FVTClient) PrintPredictors() {
@@ -560,12 +540,10 @@ func (fvt *FVTClient) ConnectToModelServing(connectionType ModelServingConnectio
 
 	// (re-)create the gRPC and REST port-forwards if necessary
 	if fvt.grpcPortForward == nil {
-		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
 		podName := fvt.GetRandomReadyRuntimePod()
 		fvt.grpcPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.grpcPort, 8033, fvt.log)
 	}
 	if fvt.restPortForward == nil {
-		//podName := fvt.GetRandomRuntimePodNameFromEndpoints()
 		podName := fvt.GetRandomReadyRuntimePod()
 		fvt.restPortForward = NewModelMeshPortForward(fvt.namespace, podName, fvt.restPort, 8008, fvt.log)
 	}
