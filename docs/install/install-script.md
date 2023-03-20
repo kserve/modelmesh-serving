@@ -9,7 +9,7 @@
 
 - **etcd** - ModelMesh Serving requires an [etcd](https://etcd.io/) server in order to coordinate internal state which can be either dedicated or shared. More on this later.
 
-- **Model storage** - The model files to be served by ModelMesh have to be stored on S3-compatible object storage or on Kubernetes Persistent Volumes. For more information about supported storage options take a look at our [storage setup](/docs/predictors/setup-storage.md) page.
+- **Model storage** - The model files have to be stored in a compatible form of remote storage or on a Kubernetes Persistent Volume. For more information about supported storage options take a look at our [storage setup](/docs/predictors/setup-storage.md) page.
 
 We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
