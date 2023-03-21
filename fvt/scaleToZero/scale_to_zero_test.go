@@ -67,7 +67,7 @@ var _ = Describe("Scaling of runtime deployments to zero", Ordered, func() {
 
 		It("should scale all runtimes down", func() {
 			By("Waiting for the deployments to stabilize")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 			// check that all runtimes are scaled to zero
 			expectScaledToZero()
@@ -82,7 +82,7 @@ var _ = Describe("Scaling of runtime deployments to zero", Ordered, func() {
 			FVTClientInstance.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Waiting for the deployments to stabilize")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 			// check that all runtimes except the one are scaled to zero
 			expectScaledUp()
@@ -101,7 +101,7 @@ var _ = Describe("Scaling of runtime deployments to zero", Ordered, func() {
 			FVTClientInstance.ApplyPredictorExpectSuccess(testPredictorObject)
 
 			By("Waiting for the deployments to stabilize")
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 			// ensure the runtime is ready and scaled up and others are scaled down
 			expectScaledUp()

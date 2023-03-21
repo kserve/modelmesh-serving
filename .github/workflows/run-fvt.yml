@@ -1,4 +1,4 @@
-name: FVTs
+name: FVT
 
 on:
   pull_request:
@@ -71,7 +71,8 @@ jobs:
         run: |
           docker pull nvcr.io/nvidia/tritonserver:21.06.1-py3
           docker pull seldonio/mlserver:0.5.2
-          docker pull openvino/model_server:2022.1
+          docker pull openvino/model_server:2022.2
+          # docker pull pytorch/torchserve:0.6.0-cpu
           docker pull kserve/modelmesh-runtime-adapter
           docker pull kserve/rest-proxy
           docker pull kserve/modelmesh
@@ -79,7 +80,7 @@ jobs:
         run: |
           docker images
           kubectl get pods
-          kubectl get servingruntimes
+          kubectl get clusterservingruntimes
       - name: Run FVTs
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo

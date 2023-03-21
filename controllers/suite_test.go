@@ -32,7 +32,6 @@ package controllers
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -211,7 +210,7 @@ func getDefaultConfig() (*config2.Config, error) {
 	if defaultTestConfigFileContents == nil {
 		var err error
 		var testConfigFile = "./testdata/test-config-defaults.yaml"
-		if defaultTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
+		if defaultTestConfigFileContents, err = os.ReadFile(testConfigFile); err != nil {
 			return nil, err
 		}
 	}
@@ -228,7 +227,7 @@ func getPayloadProcessingConfig(loadErrorFile bool) (*config2.Config, error) {
 		} else {
 			testConfigFile = "./testdata/test-config-payload-processor.yaml"
 		}
-		if payloadProcessingTestConfigFileContents, err = ioutil.ReadFile(testConfigFile); err != nil {
+		if payloadProcessingTestConfigFileContents, err = os.ReadFile(testConfigFile); err != nil {
 			return nil, err
 		}
 	}

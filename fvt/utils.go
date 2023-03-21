@@ -17,19 +17,48 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	yamlserializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/apimachinery/pkg/types"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-//Utility function to return the testdata directory
+func InitializeFVTClient() {
+	Log = zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter))
+	Log.Info("Initializing test suite")
+
+	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = DefaultTestNamespace
+	}
+	serviceName := os.Getenv("SERVICENAME")
+	if serviceName == "" {
+		serviceName = DefaultTestServiceName
+	}
+	controllerNamespace := os.Getenv("CONTROLLERNAMESPACE")
+	if controllerNamespace == "" {
+		controllerNamespace = DefaultControllerNamespace
+	}
+	NameSpaceScopeMode = os.Getenv("NAMESPACESCOPEMODE") == "true"
+	Log.Info("Using environment variables", "NAMESPACE", namespace, "SERVICENAME", serviceName,
+		"CONTROLLERNAMESPACE", controllerNamespace, "NAMESPACESCOPEMODE", NameSpaceScopeMode)
+
+	var err error
+	FVTClientInstance, err = GetFVTClient(Log, namespace, serviceName, controllerNamespace)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(FVTClientInstance).ToNot(BeNil())
+	Log.Info("FVTClientInstance created", "client", FVTClientInstance)
+}
+
+// Utility function to return the testdata directory
 func TestDataPath(resourcePathWithinTestData string) string {
 	wd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
@@ -38,7 +67,7 @@ func TestDataPath(resourcePathWithinTestData string) string {
 }
 
 func DecodeResourceFromFile(resourcePath string) *unstructured.Unstructured {
-	content, err := ioutil.ReadFile(resourcePath)
+	content, err := os.ReadFile(resourcePath)
 	Expect(err).ToNot(HaveOccurred())
 
 	obj := &unstructured.Unstructured{}

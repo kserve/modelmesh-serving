@@ -11,19 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/*
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 
 package controllers
 
@@ -31,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -300,40 +288,52 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec, cfg *config.Config) ([]string, error) {
+	// get the PVCs from the storage-config Secret
+	storageConfigPVCsMap := make(map[string]struct{})
 	s := &corev1.Secret{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      modelmesh.StorageSecretName,
 		Namespace: req.Namespace,
 	}, s); err != nil {
-		return nil, fmt.Errorf("Could not get the storage secret: %w", err)
-	}
-
-	pvcsMap := make(map[string]struct{})
-	var storageConfig map[string]string
-	for _, storageData := range s.Data {
-		if err := json.Unmarshal(storageData, &storageConfig); err != nil {
-			return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
-		}
-		if storageConfig["type"] == StoragePVCType {
-			if name := storageConfig["name"]; name != "" {
-				pvcsMap[name] = struct{}{}
-			} else {
-				r.Log.V(1).Info("Missing PVC name in storage configuration")
+		// do not fail with error if storage-config secret does not exist
+		// TODO: make sure storage-config secret does not get mounted to runtime pod
+		//   MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
+		r.Log.V(1).Info("Could not get the storage-config secret",
+			"name", modelmesh.StorageSecretName,
+			"namespace", req.Namespace)
+	} else {
+		var storageConfig map[string]string
+		for _, storageData := range s.Data {
+			if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+				return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
+			}
+			if storageConfig["type"] == StoragePVCType {
+				if name := storageConfig["name"]; name != "" {
+					storageConfigPVCsMap[name] = struct{}{}
+				} else {
+					r.Log.V(1).Info("Missing PVC name in storage configuration")
+				}
 			}
 		}
 	}
 
-	// add pvcs for predictors when the global config is enabled
+	// collect PVCs from Predictors when the global flag 'allowAnyPVC' is enabled
+	predictorPVCsMap := make(map[string]struct{})
 	if cfg.AllowAnyPVC {
 		restProxyEnabled := cfg.RESTProxy.Enabled
+
+		// use a predicate function to extract the PVCs from Predictors in the registry
 		f := func(p *api.Predictor) bool {
 			if runtimeSupportsPredictor(rt, p, restProxyEnabled, req.Name) &&
-				p.Spec.Storage != nil && p.Spec.Storage.Parameters != nil {
+				p.Spec.Storage != nil &&
+				p.Spec.Storage.Parameters != nil {
+
 				params := *p.Spec.Storage.Parameters
-				if stype := params["type"]; stype == "pvc" {
-					if name := params["name"]; name != "" {
-						pvcsMap[name] = struct{}{}
-					}
+				storageType := params["type"]
+				name := params["name"]
+
+				if storageType == "pvc" && name != "" {
+					predictorPVCsMap[name] = struct{}{}
 				}
 			}
 			return false
@@ -345,9 +345,50 @@ func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request
 			}
 		}
 	}
-	pvcs := make([]string, 0, len(pvcsMap))
-	for pvc := range pvcsMap {
-		pvcs = append(pvcs, pvc)
+
+	pvcs := make([]string, 0, len(storageConfigPVCsMap)+len(predictorPVCsMap))
+
+	// append all PVCs from the storage-config secret;
+	for claimName := range storageConfigPVCsMap {
+		r.Log.V(2).Info("Add PVC from storage-config to runtime",
+			"claimName", claimName,
+			"runtime", req.Name)
+		pvcs = append(pvcs, claimName)
+	}
+
+	// for any PVCs not in the storage-config secret, we need to make sure the PVCs
+	// exists; if we did mount a non-existent PVC to a runtime pod, it would keep it
+	// in pending state, effectively shutting down inferencing on any and all other
+	// Predictors for that runtime
+	for claimName := range predictorPVCsMap {
+		if _, alreadyAdded := storageConfigPVCsMap[claimName]; alreadyAdded {
+			// don't add PVCs that we found in the storage-config secret already
+			continue
+		} else {
+			pvc := &corev1.PersistentVolumeClaim{}
+			if err := r.Client.Get(ctx, types.NamespacedName{
+				Name:      claimName,
+				Namespace: req.Namespace,
+			}, pvc); err != nil {
+				r.Log.Error(err, "Could not find PVC in namespace",
+					"claimName", claimName, "namespace", req.Namespace)
+			} else {
+				r.Log.V(2).Info("Add any PVC from predictors to runtime",
+					"claimName", claimName,
+					"runtime", req.Name)
+				pvcs = append(pvcs, claimName)
+			}
+		}
+	}
+
+	// we must sort the PVCs to avoid that otherwise identical runtime deployment
+	// specs are treated as different by Kubernetes causing unwanted cycles of
+	// runtimes getting terminated again and again just because the reconciler
+	// ordered the same set of PVCs in a different way
+	if len(pvcs) > 0 {
+		sort.Strings(pvcs)
+		r.Log.V(1).Info("Adding PVCs to runtime",
+			"pvcs", pvcs, "runtime", req.Name)
 	}
 
 	return pvcs, nil
@@ -388,7 +429,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 	defer r.runtimeInfoMapMutex.Unlock()
 
 	// initialize runtime information map if it is nil
-	// eg. if this is the first reconcile for any runtime
+	// e.g. if this is the first reconcile for any runtime
 	if r.runtimeInfoMap == nil {
 		r.runtimeInfoMap = make(map[types.NamespacedName]*runtimeInfo)
 	}
@@ -413,7 +454,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 		return scaledUp, time.Duration(0), nil
 	}
 
-	// if this is the first time we see no predictors update the runtime info with
+	// if this is the first time we see no predictors, update the runtime info with
 	// this transition
 	if targetRuntimeInfo.TimeTransitionedToNoPredictors == nil {
 		log.Info("Runtime no longer has any predictors, will scale to zero after grace period",

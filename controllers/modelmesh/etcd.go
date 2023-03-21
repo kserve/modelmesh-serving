@@ -23,7 +23,7 @@ const (
 	kvStoreEnvVar = "KV_STORE"
 )
 
-//mimics base/patches/etcd.yaml
+// mimics base/patches/etcd.yaml
 func (m *Deployment) configureMMDeploymentForEtcdSecret(deployment *appsv1.Deployment) error {
 	EtcdSecretName := m.EtcdSecretName
 

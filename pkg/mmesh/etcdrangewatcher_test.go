@@ -15,7 +15,7 @@ package mmesh
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,7 +79,7 @@ func Test_GetEtcdClientConfig_SuccessWithCertOverwrite(t *testing.T) {
 		Certificate:     "myCertificate",
 		CertificateFile: certificateFile}
 
-	certData, _ := ioutil.ReadFile(certificateFile)
+	certData, _ := os.ReadFile(certificateFile)
 	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{
 		certificateFile: certData,
 	}, logger)
@@ -103,8 +103,8 @@ func Test_GetEtcdClientConfig_SuccessWithKeyAndCert(t *testing.T) {
 		ClientCertificate:     "myClientCertificate",
 		ClientCertificateFile: certificateFile}
 
-	certData1, _ := ioutil.ReadFile(keyFile)
-	certData2, _ := ioutil.ReadFile(certificateFile)
+	certData1, _ := os.ReadFile(keyFile)
+	certData2, _ := os.ReadFile(certificateFile)
 	etcdClientConfig, err := getEtcdClientConfig(etcdConfig, map[string][]byte{
 		keyFile:         certData1,
 		certificateFile: certData2,
@@ -158,8 +158,8 @@ func Test_CreateEtcdClient_Success(t *testing.T) {
 		ClientKeyFile:         keyFile,
 		ClientCertificateFile: certificateFile}
 
-	certData1, _ := ioutil.ReadFile(keyFile)
-	certData2, _ := ioutil.ReadFile(certificateFile)
+	certData1, _ := os.ReadFile(keyFile)
+	certData2, _ := os.ReadFile(certificateFile)
 	etcdClient, err := CreateEtcdClient(etcdConfig, map[string][]byte{
 		keyFile:         certData1,
 		certificateFile: certData2,
