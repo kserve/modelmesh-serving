@@ -66,6 +66,7 @@ jobs:
           ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
       - name: Free up disk space
         run: |
+          eval $(minikube -p minikube docker-env)
           echo "Pruning images"
           docker image prune -a -f
           docker system df
@@ -82,6 +83,7 @@ jobs:
           docker pull kserve/modelmesh
       - name: Check installation
         run: |
+          eval $(minikube -p minikube docker-env)
           docker images
           kubectl get pods
           kubectl get clusterservingruntimes

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/kserve/kserve/pkg/constants"
+	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
 	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 
 	. "github.com/kserve/modelmesh-serving/fvt"
@@ -168,20 +169,22 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 			deployTestPredictorAndCheckDefaultHPA()
 
 			// ScaleUp Test
-			By("ScaleUp to min(2)/max(4): " + constants.MinScaleAnnotationKey)
+			By("ScaleUp to min(2)/max(4): " + mmcontstant.MinScaleAnnotationKey)
 			By("Increase TargetUtilizationPercentage to 90: " + constants.TargetUtilizationPercentage)
 			By("Change Metrics to memory: " + constants.TargetUtilizationPercentage)
 			srAnnotationsScaleUp := make(map[string]interface{})
 			srAnnotationsScaleUp[constants.AutoscalerClass] = string(constants.AutoscalerClassHPA)
-			srAnnotationsScaleUp[constants.MinScaleAnnotationKey] = "2"
-			srAnnotationsScaleUp[constants.MaxScaleAnnotationKey] = "4"
+			srAnnotationsScaleUp[mmcontstant.MinScaleAnnotationKey] = "2"
+			srAnnotationsScaleUp[mmcontstant.MaxScaleAnnotationKey] = "4"
 			srAnnotationsScaleUp[constants.TargetUtilizationPercentage] = "90"
 			srAnnotationsScaleUp[constants.AutoscalerMetrics] = "memory"
 
 			// set modified annotations
 			FVTClientInstance.SetServingRuntimeAnnotation(expectedRuntimeName, srAnnotationsScaleUp)
 
+			// sleep to give time for changes to propagate to the deployment
 			time.Sleep(10 * time.Second)
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			// check that all runtimes except the one are scaled up to minimum replicas of HPA
 			expectScaledToTargetReplicas(2)
@@ -194,20 +197,23 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 			expectHPAResourceName(corev1.ResourceMemory)
 
 			// ScaleDown Test
-			By("ScaleDown to min(1)/max(1): " + constants.MinScaleAnnotationKey)
+			By("ScaleDown to min(1)/max(1): " + mmcontstant.MinScaleAnnotationKey)
 			By("Decrease TargetUtilizationPercentage to 80: " + constants.TargetUtilizationPercentage)
 			By("Change Metrics to cpu: " + constants.TargetUtilizationPercentage)
 			srAnnotationsScaleDown := make(map[string]interface{})
 			srAnnotationsScaleDown[constants.AutoscalerClass] = string(constants.AutoscalerClassHPA)
-			srAnnotationsScaleDown[constants.MinScaleAnnotationKey] = "1"
-			srAnnotationsScaleDown[constants.MaxScaleAnnotationKey] = "1"
+			srAnnotationsScaleDown[mmcontstant.MinScaleAnnotationKey] = "1"
+			srAnnotationsScaleDown[mmcontstant.MaxScaleAnnotationKey] = "1"
 			srAnnotationsScaleDown[constants.TargetUtilizationPercentage] = "80"
 			srAnnotationsScaleDown[constants.AutoscalerMetrics] = "cpu"
 
 			// set modified annotations
 			FVTClientInstance.SetServingRuntimeAnnotation(expectedRuntimeName, srAnnotationsScaleDown)
 
+			// sleep to give time for changes to propagate to the deployment
 			time.Sleep(10 * time.Second)
+			WaitForStableActiveDeployState(time.Second * 30)
+
 			// check that all runtimes except the one are scaled up to minimum replicas of HPA
 			expectScaledToTargetReplicas(1)
 
@@ -229,7 +235,10 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 			srAnnotationsNone := make(map[string]interface{})
 			FVTClientInstance.SetServingRuntimeAnnotation(expectedRuntimeName, srAnnotationsNone)
 
+			// sleep to give time for changes to propagate to the deployment
 			time.Sleep(10 * time.Second)
+			WaitForStableActiveDeployState(time.Second * 30)
+
 			// check that all runtimes except the one are scaled up to servingRuntime default replicas
 			expectScaledToTargetReplicas(1)
 

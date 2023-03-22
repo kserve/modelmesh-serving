@@ -26,13 +26,13 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: serving-cert # this name should match the one appeared in kustomizeconfig.yaml
+  name: modelmesh-webhook-server-cert # this name should match the one appeared in kustomizeconfig.yaml
   namespace: system
 spec:
   # SERVICE_NAME_PLACEHOLDER and SERVICE_NAMESPACE_PLACEHOLDER will be substituted by kustomize
   dnsNames:
-    - SERVICE_NAME_PLACEHOLDER.SERVICE_NAMESPACE_PLACEHOLDER.svc
-    - SERVICE_NAME_PLACEHOLDER.SERVICE_NAMESPACE_PLACEHOLDER.svc.cluster.local
+    - $(SERVICE_NAME_PLACEHOLDER).$(SERVICE_NAMESPACE_PLACEHOLDER).svc
+    - $(SERVICE_NAME_PLACEHOLDER).$(SERVICE_NAMESPACE_PLACEHOLDER).svc.cluster.local
   issuerRef:
     kind: Issuer
     name: selfsigned-issuer

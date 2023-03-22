@@ -17,12 +17,14 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
 	kservev1alpha "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/constants"
 	"github.com/kserve/modelmesh-serving/controllers/autoscaler"
+	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -35,7 +37,8 @@ type ServingRuntimeWebhook struct {
 
 func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
 	var srAnnotations map[string]string
-	srReplicas := uint16(65535)
+	srReplicas := uint16(math.MaxUint16)
+	multiModel := false
 
 	if req.Kind.Kind == "ServingRuntime" {
 		servingRuntime := &kservev1alpha.ServingRuntime{}
@@ -44,9 +47,15 @@ func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Reques
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 		srAnnotations = servingRuntime.ObjectMeta.Annotations
+
 		if (*servingRuntime).Spec.Replicas != nil {
 			srReplicas = uint16(*servingRuntime.Spec.Replicas)
 		}
+
+		if (*servingRuntime).Spec.MultiModel != nil {
+			multiModel = *servingRuntime.Spec.MultiModel
+		}
+
 	} else {
 		clusterServingRuntime := &kservev1alpha.ClusterServingRuntime{}
 		err := s.decoder.Decode(req, clusterServingRuntime)
@@ -54,9 +63,18 @@ func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Reques
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 		srAnnotations = clusterServingRuntime.ObjectMeta.Annotations
+
 		if (*clusterServingRuntime).Spec.Replicas != nil {
 			srReplicas = uint16(*clusterServingRuntime.Spec.Replicas)
 		}
+
+		if (*clusterServingRuntime).Spec.MultiModel != nil {
+			multiModel = *clusterServingRuntime.Spec.MultiModel
+		}
+	}
+
+	if !multiModel {
+		return admission.Allowed("Not validating ServingRuntime because it is not ModelMesh compatible")
 	}
 
 	if err := validateServingRuntimeAutoscaler(srAnnotations); err != nil {
@@ -130,7 +148,7 @@ func validateAutoScalingReplicas(annotations map[string]string, srReplicas uint1
 
 	switch autoscalerClassType {
 	case string(constants.AutoscalerClassHPA):
-		if srReplicas != 65535 {
+		if srReplicas != math.MaxUint16 {
 			return fmt.Errorf("Autoscaler is enabled and also replicas variable set. You can not set both.")
 		}
 		return validateScalingHPA(annotations)
@@ -146,7 +164,7 @@ func validateScalingHPA(annotations map[string]string) error {
 	}
 
 	minReplicas := 1
-	if value, ok := annotations[constants.MinScaleAnnotationKey]; ok {
+	if value, ok := annotations[mmcontstant.MinScaleAnnotationKey]; ok {
 		if valueInt, err := strconv.Atoi(value); err != nil {
 			return fmt.Errorf("The min replicas should be a integer.")
 		} else if valueInt < 1 {
@@ -157,7 +175,7 @@ func validateScalingHPA(annotations map[string]string) error {
 	}
 
 	maxReplicas := 1
-	if value, ok := annotations[constants.MaxScaleAnnotationKey]; ok {
+	if value, ok := annotations[mmcontstant.MaxScaleAnnotationKey]; ok {
 		if valueInt, err := strconv.Atoi(value); err != nil {
 			return fmt.Errorf("The max replicas should be a integer.")
 		} else {

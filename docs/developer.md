@@ -6,11 +6,7 @@ This document outlines some of the development practices with ModelMesh Serving.
 
 Local Kubernetes clusters can easily be set up using tools like [kind](https://kind.sigs.k8s.io/) and [minikube](https://minikube.sigs.k8s.io/docs/).
 
-Modelmesh controller is using webhook that requires certificate. We suggest using [cert manager](https://github.com/cert-manager/cert-manager) for provisioning the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert manager documentation](https://cert-manager.io/docs/installation/) to install it.
-
-If you don't want to install cert manager, you can set the `--enable-self-signed-ca`. It will execute a script to create a self-signed CA and patch it to the webhook config.
-
-_(Note)_ The `--fvt` option automatically sets `--enable-self-signed-ca`, so you do not need to set it explicitly.
+_(Note)_ Regarding webhook certificates, there are 2 options: `cert-manager` and `self-signed-certificate`. Please refer to [install help](install/install-script.md#installation-1).
 
 For example, using `kind`:
 
@@ -64,19 +60,15 @@ you will need to restart the controller pod. This can be done through the follow
 kubectl rollout restart deploy modelmesh-controller
 ```
 
-## Deploy a custom controller image
+## Deploying a custom controller image
 
-If you have a custom controller image in your repository, you simply set `MODELMESH_SERVING_IMAGE` to deploy it. The following Makefile command will deploy the controller image with fvt dependencies.
-
-For example:
+If you have a custom controller image in your repository, set `MODELMESH_SERVING_IMAGE` to deploy it. The following example deploys the custom controller image `quay.io/$org/modelmesh-controller:custom` in the `modelmesh-serving` namespace with `fvt` dependencies:
 
 ```shell
 NAMESPACE=modelmesh-serving \
 MODELMESH_SERVING_IMAGE=quay.io/$org/modelmesh-controller:custom \
 make deploy-release-dev-mode-fvt
 ```
-
-This command will deploy your custom controller image `quay.io/$org/modelmesh-controller:custom` under `modelmesh-serving` namespace.
 
 ## Building the developer image
 

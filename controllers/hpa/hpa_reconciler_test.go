@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/kserve/kserve/pkg/constants"
+	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -105,11 +106,11 @@ func TestCreateHPA(t *testing.T) {
 			expectedMaxReplicas: int32(1),
 		},
 		{
-			name: "Check HPA replicas if annotations has " + constants.MaxScaleAnnotationKey,
+			name: "Check HPA replicas if annotations has " + mmcontstant.MaxScaleAnnotationKey,
 			servingRuntimeMetaData: &metav1.ObjectMeta{
 				Name:        servingRuntimeName,
 				Namespace:   namespace,
-				Annotations: map[string]string{constants.MaxScaleAnnotationKey: "2"},
+				Annotations: map[string]string{mmcontstant.MaxScaleAnnotationKey: "2"},
 			},
 			mmDeploymentName:    &deploymentName,
 			mmNamespace:         &namespace,
@@ -117,11 +118,11 @@ func TestCreateHPA(t *testing.T) {
 			expectedMaxReplicas: int32(2),
 		},
 		{
-			name: "Check HPA replicas if annotations has " + constants.MinScaleAnnotationKey + ". max replicas should be the same as min replicas",
+			name: "Check HPA replicas if annotations has " + mmcontstant.MinScaleAnnotationKey + ". max replicas should be the same as min replicas",
 			servingRuntimeMetaData: &metav1.ObjectMeta{
 				Name:        servingRuntimeName,
 				Namespace:   namespace,
-				Annotations: map[string]string{constants.MinScaleAnnotationKey: "2"},
+				Annotations: map[string]string{mmcontstant.MinScaleAnnotationKey: "2"},
 			},
 			mmDeploymentName:    &deploymentName,
 			mmNamespace:         &namespace,
@@ -133,7 +134,7 @@ func TestCreateHPA(t *testing.T) {
 			servingRuntimeMetaData: &metav1.ObjectMeta{
 				Name:        servingRuntimeName,
 				Namespace:   namespace,
-				Annotations: map[string]string{constants.MinScaleAnnotationKey: "2", constants.MaxScaleAnnotationKey: "3"},
+				Annotations: map[string]string{mmcontstant.MinScaleAnnotationKey: "2", mmcontstant.MaxScaleAnnotationKey: "3"},
 			},
 			mmDeploymentName:    &deploymentName,
 			mmNamespace:         &namespace,

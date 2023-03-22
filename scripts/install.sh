@@ -302,12 +302,12 @@ else
 fi
 
 info "Installing ModelMesh Serving CRDs and controller"
-if [[ ! -z $modelmesh_serving_image ]]; then 
+if [[ -n $modelmesh_serving_image ]]; then 
   info "Custom ModelMesh Serving Image: $modelmesh_serving_image"
   if [[ ! -f manager/kustomization.yaml.ori ]]; then
     cp manager/kustomization.yaml  manager/kustomization.yaml.ori
   fi
-  cd manager; kustomize edit set image modelmesh-controller=${modelmesh_serving_image} ; cd ../
+  cd manager; kustomize edit set image modelmesh-controller=${modelmesh_serving_image}; cd ../
 fi   
 
 if [[ $enable_self_signed_ca == "true" ]]; then
@@ -352,8 +352,7 @@ if [[ $namespace_scope_mode == "true" ]]; then
   rm crd/kustomization.yaml.bak
 fi
 
-
-if [[ ! -z $modelmesh_serving_image ]]; then 
+if [[ -n $modelmesh_serving_image ]]; then 
   cp manager/kustomization.yaml.ori  manager/kustomization.yaml
   rm manager/kustomization.yaml.ori 
 fi
@@ -362,10 +361,18 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   cp certmanager/kustomization.yaml.ori  certmanager/kustomization.yaml
   cp default/kustomization.yaml.ori  default/kustomization.yaml
   rm certmanager/kustomization.yaml.ori default/kustomization.yaml.ori
-else
-  info "Waiting for ModelMesh Serving controller pod to be up..."
-  wait_for_pods_ready "-l control-plane=modelmesh-controller"
+
+  info "Enabled Self Signed CA: Generate certificates and restart controller"
+  
+  # Delete dummy secret for webhook server
+  kubectl delete secret modelmesh-webhook-server-cert 
+
+  ../scripts/self-signed-ca.sh --namespace $namespace
+
 fi
+
+info "Waiting for ModelMesh Serving controller pod to be up..."
+wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
 # Older versions of kustomize have different load restrictor flag formats.
 # Can be removed once Kubeflow installation stops requiring v3.2.
@@ -375,18 +382,6 @@ if [[ -n "$kustomize_version" && "$kustomize_version" < "3.4.0" ]]; then
     kustomize_load_restrictor_arg="--load_restrictor none"
 elif [[ -n "$kustomize_version" && "$kustomize_version" < "4.0.1" ]]; then
     kustomize_load_restrictor_arg="--load_restrictor LoadRestrictionsNone"
-fi
-
-if [[ $enable_self_signed_ca == "true" ]]; then
-  info "Enabled Self Signed CA: Generate certificates and restart controller"
-  
-  # Delete dummy secret for webhook server
-  kubectl delete secret modelmesh-webhook-server-cert 
-
-  ../scripts/self-signed-ca.sh --namespace $namespace
-
-  info "Restarting ModelMesh Serving controller pod..."
-  wait_for_pods_ready "-l control-plane=modelmesh-controller"
 fi
 
 info "Installing ModelMesh Serving built-in runtimes"

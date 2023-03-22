@@ -21,6 +21,7 @@ import (
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	"github.com/kserve/kserve/pkg/constants"
 	"github.com/kserve/kserve/pkg/utils"
+	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
 	v2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -84,17 +85,16 @@ func getHPAMetrics(metadata metav1.ObjectMeta) []v2beta2.MetricSpec {
 }
 
 func createHPA(runtimeMeta metav1.ObjectMeta, mmDeploymentName string, mmNamespace string) *v2beta2.HorizontalPodAutoscaler {
-	var minReplicas int32
-	minReplicas = int32(constants.DefaultMinReplicas)
+	minReplicas := int32(constants.DefaultMinReplicas)
 	maxReplicas := int32(constants.DefaultMinReplicas)
 	annotations := runtimeMeta.Annotations
 
-	if value, ok := annotations[constants.MinScaleAnnotationKey]; ok {
+	if value, ok := annotations[mmcontstant.MinScaleAnnotationKey]; ok {
 		minReplicasInt, _ := strconv.Atoi(value)
 		minReplicas = int32(minReplicasInt)
 
 	}
-	if value, ok := annotations[constants.MaxScaleAnnotationKey]; ok {
+	if value, ok := annotations[mmcontstant.MaxScaleAnnotationKey]; ok {
 		maxReplicasInt, _ := strconv.Atoi(value)
 		maxReplicas = int32(maxReplicasInt)
 	}

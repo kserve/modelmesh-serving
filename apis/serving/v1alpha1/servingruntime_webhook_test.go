@@ -16,8 +16,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	// "fmt"
-
+	"math"
 	"testing"
 
 	"github.com/onsi/gomega"
@@ -25,6 +24,7 @@ import (
 
 	kservev1alpha "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/constants"
+	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
 )
 
 func makeTestRawServingRuntime() kservev1alpha.ServingRuntime {
@@ -36,8 +36,8 @@ func makeTestRawServingRuntime() kservev1alpha.ServingRuntime {
 				"serving.kserve.io/autoscalerClass":             "hpa",
 				"serving.kserve.io/metrics":                     "cpu",
 				"serving.kserve.io/targetUtilizationPercentage": "75",
-				"autoscaling.knative.dev/min-scale":             "2",
-				"autoscaling.knative.dev/max-scale":             "3",
+				"serving.kserve.io/min-scale":                   "2",
+				"serving.kserve.io/max-scale":                   "3",
 			},
 		},
 	}
@@ -74,16 +74,16 @@ func TestInvalidAutoscalerTargetUtilizationPercentageHighValue(t *testing.T) {
 func TestInvalidAutoscalerLowMinReplicas(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	sr := makeTestRawServingRuntime()
-	sr.ObjectMeta.Annotations[constants.MinScaleAnnotationKey] = "0"
+	sr.ObjectMeta.Annotations[mmcontstant.MinScaleAnnotationKey] = "0"
 	g.Expect(validateScalingHPA(sr.Annotations)).ShouldNot(gomega.Succeed())
 }
 
 func TestInvalidAutoscalerMaxReplicasMustBiggerThanMixReplicas(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	sr := makeTestRawServingRuntime()
-	sr.ObjectMeta.Annotations[constants.MinScaleAnnotationKey] = "4"
-	sr.ObjectMeta.Annotations[constants.MaxScaleAnnotationKey] = "3"
-	g.Expect(validateAutoScalingReplicas(sr.Annotations, 65535)).ShouldNot(gomega.Succeed())
+	sr.ObjectMeta.Annotations[mmcontstant.MinScaleAnnotationKey] = "4"
+	sr.ObjectMeta.Annotations[mmcontstant.MaxScaleAnnotationKey] = "3"
+	g.Expect(validateAutoScalingReplicas(sr.Annotations, math.MaxUint16)).ShouldNot(gomega.Succeed())
 }
 func TestDuplicatedReplicas(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
