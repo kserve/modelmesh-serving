@@ -127,7 +127,7 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 	BeforeEach(func() {
 		FVTClientInstance.DeleteAllPredictors()
 		// ensure a stable deploy state
-		WaitForStableActiveDeployState()
+		WaitForStableActiveDeployState(10 * time.Second)
 	})
 
 	AfterAll(func() {
@@ -151,7 +151,7 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 			By("Delete all predictors")
 			FVTClientInstance.DeleteAllPredictors()
 			// ensure a stable deploy state
-			WaitForStableActiveDeployState()
+			WaitForStableActiveDeployState(10 * time.Second)
 
 			By("Check ScaleToZero and No HPA")
 			expectScaledToZero()
@@ -218,7 +218,6 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 			expectHPATargetUtilizationPercentage(80)
 			expectHPAResourceName(corev1.ResourceCPU)
 		})
-
 	})
 	// This test must be the last because it will remove hpa annotation from servingruntime/clusterservingruntime
 	Context("When the model does not need autoscaler anymore", func() {
