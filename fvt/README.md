@@ -33,7 +33,7 @@ If starting with a fresh namespace, install ModelMesh Serving configured for the
 ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 ```
 
-To re-configure an existing quick-start instance for FVTs, run:
+To re-configure an existing "quickstart" deployment for FVTs, run:
 
 ```Shell
 kubectl apply -f config/dependencies/fvt.yaml

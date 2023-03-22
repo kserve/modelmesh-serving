@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -121,6 +121,22 @@ var predictorsArray = []FVTPredictor{
 	// 	differentPredictorName:     "pytorch",
 	// 	differentPredictorFilename: "pytorch-predictor.yaml",
 	// },
+}
+
+type FVTInferenceService struct {
+	name                     string
+	inferenceServiceFileName string
+}
+
+var inferenceArray = []FVTInferenceService{
+	{
+		name:                     "New Format",
+		inferenceServiceFileName: "new-format-mm.yaml",
+	},
+	{
+		name:                     "Old Format",
+		inferenceServiceFileName: "old-format-mm.yaml",
+	},
 }
 
 var _ = Describe("Predictor", func() {
@@ -871,121 +887,6 @@ var _ = Describe("Predictor", func() {
 			Expect(err.Error()).To(ContainSubstring("Unexpected <class 'ValueError'>: cannot reshape array"))
 		})
 	})
-
-	var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
-		var xgboostPredictorObject *unstructured.Unstructured
-		var xgboostPredictorName string
-
-		AfterAll(func() {
-			FVTClientInstance.SetDefaultUserConfigMap()
-		})
-
-		It("should successfully run an inference with basic TLS", func() {
-			FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
-
-			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
-
-			// load the test predictor object
-			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
-			xgboostPredictorName = xgboostPredictorObject.GetName()
-			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
-
-			By("Creating a new connection to ModelServing")
-			// ensure we are establishing a new connection after the TLS change
-			FVTClientInstance.DisconnectFromModelServing()
-
-			var timeAsleep int
-			var mmeshErr error
-			for timeAsleep <= 30 {
-				mmeshErr = FVTClientInstance.ConnectToModelServing(TLS)
-
-				if mmeshErr == nil {
-					Log.Info("Successfully connected to model mesh tls")
-					break
-				}
-
-				Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
-				FVTClientInstance.DisconnectFromModelServing()
-				timeAsleep += 10
-				time.Sleep(time.Second * time.Duration(timeAsleep))
-			}
-
-			Expect(mmeshErr).ToNot(HaveOccurred())
-
-			By("Expect inference to succeed")
-			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
-
-			By("Expect inference to succeed via REST proxy")
-			ExpectSuccessfulRESTInference_xgboostMushroom(xgboostPredictorName, true)
-
-			// cleanup the predictor
-			FVTClientInstance.DeletePredictor(xgboostPredictorName)
-
-			// disconnect because TLS config will change
-			FVTClientInstance.DisconnectFromModelServing()
-		})
-
-		It("should successfully run an inference with mutual TLS", func() {
-			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
-
-			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
-
-			// load the test predictor object
-			xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
-			xgboostPredictorName = xgboostPredictorObject.GetName()
-			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
-
-			By("Creating a new connection to ModelServing")
-			// ensure we are establishing a new connection after the TLS change
-			FVTClientInstance.DisconnectFromModelServing()
-
-			var timeAsleep int
-			var mmeshErr error
-			for timeAsleep <= 30 {
-				mmeshErr = FVTClientInstance.ConnectToModelServing(MutualTLS)
-
-				if mmeshErr == nil {
-					Log.Info("Successfully connected to model mesh tls")
-					break
-				}
-
-				Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
-				FVTClientInstance.DisconnectFromModelServing()
-				timeAsleep += 10
-				time.Sleep(time.Second * time.Duration(timeAsleep))
-			}
-			Expect(mmeshErr).ToNot(HaveOccurred())
-
-			By("Expect inference to succeed")
-			ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
-
-			// cleanup the predictor
-			FVTClientInstance.DeletePredictor(xgboostPredictorName)
-
-			// disconnect because TLS config will change
-			FVTClientInstance.DisconnectFromModelServing()
-		})
-
-		It("should fail to run inference when the server has mutual TLS but the client does not present a certificate", func() {
-			FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
-
-			By("Waiting for the deployments replicas to be ready")
-			WaitForStableActiveDeployState()
-
-			By("Expect a new connection to fail")
-			// since the connection switches to TLS, ensure we are establishing a new connection
-			FVTClientInstance.DisconnectFromModelServing()
-			// this test is expected to fail to connect due to the TLS cert, so we
-			// don't retry if it fails
-			mmeshErr := FVTClientInstance.ConnectToModelServing(TLS)
-			Expect(mmeshErr).To(HaveOccurred())
-		})
-	})
-	// The TLS tests `Describe` block should be the last one in the list to
-	// improve efficiency of the tests. Any test after the TLS tests would need
-	// to wait for the configuration changes to roll out to all Deployments.
 })
 
 // These tests verify that an invalid Predictor fails to load. These are in a
@@ -1083,7 +984,7 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for the deployments replicas to be ready")
-		WaitForStableActiveDeployState()
+		WaitForStableActiveDeployState(TimeForStatusToStabilize)
 
 		By("Checking that new ServingRuntime resource exists")
 		FVTClientInstance.GetServingRuntime(runtimeName)
@@ -1118,5 +1019,152 @@ var _ = Describe("Non-ModelMesh ServingRuntime", func() {
 		Expect(failureInfo["reason"]).To(Or(Equal("RuntimeUnhealthy"), Equal("NoSupportingRuntime")))
 
 		FVTClientInstance.DeletePredictor(obj.GetName())
+	})
+})
+
+var _ = Describe("Inference service", Ordered, func() {
+	for _, i := range inferenceArray {
+		var _ = Describe("test "+i.name+" isvc", Ordered, func() {
+			var isvcName string
+
+			It("should successfully load a model", func() {
+				isvcObject := NewIsvcForFVT(i.inferenceServiceFileName)
+				isvcName = isvcObject.GetName()
+				CreateIsvcAndWaitAndExpectReady(isvcObject, PredictorTimeout)
+
+				err := FVTClientInstance.ConnectToModelServing(Insecure)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should successfully run inference", func() {
+				ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
+			})
+
+			AfterAll(func() {
+				FVTClientInstance.DeleteIsvc(isvcName)
+			})
+
+		})
+	}
+})
+
+// The TLS tests `Describe` block should be the last one in the list to
+// improve efficiency of the tests. Any test after the TLS tests would need
+// to wait for the configuration changes to roll out to all Deployments.
+// The TLS tests must run "Serial" (not in parallel with any other tests) since
+// the configmap changes trigger deployment rollouts causing runtime pods to
+// get terminated and any concurrently running inference requests would fail as
+// the gRPC connection to terminating pods breaks.
+var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
+	var xgboostPredictorObject *unstructured.Unstructured
+	var xgboostPredictorName string
+
+	AfterAll(func() {
+		FVTClientInstance.SetDefaultUserConfigMap()
+	})
+
+	It("should successfully run an inference with basic TLS", func() {
+		By("Updating the user ConfigMap to for basic TLS")
+		FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
+
+		By("Waiting for stable deploy state after UpdateConfigMapTLS")
+		WaitForStableActiveDeployState(time.Second * 20)
+
+		// load the test predictor object
+		xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+		xgboostPredictorName = xgboostPredictorObject.GetName()
+		CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
+		By("Creating a new connection to ModelServing")
+		// ensure we are establishing a new connection after the TLS change
+		FVTClientInstance.DisconnectFromModelServing()
+
+		var timeAsleep int
+		var mmeshErr error
+		for timeAsleep <= 30 {
+			mmeshErr = FVTClientInstance.ConnectToModelServing(TLS)
+
+			if mmeshErr == nil {
+				Log.Info("Successfully connected to model mesh tls")
+				break
+			}
+
+			Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
+			FVTClientInstance.DisconnectFromModelServing()
+			timeAsleep += 10
+			time.Sleep(time.Second * time.Duration(timeAsleep))
+		}
+
+		Expect(mmeshErr).ToNot(HaveOccurred())
+
+		By("Expect inference to succeed")
+		ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
+
+		By("Expect inference to succeed via REST proxy")
+		ExpectSuccessfulRESTInference_xgboostMushroom(xgboostPredictorName, true)
+
+		// cleanup the predictor
+		FVTClientInstance.DeletePredictor(xgboostPredictorName)
+
+		// disconnect because TLS config will change
+		FVTClientInstance.DisconnectFromModelServing()
+	})
+
+	It("should successfully run an inference with mutual TLS", func() {
+		By("Updating user config for Mutual TLS")
+		FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
+
+		By("Waiting for stable deploy state after MutualTLSConfig")
+		WaitForStableActiveDeployState(time.Second * 20)
+
+		// load the test predictor object
+		xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
+		xgboostPredictorName = xgboostPredictorObject.GetName()
+		CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
+		By("Creating a new connection to ModelServing")
+		// ensure we are establishing a new connection after the TLS change
+		FVTClientInstance.DisconnectFromModelServing()
+
+		var timeAsleep int
+		var mmeshErr error
+		for timeAsleep <= 30 {
+			mmeshErr = FVTClientInstance.ConnectToModelServing(MutualTLS)
+
+			if mmeshErr == nil {
+				Log.Info("Successfully connected to model mesh tls")
+				break
+			}
+
+			Log.Info(fmt.Sprintf("Error found, retrying connecting to model-mesh: %s", mmeshErr.Error()))
+			FVTClientInstance.DisconnectFromModelServing()
+			timeAsleep += 10
+			time.Sleep(time.Second * time.Duration(timeAsleep))
+		}
+		Expect(mmeshErr).ToNot(HaveOccurred())
+
+		By("Expect inference to succeed")
+		ExpectSuccessfulInference_xgboostMushroom(xgboostPredictorName)
+
+		// cleanup the predictor
+		FVTClientInstance.DeletePredictor(xgboostPredictorName)
+
+		// disconnect because TLS config will change
+		FVTClientInstance.DisconnectFromModelServing()
+	})
+
+	It("should fail to run inference when the server has mutual TLS but the client does not present a certificate", func() {
+		FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
+
+		By("Waiting for the deployments replicas to be ready")
+		WaitForStableActiveDeployState(TimeForStatusToStabilize)
+
+		By("Expect a new connection to fail")
+		// since the connection switches to TLS, ensure we are establishing a new connection
+		FVTClientInstance.DisconnectFromModelServing()
+		// this test is expected to fail to connect due to the TLS cert, so we
+		// don't retry if it fails
+		mmeshErr := FVTClientInstance.ConnectToModelServing(TLS)
+		Expect(mmeshErr).To(HaveOccurred())
 	})
 })

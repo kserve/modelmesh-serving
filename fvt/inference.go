@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"io/ioutil"
 	"math"
 	"os"
 
@@ -91,7 +90,7 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// NOTE: ModelSpec is not included in the response, so we can't assert on the name
-	// validate the the activation for the digit 7 is the maximum
+	// validate the activation for the digit 7 is the maximum
 	activations, err := convertRawOutputContentsTo10Floats(inferResponse.Outputs["Plus214_Output_0"].TensorContent)
 	max := activations[0]
 	maxI := 0
@@ -106,7 +105,7 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 }
 
 func ExpectSuccessfulInference_torchserveMARPredict(predictorName string) {
-	imageBytes, err := ioutil.ReadFile(TestDataPath("0.png"))
+	imageBytes, err := os.ReadFile(TestDataPath("0.png"))
 	Expect(err).ToNot(HaveOccurred())
 
 	inferRequest := &torchserveapi.PredictionsRequest{
