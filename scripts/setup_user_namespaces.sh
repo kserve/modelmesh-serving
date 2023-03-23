@@ -13,28 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.#
 
-USAGE="$(
+USAGE=$(
   cat <<EOF
+
 Run this script to enable user namespaces for ModelMesh Serving, and optionally add the storage secret
 for example models and built-in serving runtimes to the target namespaces.
 
 usage: $0 [flags]
   Flags:
-    -u, --user-namespaces         (required) Kubernetes user namespaces to enable for ModelMesh
-    -c, --controller-namespace    Kubernetes ModelMesh controller namespace, default is modelmesh-serving
-    --create-storage-secret       Create storage secret for example models
-    --deploy-serving-runtimes     Deploy built-in serving runtimes
-    --dev-mode                    Run in development mode meaning the configs are local, not release based
-    -h, --help                    Display this help
+    -u, --user-namespaces       (required) Kubernetes user namespaces to enable for ModelMesh
+    -c, --controller-namespace  Kubernetes ModelMesh controller namespace, default is modelmesh-serving
+    --create-storage-secret     Create storage secret for example models
+    --deploy-serving-runtimes   Deploy built-in serving runtimes
+    --dev-mode                  Run in development mode meaning the configs are local, not release based
+    -h, --help                  Display this help
 EOF
-)"
+)
 
 ctrl_ns="modelmesh-serving"
 user_ns_array=()
-modelmesh_release="v0.10.0"       # The latest release is the default
+modelmesh_release="v0.11.0-alpha"   # The v0.11.0-alpha release is the default
 create_storage_secret=false
 deploy_serving_runtimes=false
-dev_mode=false                    # Set to true to use locally cloned files instead of from a release
+dev_mode=false                      # Set to true to use locally cloned files instead of from a release
 
 while (($# > 0)); do
   case "$1" in

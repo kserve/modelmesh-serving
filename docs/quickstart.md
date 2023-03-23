@@ -5,15 +5,15 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 ## Prerequisites
 
 - A Kubernetes cluster v 1.16+ with cluster administrative privileges
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0.0+)
 - At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
 ## 1. Install ModelMesh Serving
 
-### Get the latest release
+### Get the `v0.11.0-alpha` release
 
 ```shell
-RELEASE=release-0.10
+RELEASE="release-0.11-alpha"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
