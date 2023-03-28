@@ -123,3 +123,120 @@ stringData:
       "default_bucket": "modelmesh-example-models",
       "region": "us-south"
     }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "models-pvc-1"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "models-pvc-2"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "models-pvc-3"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "pvc-init"
+spec:
+  template:
+    metadata:
+      name: "pvc-init-pod"
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: "copy-pod"
+          image: kserve/modelmesh-minio-examples:latest
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          command: ["/bin/sh", "-ex", "-c"]
+          args:
+            - echo copy model files ...;
+              whoami;
+              ls -al "${SRC_FOLDER}";
+              cp -r "${SRC_FOLDER}"/* "${DST_FOLDER_1}" &&
+              cp -r "${SRC_FOLDER}"/* "${DST_FOLDER_2}" &&
+              cp -r "${SRC_FOLDER}"/* "${DST_FOLDER_3}" &&
+              ls -al "${DST_FOLDER_1}" &&
+              ls -al "${DST_FOLDER_2}" &&
+              ls -al "${DST_FOLDER_3}" &&
+              echo done &&
+              exit 0;
+          env:
+            - name: SRC_FOLDER
+              value: "/data1/modelmesh-example-models"
+            - name: DST_FOLDER_1
+              value: "/mnt/pvc1"
+            - name: DST_FOLDER_2
+              value: "/mnt/pvc2"
+            - name: DST_FOLDER_3
+              value: "/mnt/pvc3"
+          volumeMounts:
+            - name: "pvc1"
+              mountPath: "/mnt/pvc1"
+            - name: "pvc2"
+              mountPath: "/mnt/pvc2"
+            - name: "pvc3"
+              mountPath: "/mnt/pvc3"
+      volumes:
+        - name: "pvc1"
+          persistentVolumeClaim:
+            claimName: "models-pvc-1"
+        - name: "pvc2"
+          persistentVolumeClaim:
+            claimName: "models-pvc-2"
+        - name: "pvc3"
+          persistentVolumeClaim:
+            claimName: "models-pvc-3"
+  backoffLimit: 4
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "pvc-reader"
+spec:
+  containers:
+    - name: main
+      image: ubuntu
+      command: ["/bin/sh", "-ec", "sleep 10000"]
+      volumeMounts:
+        - name: "pvc1"
+          mountPath: "/mnt/pvc1"
+        - name: "pvc2"
+          mountPath: "/mnt/pvc2"
+        - name: "pvc3"
+          mountPath: "/mnt/pvc3"
+  volumes:
+    - name: "pvc1"
+      persistentVolumeClaim:
+        claimName: "models-pvc-1"
+    - name: "pvc2"
+      persistentVolumeClaim:
+        claimName: "models-pvc-2"
+    - name: "pvc3"
+      persistentVolumeClaim:
+        claimName: "models-pvc-3"

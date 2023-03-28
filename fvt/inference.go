@@ -29,6 +29,7 @@ import (
 
 	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
 // Used for checking if floats are sufficiently close enough.
@@ -89,7 +90,7 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	// NOTE: ModelSpec is not included in the response, so we can't assert on the name
-	// validate the the activation for the digit 7 is the maximum
+	// validate the activation for the digit 7 is the maximum
 	activations, err := convertRawOutputContentsTo10Floats(inferResponse.Outputs["Plus214_Output_0"].TensorContent)
 	max := activations[0]
 	maxI := 0
@@ -101,6 +102,20 @@ func ExpectSuccessfulInference_openvinoMnistTFSPredict(predictorName string) {
 	}
 	Expect(maxI).To(Equal(7))
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func ExpectSuccessfulInference_torchserveMARPredict(predictorName string) {
+	imageBytes, err := os.ReadFile(TestDataPath("0.png"))
+	Expect(err).ToNot(HaveOccurred())
+
+	inferRequest := &torchserveapi.PredictionsRequest{
+		ModelName: predictorName,
+		Input:     map[string][]byte{"data": imageBytes},
+	}
+
+	inferResponse, err := FVTClientInstance.RunTorchserveInference(inferRequest)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
 }
 
 // PyTorch CIFAR

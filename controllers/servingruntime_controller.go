@@ -11,19 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-/*
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 
 package controllers
 
@@ -31,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -62,6 +50,10 @@ import (
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
+const (
+	StoragePVCType = "pvc"
+)
+
 // ServingRuntimeReconciler reconciles a ServingRuntime object
 type ServingRuntimeReconciler struct {
 	client.Client
@@ -75,6 +67,8 @@ type ServingRuntimeReconciler struct {
 	ClusterScope bool
 	// whether the controller is enabled to read and watch ClusterServingRuntimes
 	EnableCSRWatch bool
+	// whether the controller is enabled to read and watch secrets
+	EnableSecretWatch bool
 	// store some information about current runtimes for making scaling decisions
 	runtimeInfoMap      map[types.NamespacedName]*runtimeInfo
 	runtimeInfoMapMutex sync.Mutex
@@ -224,6 +218,11 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("Invalid runtime Spec: %w", err)
 	}
 
+	var pvcs []string
+	if pvcs, err = r.getPVCs(ctx, req, spec, cfg); err != nil {
+		return ctrl.Result{}, fmt.Errorf("Could not get pvcs: %w", err)
+	}
+
 	// construct the deployment
 	mmDeployment := modelmesh.Deployment{
 		ServiceName:                cfg.InferenceServiceName,
@@ -237,6 +236,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		Metrics:                    cfg.Metrics.Enabled,
 		PrometheusPort:             cfg.Metrics.Port,
 		PrometheusScheme:           cfg.Metrics.Scheme,
+		PayloadProcessors:          strings.Join(cfg.PayloadProcessors, " "),
 		ModelMeshImage:             cfg.ModelMeshImage.TaggedImage(),
 		ModelMeshResources:         cfg.ModelMeshResources.ToKubernetesType(),
 		ModelMeshAdditionalEnvVars: cfg.InternalModelMeshEnvVars.ToKubernetesType(),
@@ -249,6 +249,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		PullerResources:            cfg.StorageHelperResources.ToKubernetesType(),
 		Port:                       cfg.InferenceServicePort,
 		GrpcMaxMessageSize:         cfg.GrpcMaxMessageSizeBytes,
+		PVCs:                       pvcs,
 		// Replicas is set below
 		TLSSecretName:       cfg.TLS.SecretName,
 		TLSClientAuth:       cfg.TLS.ClientAuth,
@@ -286,6 +287,113 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{RequeueAfter: requeueDuration}, nil
 }
 
+func (r *ServingRuntimeReconciler) getPVCs(ctx context.Context, req ctrl.Request, rt *kserveapi.ServingRuntimeSpec, cfg *config.Config) ([]string, error) {
+	// get the PVCs from the storage-config Secret
+	storageConfigPVCsMap := make(map[string]struct{})
+	s := &corev1.Secret{}
+	if err := r.Client.Get(ctx, types.NamespacedName{
+		Name:      modelmesh.StorageSecretName,
+		Namespace: req.Namespace,
+	}, s); err != nil {
+		// do not fail with error if storage-config secret does not exist
+		// TODO: make sure storage-config secret does not get mounted to runtime pod
+		//   MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
+		r.Log.V(1).Info("Could not get the storage-config secret",
+			"name", modelmesh.StorageSecretName,
+			"namespace", req.Namespace)
+	} else {
+		var storageConfig map[string]string
+		for _, storageData := range s.Data {
+			if err := json.Unmarshal(storageData, &storageConfig); err != nil {
+				return nil, fmt.Errorf("Could not parse storage configuration json: %w", err)
+			}
+			if storageConfig["type"] == StoragePVCType {
+				if name := storageConfig["name"]; name != "" {
+					storageConfigPVCsMap[name] = struct{}{}
+				} else {
+					r.Log.V(1).Info("Missing PVC name in storage configuration")
+				}
+			}
+		}
+	}
+
+	// collect PVCs from Predictors when the global flag 'allowAnyPVC' is enabled
+	predictorPVCsMap := make(map[string]struct{})
+	if cfg.AllowAnyPVC {
+		restProxyEnabled := cfg.RESTProxy.Enabled
+
+		// use a predicate function to extract the PVCs from Predictors in the registry
+		f := func(p *api.Predictor) bool {
+			if runtimeSupportsPredictor(rt, p, restProxyEnabled, req.Name) &&
+				p.Spec.Storage != nil &&
+				p.Spec.Storage.Parameters != nil {
+
+				params := *p.Spec.Storage.Parameters
+				storageType := params["type"]
+				name := params["name"]
+
+				if storageType == "pvc" && name != "" {
+					predictorPVCsMap[name] = struct{}{}
+				}
+			}
+			return false
+		}
+
+		for _, pr := range r.RegistryMap {
+			if _, err := pr.Find(ctx, req.Namespace, f); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	pvcs := make([]string, 0, len(storageConfigPVCsMap)+len(predictorPVCsMap))
+
+	// append all PVCs from the storage-config secret;
+	for claimName := range storageConfigPVCsMap {
+		r.Log.V(2).Info("Add PVC from storage-config to runtime",
+			"claimName", claimName,
+			"runtime", req.Name)
+		pvcs = append(pvcs, claimName)
+	}
+
+	// for any PVCs not in the storage-config secret, we need to make sure the PVCs
+	// exists; if we did mount a non-existent PVC to a runtime pod, it would keep it
+	// in pending state, effectively shutting down inferencing on any and all other
+	// Predictors for that runtime
+	for claimName := range predictorPVCsMap {
+		if _, alreadyAdded := storageConfigPVCsMap[claimName]; alreadyAdded {
+			// don't add PVCs that we found in the storage-config secret already
+			continue
+		} else {
+			pvc := &corev1.PersistentVolumeClaim{}
+			if err := r.Client.Get(ctx, types.NamespacedName{
+				Name:      claimName,
+				Namespace: req.Namespace,
+			}, pvc); err != nil {
+				r.Log.Error(err, "Could not find PVC in namespace",
+					"claimName", claimName, "namespace", req.Namespace)
+			} else {
+				r.Log.V(2).Info("Add any PVC from predictors to runtime",
+					"claimName", claimName,
+					"runtime", req.Name)
+				pvcs = append(pvcs, claimName)
+			}
+		}
+	}
+
+	// we must sort the PVCs to avoid that otherwise identical runtime deployment
+	// specs are treated as different by Kubernetes causing unwanted cycles of
+	// runtimes getting terminated again and again just because the reconciler
+	// ordered the same set of PVCs in a different way
+	if len(pvcs) > 0 {
+		sort.Strings(pvcs)
+		r.Log.V(1).Info("Adding PVCs to runtime",
+			"pvcs", pvcs, "runtime", req.Name)
+	}
+
+	return pvcs, nil
+}
+
 func (r *ServingRuntimeReconciler) removeRuntimeFromInfoMap(req ctrl.Request) (ctrl.Result, error) {
 	// remove runtime from info map
 	r.runtimeInfoMapMutex.Lock()
@@ -321,7 +429,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 	defer r.runtimeInfoMapMutex.Unlock()
 
 	// initialize runtime information map if it is nil
-	// eg. if this is the first reconcile for any runtime
+	// e.g. if this is the first reconcile for any runtime
 	if r.runtimeInfoMap == nil {
 		r.runtimeInfoMap = make(map[types.NamespacedName]*runtimeInfo)
 	}
@@ -346,7 +454,7 @@ func (r *ServingRuntimeReconciler) determineReplicasAndRequeueDuration(ctx conte
 		return scaledUp, time.Duration(0), nil
 	}
 
-	// if this is the first time we see no predictors update the runtime info with
+	// if this is the first time we see no predictors, update the runtime info with
 	// this transition
 	if targetRuntimeInfo.TimeTransitionedToNoPredictors == nil {
 		log.Info("Runtime no longer has any predictors, will scale to zero after grace period",
@@ -491,6 +599,13 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 			}))
 	}
 
+	if r.EnableSecretWatch {
+		builder = builder.Watches(&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				return r.storageSecretRequests(o.(*corev1.Secret))
+			}))
+	}
+
 	if sourcePluginEvents != nil {
 		builder.Watches(&source.Channel{Source: sourcePluginEvents},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
@@ -623,4 +738,17 @@ func (r *ServingRuntimeReconciler) clusterServingRuntimeRequests(csr *kserveapi.
 	}
 
 	return requests
+}
+
+func (r *ServingRuntimeReconciler) storageSecretRequests(secret *corev1.Secret) []reconcile.Request {
+	// check whether namespace is modelmesh enabled
+	mme, err := modelMeshEnabled2(context.TODO(), secret.Namespace, r.ControllerNamespace, r.Client, r.ClusterScope)
+	if err != nil || !mme {
+		return []reconcile.Request{}
+	}
+	if secret.Name == modelmesh.StorageSecretName {
+		return r.requestsForRuntimes(secret.Namespace, nil)
+	}
+
+	return []reconcile.Request{}
 }

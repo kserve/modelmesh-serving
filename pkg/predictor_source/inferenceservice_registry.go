@@ -162,6 +162,10 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 		}
 
 		switch u.Scheme {
+		case "pvc":
+			modelPath = strings.TrimPrefix(u.Path, "/")
+			uriParameters["type"] = "pvc"
+			uriParameters["name"] = u.Host
 		case "s3":
 			modelPath = strings.TrimPrefix(u.Path, "/")
 			uriParameters["type"] = "s3"
@@ -318,7 +322,6 @@ func (isvcr InferenceServiceRegistry) Get(ctx context.Context, nname types.Names
 	p.Spec.Storage.SchemaPath = schemaPath
 	p.Spec.Storage.Parameters = &parameters
 	p.Spec.Storage.StorageKey = secretKey
-
 	return p, nil
 
 }
@@ -332,9 +335,26 @@ func (isvcr InferenceServiceRegistry) Find(ctx context.Context, namespace string
 	}
 
 	for i := range list.Items {
-		p, _ := BuildBasePredictorFromInferenceService(&list.Items[i])
-		if p != nil && predicate(p) {
+		inferenceService := &list.Items[i]
+		nname := types.NamespacedName{Name: inferenceService.Name, Namespace: inferenceService.Namespace}
+		p, err := BuildBasePredictorFromInferenceService(inferenceService)
+		if err != nil {
 			return true, nil
+		}
+		if p != nil {
+			secretKey, parameters, modelPath, schemaPath, err := processInferenceServiceStorage(inferenceService, nname)
+			if err != nil {
+				return true, nil
+			}
+			p.Spec.Storage = &v1alpha1.Storage{}
+			p.Spec.Storage.Path = &modelPath
+			p.Spec.Storage.SchemaPath = schemaPath
+			p.Spec.Storage.Parameters = &parameters
+			p.Spec.Storage.StorageKey = secretKey
+
+			if predicate(p) {
+				return true, nil
+			}
 		}
 	}
 	return false, nil

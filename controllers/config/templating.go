@@ -16,7 +16,6 @@ package config
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"text/template"
 
@@ -43,9 +42,9 @@ func PathTemplateSource(path string, context interface{}) mf.Source {
 	return templateSource(f, context)
 }
 
-//A templating manifest source
+// A templating manifest source
 func templateSource(r io.Reader, context interface{}) mf.Source {
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		panic(err)
 	}

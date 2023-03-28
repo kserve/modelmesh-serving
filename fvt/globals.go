@@ -20,7 +20,7 @@ import (
 var Log logr.Logger
 var FVTClientInstance *FVTClient
 
-var DefaultTimeout = int64(120)
+var DefaultTimeout = int64(120) // absolute timeout for watcher event channels
 var NameSpaceScopeMode = false
 
 var DefaultConfig = map[string]interface{}{
@@ -36,6 +36,28 @@ var DefaultConfig = map[string]interface{}{
 			"name":  "BOOTSTRAP_CLEARANCE_PERIOD_MS",
 			"value": "0",
 		},
+	},
+}
+
+var StorageConfigDataMinio = map[string]interface{}{
+	"localMinIO": map[string]string{
+		"type":              "s3",
+		"access_key_id":     "AKIAIOSFODNN7EXAMPLE",
+		"secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		"endpoint_url":      "http://minio:9000",
+		"default_bucket":    "modelmesh-example-models",
+		"region":            "us-south",
+	},
+}
+
+var StorageConfigDataPVC = map[string]interface{}{
+	"pvc1": map[string]string{
+		"type": "pvc",
+		"name": "models-pvc-1",
+	},
+	"pvc2": map[string]string{
+		"type": "pvc",
+		"name": "models-pvc-2",
 	},
 }
 
@@ -71,4 +93,5 @@ const (
 	IsvcSamplesPath            = "isvcs/"
 	RuntimeSamplesPath         = "runtimes/"
 	TLSSecretName              = "fvt-tls-secret"
+	StorageConfigSecretName    = "storage-config"
 )

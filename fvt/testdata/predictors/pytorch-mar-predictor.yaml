@@ -1,4 +1,4 @@
-# Copyright 2021 IBM Corporation
+# Copyright 2022 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,17 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: v1
-kind: Secret
+apiVersion: serving.kserve.io/v1alpha1
+kind: Predictor
 metadata:
-  name: storage-config
-stringData:
-  localMinIO: |
-    {
-      "type": "s3",
-      "access_key_id": "AKIAIOSFODNN7EXAMPLE",
-      "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-      "endpoint_url": "http://minio.controller_namespace:9000",
-      "default_bucket": "modelmesh-example-models",
-      "region": "us-south"
-    }
+  name: pytorch-mar-predictor
+spec:
+  modelType:
+    name: pytorch-mar
+  path: fvt/pytorch/pytorch-mar/mnist.mar
+  storage:
+    s3:
+      secretKey: localMinIO

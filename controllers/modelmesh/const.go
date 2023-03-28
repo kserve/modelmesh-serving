@@ -45,11 +45,17 @@ const (
 	//The env variable puller uses to configure the config dir (secrets)
 	PullerEnvStorageConfigDir = "STORAGE_CONFIG_DIR"
 
+	//The env variable puller uses to configure the pvc dir (secrets)
+	PullerEnvPVCDir = "PVC_MOUNTS_DIR"
+
 	//The puller default port number
 	PullerPortNumber = 8086
 
 	//The puller model mount path
 	PullerModelPath = "/models"
+
+	//The puller model PVC path
+	DefaultPVCMountsDir = "/pvc_mounts"
 
 	//The puller model config path
 	PullerConfigPath = "/storage-config"

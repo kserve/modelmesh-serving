@@ -2,13 +2,14 @@
 
 ## Prerequisites
 
-- **Kubernetes cluster** - A Kubernetes cluster is required. You will need `cluster-admin` authority in order to complete all of the prescribed steps.
+- **Kubernetes cluster** - A Kubernetes cluster is required. You will need
+  `cluster-admin` authority in order to complete all of the prescribed steps.
 
 - **Kubectl and Kustomize** - The installation will occur via the terminal using [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/).
 
 - **etcd** - ModelMesh Serving requires an [etcd](https://etcd.io/) server in order to coordinate internal state which can be either dedicated or shared. More on this later.
 
-- **S3-compatible object storage** - Before models can be deployed, a remote S3-compatible datastore is needed from which to pull the model data. This could be for example an [IBM Cloud Object Storage](https://www.ibm.com/cloud/object-storage) instance, or a locally running [MinIO](https://github.com/minio/minio) deployment. Note that this is not required to be in place prior to the initial installation.
+- **Model storage** - The model files have to be stored in a compatible form of remote storage or on a Kubernetes Persistent Volume. For more information about supported storage options take a look at our [storage setup](/docs/predictors/setup-storage.md) page.
 
 We provide an install script to quickly run ModelMesh Serving with a provisioned etcd server. This may be useful for experimentation or development but should not be used in production.
 
@@ -68,7 +69,7 @@ usage: ./scripts/install.sh [flags]
 
 Flags:
   -n, --namespace                (required) Kubernetes namespace to deploy ModelMesh Serving to.
-  -p, --install-config-path      Path to local model serve installation configs. Can be ModelMesh Serving tarfile or directory.
+  -p, --install-config-path      Path to installation configs. Can be a local ModelMesh Serving config tarfile/directory or a URL to a config tarfile.
   -d, --delete                   Delete any existing instances of ModelMesh Serving in Kube namespace before running install, including CRDs, RBACs, controller, older CRD with serving.kserve.io api group name, etc.
   -u, --user-namespaces          Kubernetes namespaces to enable for ModelMesh Serving
   --quickstart                   Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development
@@ -80,7 +81,7 @@ Installs ModelMesh Serving CRDs, controller, and built-in runtimes into specifie
 Kubernetes namespaces.
 
 Expects cluster-admin authority and Kube cluster access to be configured prior to running.
-Also requires Etcd secret 'model-serving-etcd' to be created in namespace already.
+Also requires etcd secret 'model-serving-etcd' to be created in namespace already.
 ```
 
 You can optionally provide a local `--install-config-path` that points to a local ModelMesh Serving tar file or directory containing ModelMesh Serving configs to deploy. If not specified, the `config` directory from the root of the project will be used.
@@ -88,6 +89,8 @@ You can optionally provide a local `--install-config-path` that points to a loca
 You can also optionally use `--delete` to delete any existing instances of ModelMesh Serving in the designated Kube namespace before running the install.
 
 The installation will create a secret named `storage-config` if it does not already exist. If the `--quickstart` option was chosen, this will be populated with the connection details for the example models bucket in IBM Cloud Object Storage and the local MinIO; otherwise, it will be empty and ready for you to add your own entries.
+
+The `--namespace-scope-mode` will deploy `ServingRuntime`s confined to the same namespace, instead of the default cluster-scoped runtimes `ClusterServingRuntime`s. These serving runtimes are accessible to any user/namespace in the cluster.
 
 ## Setup additional namespaces
 

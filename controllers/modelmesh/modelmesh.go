@@ -47,12 +47,14 @@ type Deployment struct {
 	Metrics            bool
 	PrometheusPort     uint16
 	PrometheusScheme   string
+	PayloadProcessors  string
 	ModelMeshImage     string
 	ModelMeshResources *corev1.ResourceRequirements
 	RESTProxyEnabled   bool
 	RESTProxyImage     string
 	RESTProxyResources *corev1.ResourceRequirements
 	RESTProxyPort      uint16
+	PVCs               []string
 	// internal fields used when templating
 	ModelMeshLimitCPU          string
 	ModelMeshRequestsCPU       string
@@ -141,7 +143,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 
 	if useStorageHelper(m.SRSpec) {
 		manifest, err = manifest.Transform(
-			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources),
+			addPullerTransform(m.SRSpec, m.PullerImage, m.PullerImageCommand, m.PullerResources, m.PVCs),
 		)
 		if err != nil {
 			return fmt.Errorf("Error transforming: %w", err)
@@ -258,26 +260,32 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 	}
 
 	if m.EnableAccessLogging {
-		//See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L52
+		// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L50
 		if err := setEnvironmentVar(ModelMeshContainerName, "MM_LOG_EACH_INVOKE", "true", deployment); err != nil {
 			return err
 		}
 	}
 
 	if m.GrpcMaxMessageSize > 0 {
-		//See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L38
+		// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L34
 		if err := setEnvironmentVar(ModelMeshContainerName, "MM_SVC_GRPC_MAX_MSG_SIZE", strconv.Itoa(m.GrpcMaxMessageSize), deployment); err != nil {
 			return err
 		}
 	}
 
-	// See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L31
+	// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L27
 	if err := setEnvironmentVar(ModelMeshContainerName, "MM_KVSTORE_PREFIX", ModelMeshEtcdPrefix, deployment); err != nil {
 		return err
 	}
-	// See https://github.com/kserve/modelmesh/blob/main/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L65
+	// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L63
 	if err := setEnvironmentVar(ModelMeshContainerName, "MM_DEFAULT_VMODEL_OWNER", m.DefaultVModelOwner, deployment); err != nil {
 		return err
+	}
+
+	if len(m.PayloadProcessors) > 0 {
+		if err := setEnvironmentVar(ModelMeshContainerName, "MM_PAYLOAD_PROCESSORS", m.PayloadProcessors, deployment); err != nil {
+			return err
+		}
 	}
 
 	return nil
