@@ -72,7 +72,7 @@ jobs:
           # generate dev image tag, see: scripts/build_devimage.sh
           DEV_DEPS="./scripts/build_devimage.sh Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
           ls ${DEV_DEPS} # TODO: remove this
-          DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | ${SHASUM} | head -c 16)
+          DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | sha1sum | head -c 16)
           
           echo "DEV_IMAGE_TAG=$DEV_IMG_TAG"
           echo "DEV_IMAGE_TAG=$DEV_IMG_TAG" >> $GITHUB_ENV
