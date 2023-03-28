@@ -61,6 +61,9 @@ jobs:
           
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          
+          # Generate meaningful tag when building PRs, e.g. github.ref == "refs/pull/314/merge"
+          [ "$VERSION" == "merge" ] && VERSION=$(echo "${{ github.ref }}" | sed -e 's,refs/pull/\(.*\)/merge,pr-\1,')
 
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
@@ -85,7 +88,7 @@ jobs:
           echo "IMAGE_VERSION=$DOCKER_TAG"          >> $GITHUB_ENV
           echo "DEV_IMAGE_EXISTS=$DEV_IMAGE_EXISTS" >> $GITHUB_ENV
 
-          echo "GITHUB_ENV=$GITHUB_ENV"
+          cat "$GITHUB_ENV" # TODO: remove
 
       # TODO: test before push
       #   https://docs.docker.com/build/ci/github-actions/test-before-push/
@@ -95,10 +98,10 @@ jobs:
         with:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
           platforms: linux/amd64 # TODO: try one platform at a time
-          pull: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           file: Dockerfile.develop
+          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,6 +112,7 @@ jobs:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
           platforms: linux/amd64 # TODO: try one platform at a time
           target: runtime
+          pull: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
