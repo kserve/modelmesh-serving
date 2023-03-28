@@ -61,38 +61,31 @@ jobs:
           
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          echo "VERSION=$VERSION"
 
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
-          
-          echo "IMAGE_TAG=$VERSION"
-          echo "IMAGE_TAG=$VERSION" >> $GITHUB_ENV
 
           # generate dev image tag, see: scripts/build_devimage.sh
           DEV_DEPS="./scripts/build_devimage.sh Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
-          ls ${DEV_DEPS} # TODO: remove this
           DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | sha1sum | head -c 16)
-          
-          echo "DEV_IMAGE_TAG=$DEV_IMG_TAG"
-          echo "DEV_IMAGE_TAG=$DEV_IMG_TAG" >> $GITHUB_ENV
 
           git_commit_sha="$(git rev-parse HEAD)"
-          
-          echo "GIT_COMMIT_SHA=$git_commit_sha"
-          echo "GIT_COMMIT_SHA=$git_commit_sha" >> $GITHUB_ENV
 
           DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
-          echo "DOCKER_TAG=$DOCKER_TAG"
-          echo "IMAGE_VERSION=$DOCKER_TAG" >> $GITHUB_ENV
 
           DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG
-          echo "DEV_IMAGE=$DEV_IMAGE"
+          DEV_IMAGE_EXISTS=false
           if $(docker manifest inspect $DEV_IMAGE >/dev/null ); then
-            echo "DEV_IMAGE_EXISTS=true" >> "$GITHUB_ENV"
-          else
-            echo "DEV_IMAGE_EXISTS=false" >> "$GITHUB_ENV"
+            DEV_IMAGE_EXISTS=true
           fi
+
+          echo "IMAGE_TAG=$VERSION"                 >> $GITHUB_ENV
+          echo "DEV_IMAGE_TAG=$DEV_IMG_TAG"         >> $GITHUB_ENV
+          echo "GIT_COMMIT_SHA=$git_commit_sha"     >> $GITHUB_ENV
+          echo "IMAGE_VERSION=$DOCKER_TAG"          >> $GITHUB_ENV
+          echo "DEV_IMAGE_EXISTS=$DEV_IMAGE_EXISTS" >> $GITHUB_ENV
+
+          echo "GITHUB_ENV=$GITHUB_ENV"
 
       # TODO: test before push
       #   https://docs.docker.com/build/ci/github-actions/test-before-push/
@@ -100,7 +93,8 @@ jobs:
         uses: docker/build-push-action@v3
         if: env.DEV_IMAGE_EXISTS == 'false'
         with:
-          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          platforms: linux/amd64 # TODO: try one platform at a time
           pull: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
@@ -112,7 +106,8 @@ jobs:
         id: build-and-push-controller-image
         uses: docker/build-push-action@v3
         with:
-          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          platforms: linux/amd64 # TODO: try one platform at a time
           target: runtime
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
