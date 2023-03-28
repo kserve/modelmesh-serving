@@ -17,6 +17,13 @@
 ###############################################################################
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
 
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64.
+# - TARGETOS       - e.g. linux, windows, darwin
+# - TARGETARCH     - e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 ARG GOLANG_VERSION=1.18.9
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
@@ -45,7 +52,7 @@ RUN microdnf install \
     pip3 install pre-commit && \
 # Install go
     set -eux; \
-    wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
+    wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz"; \
 #    sha256sum *go.tgz; \
     tar -C /usr/local -xzf go.tgz; \
     go version && rm go.tgz && \
@@ -56,20 +63,20 @@ RUN microdnf install \
 # Download kubebuilder
     true \
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_linux_amd64.tar.gz | tar -xz -C /tmp/ \
-    && mv /tmp/kubebuilder_*_linux_amd64 /usr/local/kubebuilder \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS}_${TARGETARCH}.tar.gz | tar -xz -C /tmp/ \
+    && mv /tmp/kubebuilder_*_${TARGETOS}_${TARGETARCH} /usr/local/kubebuilder \
 # Then download and overwrite kubebuilder binary with desired/latest version
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_linux_amd64 -o /usr/local/kubebuilder/bin/kubebuilder \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS}_${TARGETARCH} -o /usr/local/kubebuilder/bin/kubebuilder \
     && true && \
 # download openshift-cli
-    curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-linux.tar.gz \
+    curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
     && tar -xvf /tmp/oc_client.tar.gz -C /tmp \
     && mv /tmp/oc /usr/local/bin \
     && mv /tmp/kubectl /usr/local/bin \
     && chmod a+x /usr/local/bin/oc /usr/local/bin/kubectl \
     && rm -f /tmp/oc_client.tar.gz && \
 # download kustomize
-    curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz \
+    curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
     && tar -xvf /tmp/kustomize.tar.gz -C /tmp \
     && mv /tmp/kustomize /usr/local/bin \
     && chmod a+x /usr/local/bin/kustomize \

@@ -19,6 +19,13 @@ ARG DEV_IMAGE
 ###############################################################################
 FROM ${DEV_IMAGE} AS build
 
+# https://blog.thesparktree.com/docker-multi-arch-github-actions#architecture-specific-dockerfile-instructions
+# TARGETPLATFORM - platform of the build result, e.g. linux/amd64, linux/arm/v7, windows/amd64.
+# TARGETOS - OS component of TARGETPLATFORM, e.g. linux, windows, darwin
+# TARGETARCH - architecture component of TARGETPLATFORM, e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
+# TARGETVARIANT - variant component of TARGETPLATFORM, e.g. v5, v7, v8
+ARG TARGETARCH=amd64
+
 LABEL image="build"
 
 # Copy the go source
@@ -29,7 +36,7 @@ COPY generated/ generated/
 COPY pkg/ pkg/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} GO111MODULE=on go build -a -o manager main.go
 
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image
