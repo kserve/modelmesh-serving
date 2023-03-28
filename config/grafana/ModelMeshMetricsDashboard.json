@@ -2376,7 +2376,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (deployment) (label_replace(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[5m])), \"deployment\", \"$2\", \"pod\", \"(^modelmesh-serving)-(.*)-(.*)-(.*)-(.*)\"))",
+          "expr": "sum by (deployment) (label_replace(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[5m])), \"deployment\", \"$2\", \"pod\", \"(modelmesh-serving)-(.*)-(.*-.*-.*)",
           "interval": "",
           "legendFormat": "{{short_podname}}",
           "range": true,
