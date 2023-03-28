@@ -17,8 +17,8 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  IMAGE_NAME: "kserve/modelmesh-controller"
-  DEV_IMAGE_NAME: "kserve/modelmesh-controller-develop"
+  IMAGE_NAME: "docker.io/kserve/modelmesh-controller"
+  DEV_IMAGE_NAME: "docker.io/kserve/modelmesh-controller-develop"
 
 jobs:
 # temporarily disable test to save time iterating
