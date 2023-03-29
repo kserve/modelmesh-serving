@@ -17,8 +17,8 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  IMAGE_NAME: "docker.io/kserve/modelmesh-controller"
-  DEV_IMAGE_NAME: "docker.io/kserve/modelmesh-controller-develop"
+  IMAGE_NAME: "kserve/modelmesh-controller"
+  DEV_IMAGE_NAME: "kserve/modelmesh-controller-develop"
 
 jobs:
 # temporarily disable test to save time iterating
@@ -103,6 +103,8 @@ jobs:
           context: .
           file: Dockerfile.develop
           load: true
+          outputs:
+            - type=image,name=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
