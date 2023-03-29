@@ -19,16 +19,15 @@ ARG DEV_IMAGE
 ###############################################################################
 FROM ${DEV_IMAGE} AS build
 
-# https://blog.thesparktree.com/docker-multi-arch-github-actions#architecture-specific-dockerfile-instructions
-# TARGETPLATFORM - platform of the build result, e.g. linux/amd64, linux/arm/v7, windows/amd64.
-# TARGETOS - OS component of TARGETPLATFORM, e.g. linux, windows, darwin
-# TARGETARCH - architecture component of TARGETPLATFORM, e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
-# TARGETVARIANT - variant component of TARGETPLATFORM, e.g. v5, v7, v8
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64
+# - TARGETOS       - e.g. linux, windows, darwin
+# - TARGETARCH     - e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
 ARG TARGETARCH=amd64
 
 LABEL image="build"
 
-# Copy the go source
+# Copy the go sources
 COPY main.go main.go
 COPY apis/ apis/
 COPY controllers/ controllers/

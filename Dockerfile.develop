@@ -18,7 +18,7 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64.
+# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64
 # - TARGETOS       - e.g. linux, windows, darwin
 # - TARGETARCH     - e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
 ARG TARGETOS=linux
@@ -89,5 +89,5 @@ RUN dnf install -y --nodocs \
 RUN go install github.com/onsi/ginkgo/v2/ginkgo
 ENV PATH=/root/go/bin/:$PATH
 
-# the ubi/go-toolset base image does not define entrypoint command, we do need it to run 'make develop'
+# the ubi/go-toolset image doesn't define ENTRYPOINT or CMD, but we need it to run 'make develop'
 CMD /bin/bash

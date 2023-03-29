@@ -31,7 +31,7 @@ echo "Pulling dev image ${FULL_IMAGE_NAME}..."
 if $ENGINE inspect "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
   echo "Found dev image ${FULL_IMAGE_NAME} locally"
 elif $ENGINE pull -q "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
-    echo "Successfully pulled dev image ${FULL_IMAGE_NAME}"
+  echo "Successfully pulled dev image ${FULL_IMAGE_NAME}"
 else
   echo "Image ${FULL_IMAGE_NAME} does not exist yet"
   mkdir -p $CONTEXT_DIR
