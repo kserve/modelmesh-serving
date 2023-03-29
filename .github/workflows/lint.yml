@@ -15,7 +15,7 @@ jobs:
     env:
       CI: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build develop image
         run: make build.develop
       - name: Run lint
