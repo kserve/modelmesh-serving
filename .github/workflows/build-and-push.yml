@@ -97,12 +97,12 @@ jobs:
         if: env.DEV_IMAGE_EXISTS == 'false'
         with:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
-          platforms: linux/amd64 # TODO: try one platform at a time
+          # platforms: linux/amd64 # TODO: try one platform at a time
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           context: .
           file: Dockerfile.develop
-          outputs: type=image,name=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
