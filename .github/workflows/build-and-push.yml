@@ -37,6 +37,11 @@ jobs:
   build:
 #    needs: test
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -46,6 +51,8 @@ jobs:
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - name: Login to DockerHub
         if: github.event_name == 'push'
@@ -92,23 +99,23 @@ jobs:
 
       # TODO: test before push
       #   https://docs.docker.com/build/ci/github-actions/test-before-push/
-      - name: Build and push developer image
+      - name: Build and push developer image to local registry
         uses: docker/build-push-action@v4
-        if: env.DEV_IMAGE_EXISTS == 'false'
+        #if: env.DEV_IMAGE_EXISTS == 'false'
         with:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
-          # platforms: linux/amd64 # TODO: try one platform at a time
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+          platforms: linux/amd64 # TODO: try one platform at a time
+          # push: ${{ github.event_name != 'pull_request' }}
           context: .
           file: Dockerfile.develop
-          load: true
+          push: true
+          tags: localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test developer image
         run: |
-          docker run --rm ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }} go version
+          docker run --rm localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }} go version
 
       - name: Build and push controller image
         id: build-and-push-controller-image
@@ -123,7 +130,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
-            DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+            DEV_IMAGE=localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
             IMAGE_VERSION=${{ env.IMAGE_VERSION }}
             COMMIT_SHA=${{ env.GIT_COMMIT_SHA }}
           cache-from: type=gha
