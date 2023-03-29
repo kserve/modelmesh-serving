@@ -90,7 +90,7 @@ jobs:
         uses: docker/build-push-action@v4
         if: env.DEV_IMAGE_EXISTS == 'false'
         with:
-          platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
           context: .
           file: Dockerfile.develop
           push: true
@@ -113,7 +113,7 @@ jobs:
         id: build-and-push-controller-image
         uses: docker/build-push-action@v4
         with:
-          platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
           context: .
           target: runtime
           pull: true
