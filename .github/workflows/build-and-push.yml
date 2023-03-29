@@ -103,7 +103,7 @@ jobs:
         uses: docker/build-push-action@v4
         #if: env.DEV_IMAGE_EXISTS == 'false'
         with:
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
           # platforms: linux/amd64 # TODO: try one platform at a time
           context: .
           file: Dockerfile.develop
@@ -121,12 +121,12 @@ jobs:
         id: build-and-push-controller-image
         uses: docker/build-push-action@v4
         with:
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
           # platforms: linux/amd64 # TODO: try one platform at a time
           context: .
           target: runtime
           pull: true
-          load: true
+          # load: true  # multi-platform images cannot be exported with the `docker` export type
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
