@@ -25,8 +25,8 @@ on:
       - 'proto/**'
 
 env:
-  IMAGE_NAME: "docker.io/kserve/modelmesh-controller"
-  DEV_IMAGE_NAME: "localhost:5000/kserve/modelmesh-controller-develop"
+  IMAGE_NAME: "kserve/modelmesh-controller"
+  DEV_IMAGE_NAME: "kserve/modelmesh-controller-develop"
 
 jobs:
   build:
@@ -71,24 +71,38 @@ jobs:
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
 
+          git_commit_sha="$(git rev-parse HEAD)"
+          DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
+
           # generate dev image tag
           DEV_DEPS="./scripts/build_devimage.sh Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
           DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | sha1sum | head -c 16)
 
-          DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG
+          # In order for the controller image build to find the developer image
+          # we need to push the developer image to a registry since the docker
+          # exporter does not currently support exporting manifest lists.
+          # When running in a PR we need to use the local image registry service
+          # because the DockerHub push secret is not available on forked PRs.
+          # When pushing to main we do have access to the docker.io push secrets
+          # so we push to the public DockerHub registry.
+          # https://github.com/docker/buildx/issues/59#issuecomment-1189999088
+
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            DEV_IMAGE="localhost:5000/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"
+          else
+            DEV_IMAGE="docker.io/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"            
+          fi
+
           DEV_IMAGE_EXISTS=false
           if $(docker manifest inspect $DEV_IMAGE >/dev/null ); then
             DEV_IMAGE_EXISTS=true
           fi
 
-          git_commit_sha="$(git rev-parse HEAD)"
-          DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
-
           # add env vars for following steps 
           echo "IMAGE_TAG=$VERSION"                 >> $GITHUB_ENV
-          echo "DEV_IMAGE_TAG=$DEV_IMG_TAG"         >> $GITHUB_ENV
           echo "GIT_COMMIT_SHA=$git_commit_sha"     >> $GITHUB_ENV
           echo "IMAGE_VERSION=$DOCKER_TAG"          >> $GITHUB_ENV
+          echo "DEV_IMAGE=$DEV_IMAGE"               >> $GITHUB_ENV
           echo "DEV_IMAGE_EXISTS=$DEV_IMAGE_EXISTS" >> $GITHUB_ENV
 
           # print env vars for debugging
@@ -102,14 +116,14 @@ jobs:
           context: .
           file: Dockerfile.develop
           push: true
-          tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+          tags: ${{ env.DEV_IMAGE }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Set dev image for lint and test
         run: |
-          docker run --rm ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }} go version
-          echo -n "${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}" > .develop_image_name
+          docker run --rm ${{ env.DEV_IMAGE }} go version
+          echo -n "${{ env.DEV_IMAGE }}" > .develop_image_name
 
       - name: Run lint
         run: ./scripts/develop.sh make fmt
@@ -128,7 +142,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
-            DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+            DEV_IMAGE=${{ env.DEV_IMAGE }}
             IMAGE_VERSION=${{ env.IMAGE_VERSION }}
             COMMIT_SHA=${{ env.GIT_COMMIT_SHA }}
           cache-from: type=gha
