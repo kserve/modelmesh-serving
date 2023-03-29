@@ -17,26 +17,14 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  IMAGE_NAME: "kserve/modelmesh-controller"
-  DEV_IMAGE_NAME: "kserve/modelmesh-controller-develop"
+  IMAGE_NAME: "docker.io/kserve/modelmesh-controller"
+  DEV_IMAGE_NAME: "localhost:5000/kserve/modelmesh-controller-develop"
 
 jobs:
-# temporarily disable test to save time iterating
-#  test:
-#    runs-on: ubuntu-latest
-#    env:
-#      CI: true
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Build develop image
-#        run: make build.develop
-#      - name: Run lint
-#        run: ./scripts/develop.sh make fmt
-#      - name: Run unit test
-#        run: ./scripts/develop.sh make test
   build:
-#    needs: test
     runs-on: ubuntu-latest
+    env:
+      CI: true
     services:
       registry:
         image: registry:2
@@ -69,19 +57,15 @@ jobs:
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           
-          # Generate meaningful tag when building PRs, e.g. github.ref == "refs/pull/314/merge"
+          # Generate PR tag from github.ref == "refs/pull/123/merge"
           [ "$VERSION" == "merge" ] && VERSION=$(echo "${{ github.ref }}" | sed -e 's,refs/pull/\(.*\)/merge,pr-\1,')
 
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
 
-          # generate dev image tag, see: scripts/build_devimage.sh
+          # generate dev image tag
           DEV_DEPS="./scripts/build_devimage.sh Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
           DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | sha1sum | head -c 16)
-
-          git_commit_sha="$(git rev-parse HEAD)"
-
-          DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
 
           DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG
           DEV_IMAGE_EXISTS=false
@@ -89,48 +73,54 @@ jobs:
             DEV_IMAGE_EXISTS=true
           fi
 
+          git_commit_sha="$(git rev-parse HEAD)"
+          DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
+
+          # add env vars for following steps 
           echo "IMAGE_TAG=$VERSION"                 >> $GITHUB_ENV
           echo "DEV_IMAGE_TAG=$DEV_IMG_TAG"         >> $GITHUB_ENV
           echo "GIT_COMMIT_SHA=$git_commit_sha"     >> $GITHUB_ENV
           echo "IMAGE_VERSION=$DOCKER_TAG"          >> $GITHUB_ENV
           echo "DEV_IMAGE_EXISTS=$DEV_IMAGE_EXISTS" >> $GITHUB_ENV
 
-          cat "$GITHUB_ENV" # TODO: remove
+          # print env vars for debugging
+          cat "$GITHUB_ENV"
 
-      # TODO: test before push
-      #   https://docs.docker.com/build/ci/github-actions/test-before-push/
       - name: Build and push developer image to local registry
         uses: docker/build-push-action@v4
-        #if: env.DEV_IMAGE_EXISTS == 'false'
+        if: env.DEV_IMAGE_EXISTS == 'false'
         with:
           platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
-          # platforms: linux/amd64 # TODO: try one platform at a time
           context: .
           file: Dockerfile.develop
-          # push: ${{ github.event_name != 'pull_request' }}
           push: true
-          tags: localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+          tags: ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Test developer image
+      - name: Set dev image for lint and test
         run: |
-          docker run --rm localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }} go version
+          docker run --rm ${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }} go version
+          echo -n "${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}" > .develop_image_name
+
+      - name: Run lint
+        run: ./scripts/develop.sh make fmt
+
+      - name: Run unit test
+        run: ./scripts/develop.sh make test
 
       - name: Build and push controller image
         id: build-and-push-controller-image
         uses: docker/build-push-action@v4
         with:
           platforms: linux/amd64,linux/arm64 #,linux/ppc64le,linux/s390x
-          # platforms: linux/amd64 # TODO: try one platform at a time
           context: .
           target: runtime
           pull: true
-          # load: true  # multi-platform images cannot be exported with the `docker` export type
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
-            DEV_IMAGE=localhost:5000/${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+            DEV_IMAGE=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
             IMAGE_VERSION=${{ env.IMAGE_VERSION }}
             COMMIT_SHA=${{ env.GIT_COMMIT_SHA }}
           cache-from: type=gha
