@@ -104,7 +104,7 @@ jobs:
         #if: env.DEV_IMAGE_EXISTS == 'false'
         with:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
-          platforms: linux/arm64/v8 # TODO: try one platform at a time
+          platforms: linux/ppc64le # TODO: try one platform at a time
           # push: ${{ github.event_name != 'pull_request' }}
           context: .
           file: Dockerfile.develop
@@ -122,7 +122,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           # platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
-          platforms: linux/arm64/v8 # TODO: try one platform at a time
+          platforms: linux/ppc64le # TODO: try one platform at a time
           context: .
           target: runtime
           pull: true
