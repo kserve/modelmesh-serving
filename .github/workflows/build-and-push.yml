@@ -6,15 +6,23 @@ on:
       - 'main'
       - 'release-[0-9].[0-9]+'
     paths-ignore:
-      - 'docs/**'
       - '**.md'
       - '.github/**'
       - '.tekton/**'
+      - 'docs/**'
+      - 'fvt/**'
+      - 'proto/**'
     tags:
-      - v*
+      - 'v*'
   pull_request:
     branches: [ main, 'release-[0-9].[0-9]+' ]
-    paths-ignore: [ '**.md' ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - '.tekton/**'
+      - 'docs/**'
+      - 'fvt/**'
+      - 'proto/**'
 
 env:
   IMAGE_NAME: "docker.io/kserve/modelmesh-controller"
@@ -49,7 +57,7 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
-      - name: export docker build args
+      - name: Export docker build args
         run: |
           # see: scripts/build_devimage.sh
           # see: scripts/build_docker.sh
