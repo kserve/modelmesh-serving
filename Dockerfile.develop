@@ -15,7 +15,7 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
+FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64.
@@ -32,6 +32,7 @@ ARG CONTROLLER_GEN_VERSION=v0.8.0
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
 
 USER root
+ENV HOME=/root
 
 WORKDIR /workspace
 
@@ -39,7 +40,7 @@ WORKDIR /workspace
 COPY .pre-commit-config.yaml go.mod go.sum ./
 
 # Install gcc
-RUN microdnf install \
+RUN dnf install -y --nodocs \
     diffutils \
     gcc-c++ \
     make \
@@ -47,15 +48,12 @@ RUN microdnf install \
     tar \
     vim \
     git \
-    python38 \
+    python3 python3-pip \
     nodejs && \
     pip3 install pre-commit && \
 # Install go
     set -eux; \
-    wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz"; \
-#    sha256sum *go.tgz; \
-    tar -C /usr/local -xzf go.tgz; \
-    go version && rm go.tgz && \
+    go version && \
 # Download and initialize the pre-commit environments before copying the source so they will be cached
     git init && \
     pre-commit install-hooks && \
