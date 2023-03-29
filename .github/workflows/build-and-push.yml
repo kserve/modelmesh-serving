@@ -103,8 +103,7 @@ jobs:
           context: .
           file: Dockerfile.develop
           load: true
-          outputs:
-            - type=image,name=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
+          outputs: type=image,name=${{ env.DEV_IMAGE_NAME }}:${{ env.DEV_IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
