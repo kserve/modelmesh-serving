@@ -87,15 +87,20 @@ jobs:
           # so we push to the public DockerHub registry.
           # https://github.com/docker/buildx/issues/59#issuecomment-1189999088
 
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            DEV_IMAGE="localhost:5000/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"
-          else
-            DEV_IMAGE="docker.io/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"            
-          fi
-
+          DEV_IMAGE="docker.io/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"            
           DEV_IMAGE_EXISTS=false
+
+          # Check if the developer image already exists in the registry. The
+          # developer image does not change often and is costly to build we want
+          # to avoid rebuilding it unnecessarily. If it does not exist, we need
+          # to build it. If this workflow is running in a forked PR, we must use
+          # the local registry.
           if $(docker manifest inspect $DEV_IMAGE >/dev/null ); then
             DEV_IMAGE_EXISTS=true
+          else
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              DEV_IMAGE="localhost:5000/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"
+            fi
           fi
 
           # add env vars for following steps 
