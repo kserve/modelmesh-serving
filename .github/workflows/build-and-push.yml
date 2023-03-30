@@ -91,10 +91,10 @@ jobs:
           DEV_IMAGE_EXISTS=false
 
           # Check if the developer image already exists in the registry. The
-          # developer image does not change often and is costly to build we want
-          # to avoid rebuilding it unnecessarily. If it does not exist, we need
-          # to build it. If this workflow is running in a forked PR, we must use
-          # the local registry.
+          # developer image doesn't change often and is costly to build. We want
+          # to avoid rebuilding it unnecessarily. If we need to build it and if
+          # this workflow is running on a forked PR, then we must use the local
+          # image registry.
           if $(docker manifest inspect $DEV_IMAGE >/dev/null ); then
             DEV_IMAGE_EXISTS=true
           else
