@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.3.2"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -24,12 +55,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 43,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -44,7 +75,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -119,28 +150,6 @@
                 "value": "points"
               }
             ]
-          },
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": ["Age at Eviction"],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
           }
         ]
       },
@@ -167,7 +176,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -180,13 +189,15 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "max(rate(modelmesh_age_at_eviction_milliseconds_sum{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval])/rate(modelmesh_age_at_eviction_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval]))/1000",
           "hide": false,
           "interval": "",
           "legendFormat": "Age at Eviction",
+          "range": true,
           "refId": "B"
         }
       ],
@@ -196,7 +207,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -368,7 +379,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -381,7 +392,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -397,7 +408,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -505,7 +519,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -598,7 +612,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -611,7 +625,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -625,7 +639,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -641,7 +655,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -745,7 +762,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -826,7 +843,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -840,7 +857,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -858,7 +875,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -936,7 +953,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -949,7 +966,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
           "expr": "avg(rate(modelmesh_response_size_bytes_sum{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval]))/avg(rate(modelmesh_response_size_bytes_count{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval]))",
@@ -963,7 +980,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1006,8 +1026,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1072,7 +1091,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1118,8 +1140,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1186,7 +1207,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1229,8 +1253,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1295,7 +1318,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1336,8 +1362,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1402,7 +1427,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "P1809F7CD0C75ACF3",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1448,8 +1476,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1516,7 +1543,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1560,8 +1587,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1633,7 +1659,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1650,7 +1676,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1694,8 +1720,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1746,7 +1771,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1764,7 +1789,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1808,8 +1833,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1844,7 +1868,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
           "expr": "avg(rate(modelmesh_cache_miss_milliseconds_sum{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[5m]))/avg(rate(modelmesh_cache_miss_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[5m]))",
@@ -1859,7 +1883,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1903,8 +1927,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1984,7 +2007,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1999,7 +2022,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2014,7 +2037,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2029,7 +2052,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2048,7 +2071,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2091,8 +2114,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2129,7 +2151,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2147,7 +2169,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2195,8 +2217,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2232,7 +2253,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2245,7 +2266,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -2277,7 +2298,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -2293,7 +2314,7 @@
             "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 21,
             "gradientMode": "none",
             "hideFrom": {
               "graph": false,
@@ -2322,8 +2343,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2333,7 +2353,98 @@
           },
           "unit": "deckbytes"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "triton capacity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mlserver capacity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "triton usage"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mlserver usage"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total usage"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total capacity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 7,
@@ -2358,10 +2469,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_used_bytes{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}/1024),\n      \"deployment\",\n      \"$2 usage\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "  sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_used_bytes{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}/1024),\n      \"deployment\",\n      \"$2 usage\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2370,10 +2481,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_capacity_bytes{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}/1024),\n      \"deployment\",\n      \"$2 capacity\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_capacity_bytes{namespace=\"$namespace\",pod=~\"servicename-$runtime-.*\"}/1024),\n      \"deployment\",\n      \"$2 capacity\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2386,7 +2497,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -2431,8 +2542,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -2479,11 +2589,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_models_with_failure_total{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}) ,\n      \"deployment\",\n      \"$2-failed models\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    ))",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_models_with_failure_total{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}) ,\n      \"deployment\",\n      \"$2-failed models\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    ))",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
@@ -2493,28 +2603,15 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_models_total{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}),\n      \"deployment\",\n      \"$2-loaded models\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (modelmesh_instance_models_total{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}),\n      \"deployment\",\n      \"$2-loaded models\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
           "range": true,
           "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "max(modelmesh_models_managed_total{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "total managed models",
-          "range": true,
-          "refId": "C"
         }
       ],
       "title": "Model Counts",
@@ -2523,7 +2620,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -2567,8 +2664,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2602,11 +2698,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (deployment) (\n  label_replace(\n    count by (pod) (container_memory_usage_bytes{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\",container=\"mm\"}),\n    \"deployment\",\n    \"$2\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n",
+          "expr": "sum by (deployment) (\n  label_replace(\n    count by (pod) (container_memory_usage_bytes{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\",container=\"$mm_container\"}),\n    \"deployment\",\n    \"$2\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n",
           "interval": "",
           "legendFormat": "__auto",
           "range": true,
@@ -2619,7 +2715,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2663,8 +2759,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2700,11 +2795,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (rate(modelmesh_invoke_model_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 external request\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    ))",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\n      sum by (pod) (rate(modelmesh_invoke_model_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 external request\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    ))",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
@@ -2718,7 +2813,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2760,8 +2855,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2796,10 +2890,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_request_size_bytes_sum{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 request size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_request_size_bytes_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 request size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
+          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_request_size_bytes_sum{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 request size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_request_size_bytes_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 request size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2808,10 +2902,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_response_size_bytes_sum{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 response size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_response_size_bytes_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 response size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
+          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_response_size_bytes_sum{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 response size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_response_size_bytes_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 response size\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2824,7 +2918,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2868,8 +2962,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2878,7 +2971,53 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model Unloads"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model Evictions"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load Failures"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
@@ -2903,10 +3042,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_loadmodel_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 loads\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_loadmodel_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 loads\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "interval": "5m",
           "legendFormat": "__auto",
@@ -2916,10 +3055,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "-sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_unloadmodel_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 unloads\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "-sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_unloadmodel_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 unloads\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "interval": "5m",
           "legendFormat": "__auto",
@@ -2929,10 +3068,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "-sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_age_at_eviction_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 evictions\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "-sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_age_at_eviction_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 evictions\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "interval": "5m",
           "legendFormat": "__auto",
@@ -2942,10 +3081,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_loadmodel_failure{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 failures\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
+          "expr": "sum by (deployment) ( \n\tlabel_replace(\nsum by (pod) (increase(modelmesh_loadmodel_failure{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval])),\n      \"deployment\",\n      \"$2 failures\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n)",
           "hide": false,
           "interval": "5m",
           "legendFormat": "__auto",
@@ -2959,7 +3098,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3002,8 +3141,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3040,24 +3178,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "avg(rate(modelmesh_loaded_model_size_bytes_sum{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval]))/avg(rate(modelmesh_loaded_model_size_bytes_count{namespace=\"$namespace\",pod=~\"$servicename-.*\"}[$__rate_interval]))",
-          "hide": true,
-          "interval": "",
-          "legendFormat": "Loaded Model Size",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "avg by (deployment) (\n  label_replace(\n    avg by (pod) (\n      rate(\n        modelmesh_loaded_model_size_bytes_sum{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n      )\n    ),\n    \"deployment\",\n    \"$2 model size\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n\n/\n\navg by (deployment) (\n  label_replace(\n    avg by (pod) (\n      rate(\n        modelmesh_loaded_model_size_bytes_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n      )\n    ),\n    \"deployment\",\n    \"$2 model size\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n\n",
+          "expr": "avg by (deployment) (\n  label_replace(\n    avg by (pod) (\n      rate(\n        modelmesh_loaded_model_size_bytes_sum{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n      )\n    ),\n    \"deployment\",\n    \"$2 model size\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n\n/\n\navg by (deployment) (\n  label_replace(\n    avg by (pod) (\n      rate(\n        modelmesh_loaded_model_size_bytes_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n      )\n    ),\n    \"deployment\",\n    \"$2 model size\",\n    \"pod\",\n    \"(modelmesh-serving)-(.*?)-(.*)\"\n  )\n)\n\n",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -3070,7 +3194,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3118,8 +3242,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3155,10 +3278,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_loadmodel_milliseconds_sum{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 loading time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_loadmodel_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 loading time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
+          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_loadmodel_milliseconds_sum{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 loading time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_loadmodel_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 loading time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -3167,10 +3290,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_model_sizing_milliseconds_sum{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 sizing time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_model_sizing_milliseconds_count{namespace=\"modelmesh-serving\",pod=~\"modelmesh-serving-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 sizing time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
+          "expr": "  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_model_sizing_milliseconds_sum{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 sizing time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )\n/\n  avg by (deployment) (\n    label_replace(\n      avg by (pod) (\n        rate(\n          modelmesh_model_sizing_milliseconds_count{namespace=\"$namespace\",pod=~\"$servicename-$runtime-.*\"}[$__rate_interval]\n        )\n      ),\n      \"deployment\",\n      \"$2 sizing time\",\n      \"pod\",\n      \"(modelmesh-serving)-(.*?)-(.*)\"\n    )\n  )",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -3198,7 +3321,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3243,8 +3366,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3291,7 +3413,7 @@
             "h": 11,
             "w": 12,
             "x": 0,
-            "y": 83
+            "y": 27
           },
           "id": 48,
           "options": {
@@ -3310,7 +3432,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "P1809F7CD0C75ACF3"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "label_replace(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",pod=~\"$servicename-.*\", container=\"$mm_container\"}[$__rate_interval]), \"short_podname\", \"$1\", \"pod\",\"$servicename-(.*)\")",
@@ -3321,7 +3443,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "P1809F7CD0C75ACF3"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "avg(cluster:namespace:pod_cpu:active:kube_pod_container_resource_requests{namespace=\"$namespace\",pod=~\"$servicename-.*\",container=\"$mm_container\"})",
@@ -3335,7 +3457,10 @@
           "type": "timeseries"
         },
         {
-          "datasource": "P1809F7CD0C75ACF3",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3378,8 +3503,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3411,7 +3535,7 @@
             "h": 11,
             "w": 12,
             "x": 12,
-            "y": 83
+            "y": 27
           },
           "id": 50,
           "options": {
@@ -3487,7 +3611,10 @@
           "type": "timeseries"
         },
         {
-          "datasource": "P1809F7CD0C75ACF3",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3531,8 +3658,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3548,7 +3674,7 @@
             "h": 11,
             "w": 12,
             "x": 0,
-            "y": 94
+            "y": 38
           },
           "id": 33,
           "options": {
@@ -3625,7 +3751,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "",
           "fieldConfig": {
@@ -3670,8 +3796,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3703,7 +3828,7 @@
             "h": 11,
             "w": 12,
             "x": 12,
-            "y": 94
+            "y": 38
           },
           "id": 77,
           "options": {
@@ -3724,7 +3849,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "P1809F7CD0C75ACF3"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "label_replace(container_memory_usage_bytes{namespace=\"$namespace\",pod=~\"$servicename-.*\",container!=\"$mm_container\",container!=\"\"}/1024/1024,\"short_podname\", \"$1\", \"pod\",\"$servicename-(.*)\")",
@@ -3735,7 +3860,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "P1809F7CD0C75ACF3"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "avg(cluster:namespace:pod_memory:active:kube_pod_container_resource_requests{namespace=\"$namespace\",container!=\"$mm_container\",container!=\"\",pod=~\"$servicename-.*\"}/1024/1024)",
@@ -3771,60 +3896,60 @@
       {
         "current": {
           "selected": false,
-          "text": "modelmesh-serving",
-          "value": "modelmesh-serving"
+          "text": "my-namespace",
+          "value": "my-namespace"
         },
         "hide": 0,
         "name": "namespace",
         "options": [
           {
             "selected": true,
-            "text": "modelmesh-serving",
-            "value": "modelmesh-serving"
+            "text": "my-namespace",
+            "value": "my-namespace"
           }
         ],
-        "query": "modelmesh-serving",
+        "query": "my-namespace",
         "skipUrlSync": false,
         "type": "textbox"
       },
       {
         "current": {
           "selected": false,
-          "text": "modelmesh-serving",
-          "value": "modelmesh-serving"
+          "text": "my-service-name",
+          "value": "my-service-name"
         },
         "hide": 0,
         "name": "servicename",
         "options": [
           {
             "selected": true,
-            "text": "modelmesh-serving",
-            "value": "modelmesh-serving"
+            "text": "my-service-name",
+            "value": "my-service-name"
           }
         ],
-        "query": "modelmesh-serving",
+        "query": "my-service-name",
         "skipUrlSync": false,
         "type": "textbox"
       },
       {
         "current": {
           "selected": true,
-          "text": "mm",
-          "value": "mm"
+          "text": "mm-runtime",
+          "value": "mm-runtime"
         },
         "hide": 0,
         "includeAll": false,
-        "label": "MM Container Name",
+        "label": "mm container",
         "multi": false,
         "name": "mm_container",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "mm",
             "value": "mm"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "mm-runtime",
             "value": "mm-runtime"
           },
@@ -3838,17 +3963,55 @@
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["mlserver"],
+          "value": ["mlserver"]
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "runtime",
+        "multi": true,
+        "name": "runtime",
+        "options": [
+          {
+            "selected": true,
+            "text": "mlserver",
+            "value": "mlserver"
+          },
+          {
+            "selected": false,
+            "text": "triton",
+            "value": "triton"
+          },
+          {
+            "selected": false,
+            "text": "ovms",
+            "value": "ovms"
+          },
+          {
+            "selected": false,
+            "text": "torchserve",
+            "value": "torchserve"
+          }
+        ],
+        "query": "mlserver,triton,ovms,torchserve",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-2d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "ModelMesh Dashboard",
-  "uid": "vMm_rt-7z",
+  "uid": "vMm_rt-7z-new",
   "version": 1,
   "weekStart": ""
 }
