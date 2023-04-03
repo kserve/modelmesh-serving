@@ -28,6 +28,7 @@ ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
 ARG KUBEBUILDER_VERSION=v3.3.0
 ARG CONTROLLER_GEN_VERSION=v0.8.0
+
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
 
 USER root
@@ -35,56 +36,64 @@ ENV HOME=/root
 
 WORKDIR /workspace
 
-# Copy the Go Modules manifests
-COPY .pre-commit-config.yaml go.mod go.sum ./
+# Install required packages
+RUN true \
+    && dnf install -y --nodocs \
+       python3 \
+       python3-pip \
+       nodejs \
+    && pip3 install pre-commit \
+    && dnf clean all \
+    && true
 
-# Install gcc
-RUN dnf install -y --nodocs \
-    diffutils \
-    gcc-c++ \
-    make \
-    wget \
-    tar \
-    vim \
-    git \
-    python3 python3-pip \
-    nodejs && \
-    pip3 install pre-commit && \
-# Install go
-    set -eux; \
-    go version && \
-# Download and initialize the pre-commit environments before copying the source so they will be cached
-    git init && \
-    pre-commit install-hooks && \
-    rm -rf .git && \
-# Download kubebuilder
-    true \
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
+# Then download and overwrite kubebuilder binary with desired/latest version
+RUN true \
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS}_${TARGETARCH}.tar.gz | tar -xz -C /tmp/ \
     && mv /tmp/kubebuilder_*_${TARGETOS}_${TARGETARCH} /usr/local/kubebuilder \
-# Then download and overwrite kubebuilder binary with desired/latest version
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS}_${TARGETARCH} -o /usr/local/kubebuilder/bin/kubebuilder \
-    && true && \
+    && true
+
 # download openshift-cli
-    curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
+RUN true \
+    && curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/${TARGETARCH}/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
     && tar -xvf /tmp/oc_client.tar.gz -C /tmp \
     && mv /tmp/oc /usr/local/bin \
     && mv /tmp/kubectl /usr/local/bin \
     && chmod a+x /usr/local/bin/oc /usr/local/bin/kubectl \
-    && rm -f /tmp/oc_client.tar.gz && \
+    && rm -f /tmp/oc_client.tar.gz \
+    && true
+
 # download kustomize
-    curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
+RUN true \
+    && curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
     && tar -xvf /tmp/kustomize.tar.gz -C /tmp \
     && mv /tmp/kustomize /usr/local/bin \
     && chmod a+x /usr/local/bin/kustomize \
-    && rm -v /tmp/kustomize.tar.gz && \
+    && rm -v /tmp/kustomize.tar.gz \
+    && true
+
+# Copy the Go Modules manifests
+COPY .pre-commit-config.yaml go.mod go.sum ./
+
+# Download and initialize the pre-commit environments before copying the source so they will be cached
+RUN true\
+    && git init \
+    && pre-commit install-hooks \
+    && rm -rf .git \
+    && true
+
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
-    go mod download && \
+RUN go mod download
+
 # Install controller-gen
-    mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
-    && go mod init tmp && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
-    && rm -rf /tmp/controller-gen-tmp
+RUN true \
+    && mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
+    && go mod init tmp \
+    && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
+    && rm -rf /tmp/controller-gen-tmp \
+    && true
 
 RUN go install github.com/onsi/ginkgo/v2/ginkgo
 ENV PATH=/root/go/bin/:$PATH
