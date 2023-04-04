@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG DEV_IMAGE
-ARG BUILDPLATFORM="linux/amd64"
-
 ###############################################################################
 # Stage 1: Run the go build with go compiler native to the build platform
 # https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 ###############################################################################
+ARG BUILDPLATFORM="linux/amd64"
+ARG DEV_IMAGE
 FROM --platform=${BUILDPLATFORM} ${DEV_IMAGE} AS build
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
 LABEL image="build"
