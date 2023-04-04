@@ -22,9 +22,6 @@ ARG BUILDPLATFORM="linux/amd64"
 FROM --platform=${BUILDPLATFORM} ${DEV_IMAGE} AS build
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64
-# - TARGETOS       - e.g. linux, windows, darwin
-# - TARGETARCH     - e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
 ARG TARGETARCH=amd64
 
 LABEL image="build"
@@ -36,7 +33,7 @@ COPY controllers/ controllers/
 COPY generated/ generated/
 COPY pkg/ pkg/
 
-# Build
+# Build using native go compiler from BUILDPLATFORM but compiled output for TARGETPLATFORM
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on go build -a -o manager main.go

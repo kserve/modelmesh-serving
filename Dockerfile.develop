@@ -18,9 +18,6 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# - TARGETPLATFORM - e.g. linux/amd64, linux/arm/v7, windows/amd64
-# - TARGETOS       - e.g. linux, windows, darwin
-# - TARGETARCH     - e.g. amd64, arm32v7, arm64v8, i386, ppc64le, s390x
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
@@ -54,7 +51,7 @@ RUN true \
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS}_${TARGETARCH} -o /usr/local/kubebuilder/bin/kubebuilder \
     && true
 
-# download openshift-cli
+# Download openshift-cli
 RUN true \
     && curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/${TARGETARCH}/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
     && tar -xvf /tmp/oc_client.tar.gz -C /tmp \
@@ -64,7 +61,7 @@ RUN true \
     && rm -f /tmp/oc_client.tar.gz \
     && true
 
-# download kustomize
+# Download kustomize
 RUN true \
     && curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
     && tar -xvf /tmp/kustomize.tar.gz -C /tmp \
@@ -83,8 +80,8 @@ RUN true\
     && rm -rf .git \
     && true
 
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
+# Cache dependencies before copying and building sources so that source changes
+# won't invalidate earlier download layers
 RUN go mod download
 
 # Install controller-gen
