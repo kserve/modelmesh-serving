@@ -13,6 +13,7 @@
 # limitations under the License.
 
 ARG DEV_IMAGE
+ARG BUILDPLATFORM="linux/amd64"
 
 ###############################################################################
 # Stage 1: Run the go build with go compiler native to the build platform
