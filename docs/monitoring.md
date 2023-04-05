@@ -136,20 +136,24 @@ spec:
 
 Other configurable Prometheus specification fields are listed [here](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#prometheusspec).
 
+## Create a ServiceMonitor 
 
-## Create the ServiceMonitor CRD 
+[ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) is a custom resource definition provided by Prometheus Operator and is leveraged by ModelMesh for monitoring pods through the `modelmesh-serving` service. 
 
-The [ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) CRD is provided by the Prometheus Operator and is leveraged by ModelMesh for monitoring pods
-through the `modelmesh-serving` service. By default, when the ModelMesh controller is started, the `ServiceMonitor` is checked. If it exists and `metrics.enabled` is `true`, a `ServiceMonitor` resource
+Create a `ServiceMonitor` to monitor the `modelmesh-serving` service using the definition found [here](../config/grafana/servicemonitor.yaml).
+```bash
+kubectl apply -f servicemonitor.yaml
+```
+After the `ServiceMonitor` is created, the Prometheus operator will dynamically discover the pods with the label `modelmesh-service: modelmesh-serving` and scrape the metrics endpoint exposed by those pods.
+
+**Note**: By default, when the ModelMesh controller is started, the `ServiceMonitor` is checked. If it exists and `metrics.enabled` is `true`, a `ServiceMonitor` resource
 will be created for monitoring `ServingRuntime` pods.
 
-If you have an alternative solution to collect the metrics, you can disable the creation of `ServiceMonitor` by setting the configuration `metrics.disablePrometheusOperatorSupport` to `true` in the [`model-serving-config` configmap](configuration/README.md)).
+If you have an alternative solution to collect the metrics, you can disable the creation of `ServiceMonitor` by setting the configuration `metrics.disablePrometheusOperatorSupport` to `true` in the [`model-serving-config` configmap](configuration/README.md).
 
 ## Import the Grafana Dashboard
 
-To access [Grafana](https://github.com/grafana/grafana) and visualize the Prometheus-monitored data, follow the instructions [here](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/access-ui.md#grafana). 
-
-We provide a [pre-built dashboard](/config/grafana/ModelMeshMetricsDashboard.json) which includes many important ModelMesh metrics and views. You can import it using the guide [here](https://grafana.com/docs/grafana/latest/dashboards/manage-dashboards/#import-a-dashboard).
+To access [Grafana](https://github.com/grafana/grafana) and visualize the Prometheus-monitored data, follow the instructions [here](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/access-ui.md#grafana) and import the [pre-built dashboard](/config/grafana/ModelMeshMetricsDashboard.json) we provide using [this guide](https://grafana.com/docs/grafana/latest/dashboards/manage-dashboards/#import-a-dashboard).
 
 ## Troubleshooting
 
@@ -179,4 +183,4 @@ If the ModelMesh Serving metric(s) are missing in the monitoring UIs:
 
 - Check if the `ServiceMonitor` resource with name `modelmesh-metrics-monitor` exists.
 
-Additional troubleshooting steps can be found [here](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/troubleshooting.md#troubleshooting-servicemonitor-changes).~~
+Additional troubleshooting steps can be found [here](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/troubleshooting.md#troubleshooting-servicemonitor-changes).
