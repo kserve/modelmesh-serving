@@ -45,9 +45,9 @@ Here is the list of metrics exposed by ModelMesh Serving:
 
 The best way to visualize the metrics is to use Prometheus to collect them from targets by scraping the metrics HTTP endpoints coupled with a Grafana dashboard. Setup instructions are provided below and involve the following steps:
 
-1. [Set up Prometheus Operator](#setup-prometheus-operator)
-2. [Create the ServiceMonitor CRD](#create-the-servicemonitor-crd)
-3. [Import Grafana Dashboard](#Import-Grafana-Dashboard)
+1. [Set up Prometheus Operator](#set-up-prometheus-operator)
+2. [Create the ServiceMonitor CRD](#create-the-servicemonitor-resource)
+3. [Import Grafana Dashboard](#import-the-grafana-dashboard)
 
 ## Monitoring Setup
 
@@ -140,7 +140,7 @@ spec:
 
 Other configurable Prometheus specification fields are listed [here](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#prometheusspec).
 
-## Create a ServiceMonitor
+## Create the ServiceMonitor Resource
 
 [ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) is a custom resource definition provided by Prometheus Operator and is leveraged by ModelMesh for monitoring pods through the `modelmesh-serving` service.
 
