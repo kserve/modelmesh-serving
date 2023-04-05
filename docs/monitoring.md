@@ -2,7 +2,7 @@
 
 ## Overview
 
-Serving runtime pods expose the endpoint `/metrics` on port `2112` and scheme `https` and the metrics published by each pod are mostly disjoint, for aggregation by a monitoring framework (e.g. Grafana), except for [service-wide metrics](#Metrics) with the scope `Deployment`. These are published by only one of the pods at a given time. 
+Serving runtime pods expose the endpoint `/metrics` on port `2112` and scheme `https` and the metrics published by each pod are mostly disjoint, for aggregation by a monitoring framework (e.g. Grafana), except for [service-wide metrics](#Metrics) with the scope `Deployment`. These are published by only one of the pods at a given time.
 
 Endpoints associated with a ModelMesh Serving service (`modelmesh-serving` by default) should be used to track the serving runtime pods' IPs from which Prometheus metrics should be scraped.
 
@@ -52,10 +52,12 @@ The best way to visualize the metrics is to use Prometheus to collect them from 
 ## Monitoring Setup
 
 ### Set up Prometheus Operator
+
 The [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator) is the easiest way to set up both Prometheus and Grafana natively in a Kubernetes cluster. You can clone the [`kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus) project and follow the [quickstart](https://github.com/prometheus-operator/kube-prometheus#quickstart) instructions to set it up.
 By default, the operator sets RBAC rules to enable monitoring for the `default`, `monitoring`, and `kube-system` namespaces to collect Kubernetes and node metrics.
 
 #### Monitor Additional Namespaces
+
 To monitor the `modelmesh-serving` namespace, in the cloned `kube-prometheus` repository, add the following to `manifests/prometheus-roleBindingSpecificNamespaces.yaml`:
 
 ```yaml
@@ -74,12 +76,13 @@ To monitor the `modelmesh-serving` namespace, in the cloned `kube-prometheus` re
     kind: Role
     name: prometheus-k8s
   subjects:
-  - kind: ServiceAccount
-    name: prometheus-k8s
-    namespace: monitoring
+    - kind: ServiceAccount
+      name: prometheus-k8s
+      namespace: monitoring
 ```
 
 and to `manifests/prometheus-roleSpecificNamespaces.yaml`:
+
 ```yaml
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: Role
@@ -92,35 +95,36 @@ and to `manifests/prometheus-roleSpecificNamespaces.yaml`:
     name: prometheus-k8s
     namespace: modelmesh-serving
   rules:
-  - apiGroups:
-    - ""
-    resources:
-    - services
-    - endpoints
-    - pods
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups:
-    - extensions
-    resources:
-    - ingresses
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups:
-    - networking.k8s.io
-    resources:
-    - ingresses
-    verbs:
-    - get
-    - list
-    - watch
+    - apiGroups:
+        - ""
+      resources:
+        - services
+        - endpoints
+        - pods
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - extensions
+      resources:
+        - ingresses
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - networking.k8s.io
+      resources:
+        - ingresses
+      verbs:
+        - get
+        - list
+        - watch
 ```
 
 #### Increase Retention Period
+
 By default, Prometheus only keeps a 24-hour history record. To increase the retention period, modify `manifests/prometheus-prometheus.yaml` by adding:
 
 ```yaml
@@ -136,14 +140,16 @@ spec:
 
 Other configurable Prometheus specification fields are listed [here](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#prometheusspec).
 
-## Create a ServiceMonitor 
+## Create a ServiceMonitor
 
-[ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) is a custom resource definition provided by Prometheus Operator and is leveraged by ModelMesh for monitoring pods through the `modelmesh-serving` service. 
+[ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) is a custom resource definition provided by Prometheus Operator and is leveraged by ModelMesh for monitoring pods through the `modelmesh-serving` service.
 
 Create a `ServiceMonitor` to monitor the `modelmesh-serving` service using the definition found [here](../config/grafana/servicemonitor.yaml).
+
 ```bash
 kubectl apply -f servicemonitor.yaml
 ```
+
 After the `ServiceMonitor` is created, the Prometheus operator will dynamically discover the pods with the label `modelmesh-service: modelmesh-serving` and scrape the metrics endpoint exposed by those pods.
 
 **Note**: By default, when the ModelMesh controller is started, the `ServiceMonitor` is checked. If it exists and `metrics.enabled` is `true`, a `ServiceMonitor` resource
