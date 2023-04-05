@@ -1,4 +1,4 @@
-~~# ModelMesh Metrics
+# ModelMesh Metrics
 
 ## Overview
 
