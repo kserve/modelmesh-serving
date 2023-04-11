@@ -16,13 +16,16 @@
 # Stage 1: Run the go build with go compiler native to the build platform
 # https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 ###############################################################################
-ARG BUILDPLATFORM="linux/amd64"
+#ARG BUILDPLATFORM
 ARG DEV_IMAGE
 FROM --platform=${BUILDPLATFORM} ${DEV_IMAGE} AS build
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+# don't provide "default" values for non-buildx environments, see https://github.com/docker/buildx/issues/510
+#ARG TARGETOS=linux
+#ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 
 LABEL image="build"
 
@@ -36,7 +39,7 @@ COPY pkg/ pkg/
 # Build using native go compiler from BUILDPLATFORM but compiled output for TARGETPLATFORM
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
-    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on go build -a -o manager main.go
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GO111MODULE=on go build -a -o manager main.go
 
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image
