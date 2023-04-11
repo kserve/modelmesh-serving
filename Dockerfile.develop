@@ -18,8 +18,10 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+# don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
+# see https://github.com/docker/buildx/issues/510
+ARG TARGETOS
+ARG TARGETARCH
 
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2

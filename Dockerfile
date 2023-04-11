@@ -16,14 +16,13 @@
 # Stage 1: Run the go build with go compiler native to the build platform
 # https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 ###############################################################################
-#ARG BUILDPLATFORM
+ARG BUILDPLATFORM
 ARG DEV_IMAGE
-FROM --platform=${BUILDPLATFORM} ${DEV_IMAGE} AS build
+FROM --platform=$BUILDPLATFORM $DEV_IMAGE AS build
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# don't provide "default" values for non-buildx environments, see https://github.com/docker/buildx/issues/510
-#ARG TARGETOS=linux
-#ARG TARGETARCH=amd64
+# don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
+# see https://github.com/docker/buildx/issues/510
 ARG TARGETOS
 ARG TARGETARCH
 
