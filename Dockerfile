@@ -16,7 +16,6 @@
 # Stage 1: Run the go build with go compiler native to the build platform
 # https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 ###############################################################################
-ARG BUILDPLATFORM
 ARG DEV_IMAGE
 FROM --platform=$BUILDPLATFORM $DEV_IMAGE AS build
 
