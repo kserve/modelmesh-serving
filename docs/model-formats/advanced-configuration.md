@@ -79,7 +79,7 @@ To pass runtime specific configuration through to MLServer, include a non-empty
 ```
 
 For details on the specification of this configuration, refer to the definition of
-[MLServer's ModelSettings class](https://github.com/SeldonIO/MLServer/blob/0.3.2/mlserver/settings.py#L49).
+[MLServer's ModelSettings class](https://github.com/SeldonIO/MLServer/blob/1.2.4/mlserver/settings.py#L192).
 
 ---
 
