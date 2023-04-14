@@ -670,7 +670,7 @@ var _ = Describe("Predictor", func() {
 			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("1 should be equal to 64"))
+			Expect(err.Error()).To(ContainSubstring("SVC is expecting 64 features as input"))
 		})
 
 		It("should return model metadata", func() {
