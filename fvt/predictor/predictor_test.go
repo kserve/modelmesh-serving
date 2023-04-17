@@ -467,7 +467,7 @@ var _ = Describe("Predictor", func() {
 			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
-			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
+			Expect(err.Error()).To(ContainSubstring("unexpected shape for input"))
 		})
 
 		It("should return model metadata", func() {

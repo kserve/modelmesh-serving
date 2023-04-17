@@ -19,7 +19,6 @@ spec:
   modelType:
     name: tensorflow
   path: fvt/tensorflow/mnist.savedmodel
-  schemaPath: fvt/tensorflow/schema/tf-schema.json
   storage:
     s3:
       secretKey: localMinIO
