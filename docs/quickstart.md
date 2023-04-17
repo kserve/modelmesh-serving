@@ -62,7 +62,7 @@ Three `ServingRuntime`s are included with ModelMesh Serving by default. The curr
 are:
 
 | ServingRuntime | Supported Frameworks                |
-|----------------| ----------------------------------- |
+| -------------- | ----------------------------------- |
 | mlserver-1.x   | sklearn, xgboost, lightgbm          |
 | ovms-1.x       | openvino_ir, onnx                   |
 | torchserve-0.x | pytorch-mar                         |
