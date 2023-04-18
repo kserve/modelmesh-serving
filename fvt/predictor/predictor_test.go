@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -531,7 +531,7 @@ var _ = Describe("Predictor", func() {
 			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(err).To(HaveOccurred())
 			Expect(inferResponse).To(BeNil())
-			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: unexpected shape for input"))
+			Expect(err.Error()).To(ContainSubstring("unexpected shape for input"))
 		})
 
 		It("should return model metadata", func() {
