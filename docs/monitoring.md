@@ -144,7 +144,7 @@ Other configurable Prometheus specification fields are listed [here](https://git
 
 [ServiceMonitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) is a custom resource definition provided by Prometheus Operator and is leveraged by ModelMesh for monitoring pods through the `modelmesh-serving` service.
 
-Create a `ServiceMonitor` to monitor the `modelmesh-serving` service using the definition found [here](../config/grafana/servicemonitor.yaml).
+Create a `ServiceMonitor` to monitor the `modelmesh-serving` service using the definition found [here](../config/prometheus/servicemonitor.yaml).
 
 ```bash
 kubectl apply -f servicemonitor.yaml
@@ -159,7 +159,7 @@ If you have an alternative solution to collect the metrics, you can disable the 
 
 ## Import the Grafana Dashboard
 
-To access [Grafana](https://github.com/grafana/grafana) and visualize the Prometheus-monitored data, follow the instructions [here](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/access-ui.md#grafana) and import the [pre-built dashboard](/config/grafana/ModelMeshMetricsDashboard.json) we provide using [this guide](https://grafana.com/docs/grafana/latest/dashboards/manage-dashboards/#import-a-dashboard).
+To access [Grafana](https://github.com/grafana/grafana) and visualize the Prometheus-monitored data, follow the instructions [here](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/access-ui.md#grafana) and import the [pre-built dashboard](/config/dashboard/ModelMeshMetricsDashboard.json) we provide using [this guide](https://grafana.com/docs/grafana/latest/dashboards/manage-dashboards/#import-a-dashboard).
 
 ## Troubleshooting
 
