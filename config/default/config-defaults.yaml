@@ -38,7 +38,7 @@ restProxy:
       cpu: "1"
       memory: "512Mi"
 storageHelperImage:
-  name: kserve/modelmesh-runtime-adapter
+  name: rafvasq/modelmesh-runtime-adapter
   tag: latest
   command: ["/opt/app/puller"]
 storageHelperResources:
