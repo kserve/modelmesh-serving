@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -73,7 +73,7 @@ func TestNewMergedConfigFromStringImage(t *testing.T) {
 	testCases := []testCase{
 		{
 			configYaml:                 "storageHelperImage:\n  tag: tag-override",
-			expectedStorageHelperImage: "kserve/modelmesh-runtime-adapter:tag-override",
+			expectedStorageHelperImage: "rafvasq/modelmesh-runtime-adapter:tag-override",
 		},
 		{
 			configYaml:             "modelMeshImage:\n  name: model-mesh\n  tag: some-mm-tag",
