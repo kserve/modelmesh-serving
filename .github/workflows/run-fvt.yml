@@ -73,7 +73,7 @@ jobs:
           docker pull seldonio/mlserver:1.2.4
           docker pull openvino/model_server:2022.2
           # docker pull pytorch/torchserve:0.6.0-cpu
-          docker pull rafvasq/modelmesh-runtime-adapter
+          docker pull kserve/modelmesh-runtime-adapter
           docker pull kserve/rest-proxy
           docker pull kserve/modelmesh
       - name: Check installation

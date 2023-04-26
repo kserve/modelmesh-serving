@@ -73,7 +73,7 @@ func TestNewMergedConfigFromStringImage(t *testing.T) {
 	testCases := []testCase{
 		{
 			configYaml:                 "storageHelperImage:\n  tag: tag-override",
-			expectedStorageHelperImage: "rafvasq/modelmesh-runtime-adapter:tag-override",
+			expectedStorageHelperImage: "kserve/modelmesh-runtime-adapter:tag-override",
 		},
 		{
 			configYaml:             "modelMeshImage:\n  name: model-mesh\n  tag: some-mm-tag",
