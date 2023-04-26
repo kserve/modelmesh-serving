@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,8 +57,8 @@ import (
 	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
-const PredictorTimeout = time.Second * 120       // absolute time to wait for predictor to become ready
-const TimeForStatusToStabilize = time.Second * 5 // time to wait between watcher events before assuming a stable state
+const PredictorTimeout = time.Second * 120        // absolute time to wait for predictor to become ready
+const TimeForStatusToStabilize = time.Second * 20 // time to wait between watcher events before assuming a stable state
 
 type ModelServingConnectionType int
 
