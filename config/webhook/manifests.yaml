@@ -22,7 +22,6 @@ webhooks:
       caBundle: Cg==
       service:
         name: modelmesh-webhook-server-service
-        namespace: system
         path: /validate-serving-modelmesh-io-v1alpha1-servingruntime
         port: 9443
     failurePolicy: Fail

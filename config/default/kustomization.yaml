@@ -19,14 +19,14 @@ vars:
     objref:
       group: cert-manager.io
       kind: Certificate
-      name: serving-cert
+      name: modelmesh-webhook-server-cert
       version: v1
   - fieldref: {}
     name: CERTIFICATE_NAME_PLACEHOLDER
     objref:
       group: cert-manager.io
       kind: Certificate
-      name: serving-cert
+      name: modelmesh-webhook-server-cert
       version: v1
   - fieldref:
       fieldPath: metadata.namespace

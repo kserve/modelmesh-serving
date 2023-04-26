@@ -15,7 +15,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: modelmesh-controller
-  namespace: system
 spec:
   template:
     spec:
