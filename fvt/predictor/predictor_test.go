@@ -601,7 +601,7 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 	// TorchServe test is currently disabled
-	var _ = FDescribe("TorchServe Inference", Ordered, func() {
+	var _ = Describe("TorchServe Inference", Ordered, func() {
 		var torchservePredictorObject *unstructured.Unstructured
 		var torchservePredictorName string
 
