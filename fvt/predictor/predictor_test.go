@@ -1115,7 +1115,7 @@ var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
 		FVTClientInstance.UpdateConfigMapTLS(MutualTLSConfig)
 
 		By("Waiting for stable deploy state after MutualTLSConfig")
-		WaitForStableActiveDeployState(time.Second * 30)
+		WaitForStableActiveDeployState(time.Second * 100)
 
 		// load the test predictor object
 		xgboostPredictorObject = NewPredictorForFVT("xgboost-predictor.yaml")
