@@ -11,11 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# This patch add annotation to admission webhook config and
-# the string CERTIFICATE_NAMESPACE_PLACEHOLDER and CERTIFICATE_NAME_PLACEHOLDER will be replaced by kustomize.
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: servingruntime.serving.kserve.io
-  annotations:
-    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE_PLACEHOLDER)/$(CERTIFICATE_NAME_PLACEHOLDER)
+  name: modelmesh-webhook
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: modelmesh-controller
+      control-plane: modelmesh-controller
+  ingress:
+    # exposed for webhook
+    - ports:
+        - port: 9443
+          protocol: TCP
+  policyTypes:
+    - Ingress

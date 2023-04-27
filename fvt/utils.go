@@ -122,6 +122,11 @@ func GetMap(obj *unstructured.Unstructured, fieldPath ...string) map[string]inte
 	return value
 }
 
+func SetMap(obj *unstructured.Unstructured, value map[string]interface{}, fieldPath ...string) {
+	err := unstructured.SetNestedMap(obj.Object, value, fieldPath...)
+	Expect(err).ToNot(HaveOccurred())
+}
+
 func SetString(obj *unstructured.Unstructured, value string, fieldPath ...string) {
 	err := unstructured.SetNestedField(obj.Object, value, fieldPath...)
 	Expect(err).ToNot(HaveOccurred())
