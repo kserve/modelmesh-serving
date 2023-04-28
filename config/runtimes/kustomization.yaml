@@ -20,7 +20,7 @@ resources:
 images:
   - name: tritonserver-2
     newName: nvcr.io/nvidia/tritonserver
-    newTag: "23.03-py3"
+    newTag: "23.04-py3"
 
   - name: mlserver-0
     newName: seldonio/mlserver
