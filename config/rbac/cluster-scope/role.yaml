@@ -197,3 +197,15 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+      - horizontalpodautoscalers/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
