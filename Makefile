@@ -179,4 +179,5 @@ check-doc-links:
 $(eval $(RUN_ARGS):;@:)
 
 # Remove $(MAKECMDGOALS) if you don't intend make to just be a taskrunner
-.PHONY: all generate manifests check-doc-links fmt fvt controller-gen oc-login deploy-release build.develop $(MAKECMDGOALS)
+# https://stackoverflow.com/questions/44492805/declare-all-targets-phony/44499287#44499287
+.PHONY: all $(MAKECMDGOALS)

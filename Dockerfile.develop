@@ -46,10 +46,9 @@ RUN --mount=type=cache,target=/root/.cache/dnf:rw \
 
 # Install pre-commit
 ARG PIP_CACHE_DIR=/root/.cache/pip
-RUN --mount=type=cache,target=$PIP_CACHE_DIR \
+RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install pre-commit && \
     pip3 list
-
 
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
 # Then download and overwrite kubebuilder binary with desired/latest version
