@@ -8,6 +8,8 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
 - At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
+_(Note)_ Regarding webhook certificates, there are 2 options: `cert-manager` and `self-signed-certificate`. Please refer to [install help](install/install-script.md#installation-1).
+
 ## 1. Install ModelMesh Serving
 
 ### Get the latest release
@@ -22,7 +24,7 @@ cd modelmesh-serving
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart --enable-self-signed-ca
 ```
 
 This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.

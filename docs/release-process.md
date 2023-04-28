@@ -141,7 +141,6 @@ with KServe.
 1. Generate the release manifests on the `release-*` branch:
 
    ```Shell
-   kustomize build config/default > modelmesh.yaml
    kustomize build config/runtimes --load-restrictor LoadRestrictionsNone > modelmesh-runtimes.yaml
    cp config/dependencies/quickstart.yaml modelmesh-quickstart-dependencies.yaml
    ```

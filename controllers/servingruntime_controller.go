@@ -23,31 +23,30 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
-	"github.com/kserve/modelmesh-serving/pkg/config"
+	"github.com/go-logr/logr"
+	mf "github.com/manifestival/manifestival"
 
+	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
+	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
+	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	"github.com/kserve/modelmesh-serving/controllers/autoscaler"
+	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
+	"github.com/kserve/modelmesh-serving/pkg/config"
 	"github.com/kserve/modelmesh-serving/pkg/mmesh"
 	"github.com/kserve/modelmesh-serving/pkg/predictor_source"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/go-logr/logr"
-	mf "github.com/manifestival/manifestival"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
-	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
-	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
 )
 
 const (
@@ -184,6 +183,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Reconcile this serving runtime
 	rt := &kserveapi.ServingRuntime{}
+	crt := &kserveapi.ClusterServingRuntime{}
 	var owner mf.Owner
 	var spec *kserveapi.ServingRuntimeSpec
 
@@ -197,7 +197,6 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return r.removeRuntimeFromInfoMap(req)
 		}
 		// try to find the runtime in cluster ServingRuntimes
-		crt := &kserveapi.ClusterServingRuntime{}
 		if err = r.Client.Get(ctx, types.NamespacedName{Name: req.Name}, crt); err == nil {
 			spec = &crt.Spec
 			owner = crt
@@ -270,11 +269,58 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
+	// At the moment, ModelMesh deployment name is the combined of ServingRuntime and deploymentObject name.
+	// TO-DO: refactor the mmDeploymentName to use mmDeployment object name.
+	mmDeploymentName := fmt.Sprintf("%s-%s", mmDeployment.ServiceName, mmDeployment.Name)
+
+	var as *autoscaler.AutoscalerReconciler
+	if crt.GetName() != "" {
+		as, err = autoscaler.NewAutoscalerReconciler(r.Client, r.Client.Scheme(), crt, mmDeploymentName, mmDeployment.Namespace)
+	} else {
+		as, err = autoscaler.NewAutoscalerReconciler(r.Client, r.Client.Scheme(), rt, mmDeploymentName, mmDeployment.Namespace)
+	}
+
+	if err != nil {
+		log.Error(err, "fails to create an autoscaler controller: %w", "skip to create HPA")
+	}
+
 	replicas, requeueDuration, err := r.determineReplicasAndRequeueDuration(ctx, log, cfg, spec, req.NamespacedName)
 	if err != nil {
 		return RequeueResult, fmt.Errorf("could not determine replicas: %w", err)
 	}
-	mmDeployment.Replicas = replicas
+
+	//ScaleToZero or None autoscaler case
+	if replicas == uint16(0) || as.Autoscaler.AutoscalerClass == autoscaler.AutoscalerClassNone {
+		mmDeployment.Replicas = replicas
+		if _, err = as.Reconcile(true); err != nil {
+			return ctrl.Result{}, fmt.Errorf("HPA reconcile error: %w", err)
+		}
+	} else {
+		//Autoscaler case
+		if as.Autoscaler != nil {
+
+			// To-Do Skip changing replicas when the replicas of the runtime deployment is bigger than 0
+			// Workaround - if deployment replica is 0, set HPA minReplicas. Else, it sets the same replicas of the deployment
+			existingDeployment := &appsv1.Deployment{}
+			if err = r.Client.Get(ctx, types.NamespacedName{
+				Name:      mmDeploymentName,
+				Namespace: req.Namespace,
+			}, existingDeployment); err != nil {
+				return ctrl.Result{}, fmt.Errorf("Could not get the deployment for the servingruntime : %w", err)
+			}
+			if *existingDeployment.Spec.Replicas == int32(0) {
+				mmDeployment.Replicas = uint16(*(as.Autoscaler.HPA.HPA).Spec.MinReplicas)
+			} else {
+				mmDeployment.Replicas = uint16(*(existingDeployment.Spec.Replicas))
+			}
+		}
+
+		//Create or Update HPA
+		if _, err = as.Reconcile(false); err != nil {
+			return ctrl.Result{}, fmt.Errorf("HPA reconcile error: %w", err)
+		}
+	}
+
 	if err = mmDeployment.Apply(ctx); err != nil {
 		if errors.IsConflict(err) {
 			// this can occur during normal operations if the deployment was updated

@@ -51,7 +51,8 @@ test:
 
 # Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 fvt:
-	ginkgo -v -procs=2 --progress --fail-fast fvt/predictor fvt/scaleToZero fvt/storage --timeout=50m
+	ginkgo -v -procs=2 --progress --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
+
 
 # Command to regenerate the grpc go files from the proto files
 fvt-protoc:
@@ -90,6 +91,15 @@ deploy-release:
 
 deploy-release-dev-mode:
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging
+
+deploy-release-dev-mode-fvt:
+ifdef MODELMESH_SERVING_IMAGE
+	$(eval extra_options += --modelmesh-serving-image ${MODELMESH_SERVING_IMAGE}) 
+endif
+ifdef NAMESPACE_SCOPE_MODE
+	$(eval extra_options += --namespace-scope-mode) 
+endif 
+	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging --fvt ${extra_options}
 
 delete: oc-login
 	./scripts/delete.sh --namespace ${NAMESPACE} --local-config-path config
