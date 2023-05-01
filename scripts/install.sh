@@ -325,16 +325,17 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   # comment out vars
   configMapGeneratorStartLine=$(grep -n configMapGenerator ./default/kustomization.yaml |cut -d':' -f1)
   configMapGeneratorBeforeLine=$((configMapGeneratorStartLine-1))
-  sed "1,${configMapGeneratorBeforeLine}s/^/#/g" -i default/kustomization.yaml
-  
+  sed -i.bak "1,${configMapGeneratorBeforeLine}s/^/#/g" default/kustomization.yaml
+
   # remove webhookcainjection_patch.yaml
-  sed 's+- webhookcainjection_patch.yaml++g' -i default/kustomization.yaml
+  sed -i.bak  's+- webhookcainjection_patch.yaml++g' default/kustomization.yaml
 
   # create dummy secret 'modelmesh-webhook-server-cert'
   secretExist=$(kubectl get secret modelmesh-webhook-server-cert --ignore-not-found|wc -l)
-  if [[ $secretExist == 0 ]]; then
+  if [[ $secretExist -eq 0 ]]; then
     kubectl create secret generic modelmesh-webhook-server-cert 
   fi
+  rm default/kustomization.yaml.bak
 fi
 
 kustomize build default | kubectl apply -f -
@@ -365,10 +366,9 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   info "Enabled Self Signed CA: Generate certificates and restart controller"
   
   # Delete dummy secret for webhook server
-  kubectl delete secret modelmesh-webhook-server-cert 
+  kubectl delete secret modelmesh-webhook-server-cert
 
   ../scripts/self-signed-ca.sh --namespace $namespace
-
 fi
 
 info "Waiting for ModelMesh Serving controller pod to be up..."
