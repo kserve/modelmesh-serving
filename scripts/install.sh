@@ -328,7 +328,7 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   sed -i.bak "1,${configMapGeneratorBeforeLine}s/^/#/g" default/kustomization.yaml
 
   # remove webhookcainjection_patch.yaml
-  sed -i.bak  's+- webhookcainjection_patch.yaml++g' default/kustomization.yaml
+  sed -i.bak '/webhookcainjection_patch.yaml/d' default/kustomization.yaml
 
   # create dummy secret 'modelmesh-webhook-server-cert'
   secretExist=$(kubectl get secret modelmesh-webhook-server-cert --ignore-not-found|wc -l)
