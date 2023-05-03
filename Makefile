@@ -178,6 +178,8 @@ check-doc-links:
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
 
-# Remove $(MAKECMDGOALS) if you don't intend make to just be a taskrunner
+# Mark "phony" targets (where target is not a file name)
+# Either by adding every (non-file) target as a dependency of the .PHONY pseudo target
+# or we use $(MAKECMDGOALS) plus any target that is a dependency of another target
 # https://stackoverflow.com/questions/44492805/declare-all-targets-phony/44499287#44499287
-.PHONY: all $(MAKECMDGOALS)
+.PHONY: manage generate fmt manifests controller-gen oc-login build build.develop $(MAKECMDGOALS)
