@@ -37,7 +37,11 @@ COPY pkg/ pkg/
 # Build using native go compiler from BUILDPLATFORM but compiled output for TARGETPLATFORM
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
-    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GO111MODULE=on go build -a -o manager main.go
+    GOOS=${TARGETOS:-linux} \
+    GOARCH=${TARGETARCH:-amd64} \
+    CGO_ENABLED=0 \
+    GO111MODULE=on \
+    go build -a -o manager main.go
 
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image
