@@ -116,10 +116,10 @@ openssl x509 -extensions v3_req -req -days 365 -in ${tmpdir}/server.csr -CA ${tm
 kubectl create secret generic ${secret} \
         --from-file=tls.key=${tmpdir}/server.key \
         --from-file=tls.crt=${tmpdir}/server.crt \
-        --dry-run -o yaml |
+        --dry-run=server -o yaml |
     kubectl -n ${namespace} apply -f -
 # Webhook pod needs to be restarted so that the service reload the secret
-# http://github.com/kueflow/kubeflow/issues/3227
+# http://github.com/kubeflow/kubeflow/issues/3227
 webhookPod=$(kubectl get pods -n ${namespace} |grep ${webhookDeploymentName} |awk '{print $1;}')
 # ignore error if webhook pod does not exist
 kubectl delete pod ${webhookPod} -n ${namespace} 2>/dev/null || true
