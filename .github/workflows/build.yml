@@ -1,25 +1,27 @@
-name: Build and Push
+name: Build
 
 on:
   push:
     branches:
-      - 'main'
+      - main
       - 'release-[0-9].[0-9]+'
+    tags:
+      - 'v*'
     paths-ignore:
-      - '**.md'
       - '.github/**'
       - '.tekton/**'
+      - '**.md'
       - 'docs/**'
       - 'fvt/**'
       - 'proto/**'
-    tags:
-      - 'v*'
   pull_request:
-    branches: [ main, 'release-[0-9].[0-9]+' ]
+    branches:
+      - main
+      - 'release-[0-9].[0-9]+'
     paths-ignore:
-      - '**.md'
       - '.github/**'
       - '.tekton/**'
+      - '**.md'
       - 'docs/**'
       - 'fvt/**'
       - 'proto/**'
