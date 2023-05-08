@@ -21,10 +21,10 @@ jobs:
         run: |
           docker system df
           df -h
-          du -h -d1 /      2> /dev/null | sort -rh | head -10
-          du -h -d2 /usr   2> /dev/null | sort -rh | head -10
+          du -sh /*        2> /dev/null | sort -rh  2> /dev/null | head
+          du -h -d2 /usr   2> /dev/null | sort -rh  2> /dev/null | head
 
-      - name: Free up space on GitHub image
+      - name: Free up disk space
         run: |
           # https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
@@ -38,8 +38,7 @@ jobs:
 
       - name: Check disk space after cleanup
         run: |
-          du -h -d1 /      2> /dev/null | sort -rh | head -10
-          du -h -d2 /usr   2> /dev/null | sort -rh | head -10
+          df -h
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -103,10 +102,12 @@ jobs:
           kubectl create ns modelmesh-serving
           ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 
-      - name: Free up disk space
+      - name: Prune docker images
         run: |
+          echo "Pruning docker images"
+          docker image prune -a -f
+          docker system df
           eval $(minikube -p minikube docker-env)
-          echo "Pruning images"
           docker image prune -a -f
           docker system df
           df -h
