@@ -21,22 +21,25 @@ jobs:
         run: |
           docker system df
           df -h
-          du -sh  /*  2> /dev/null | sort -rh | head -10
+          du -h -d1 /      2> /dev/null | sort -rh | head -10
+          du -h -d2 /usr   2> /dev/null | sort -rh | head -10
 
       - name: Free up space on GitHub image
         run: |
           # https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/share/boost
+          # also delete tools/libs for Android (12G), PowerShell (1.3G), Swift (1.7G)
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
 
       - name: Check disk space after cleanup
         run: |
-          set -x
-          du -h -d2 /usr/local   2> /dev/null | sort -rh | head -10
-          du -h -d2 /usr/lib     2> /dev/null | sort -rh | head -10
-          du -h -d2 /usr/share   2> /dev/null | sort -rh | head -10
+          du -h -d1 /      2> /dev/null | sort -rh | head -10
+          du -h -d2 /usr   2> /dev/null | sort -rh | head -10
 
       - name: Checkout
         uses: actions/checkout@v3
