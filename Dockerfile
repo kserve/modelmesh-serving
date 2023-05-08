@@ -12,24 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###############################################################################
+# Stage 1: Run the go build with go compiler native to the build platform
+# https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+###############################################################################
 ARG DEV_IMAGE
+FROM --platform=$BUILDPLATFORM $DEV_IMAGE AS build
 
-###############################################################################
-# Stage 1: Run the build
-###############################################################################
-FROM ${DEV_IMAGE} AS build
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
+# see https://github.com/docker/buildx/issues/510
+ARG TARGETOS
+ARG TARGETARCH
 
 LABEL image="build"
 
-# Copy the go source
+# Copy the go sources
 COPY main.go main.go
 COPY apis/ apis/
 COPY controllers/ controllers/
 COPY generated/ generated/
 COPY pkg/ pkg/
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+# Build using native go compiler from BUILDPLATFORM but compiled output for TARGETPLATFORM
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    GOOS=${TARGETOS:-linux} \
+    GOARCH=${TARGETARCH:-amd64} \
+    CGO_ENABLED=0 \
+    GO111MODULE=on \
+    go build -a -o manager main.go
 
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image

@@ -1,4 +1,4 @@
-name: Lint
+name: Test
 
 on:
   pull_request:
@@ -8,9 +8,13 @@ on:
     paths-ignore:
       - '.github/**'
       - '.tekton/**'
+      - '**.md'
+      - 'docs/**'
+      - 'fvt/**'
+      - 'proto/**'
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -22,8 +26,8 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build develop image
+      - name: Build developer image
         run: make build.develop
 
-      - name: Run lint
-        run: ./scripts/develop.sh make fmt
+      - name: Run unit tests
+        run: ./scripts/develop.sh make test

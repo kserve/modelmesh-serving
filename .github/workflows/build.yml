@@ -1,0 +1,155 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'release-[0-9].[0-9]+'
+    tags:
+      - 'v*'
+    paths-ignore:
+      - '.github/**'
+      - '.tekton/**'
+      - '**.md'
+      - 'docs/**'
+      - 'fvt/**'
+      - 'proto/**'
+  pull_request:
+    branches:
+      - main
+      - 'release-[0-9].[0-9]+'
+    paths-ignore:
+      - '.github/**'
+      - '.tekton/**'
+      - '**.md'
+      - 'docs/**'
+      - 'fvt/**'
+      - 'proto/**'
+
+env:
+  IMAGE_NAME: "kserve/modelmesh-controller"
+  DEV_IMAGE_NAME: "kserve/modelmesh-controller-develop"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      - name: Login to DockerHub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Export docker build args
+        run: |
+          # see: scripts/build_devimage.sh
+          # see: scripts/build_docker.sh
+          
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          
+          # Generate PR tag from github.ref == "refs/pull/123/merge"
+          [ "$VERSION" == "merge" ] && VERSION=$(echo "${{ github.ref }}" | sed -e 's,refs/pull/\(.*\)/merge,pr-\1,')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          git_commit_sha="$(git rev-parse HEAD)"
+          DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
+
+          # generate dev image tag
+          DEV_DEPS="./scripts/build_devimage.sh Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
+          DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | sha1sum | head -c 16)
+
+          # In order for the controller image build to find the developer image
+          # we need to push the developer image to a registry since the docker
+          # exporter does not currently support exporting manifest lists.
+          # When running in a PR we need to use the local image registry service
+          # because the DockerHub push secret is not available on forked PRs.
+          # When pushing to main we do have access to the docker.io push secrets
+          # so we push to the public DockerHub registry.
+          # https://github.com/docker/buildx/issues/59#issuecomment-1189999088
+
+          DEV_IMAGE="docker.io/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"            
+          DEV_IMAGE_EXISTS=false
+
+          # Check if the developer image already exists in the registry. The
+          # developer image doesn't change often and is costly to build. We want
+          # to avoid rebuilding it unnecessarily. If we need to build it and if
+          # this workflow is running on a forked PR, then we must use the local
+          # image registry.
+          if $(docker manifest inspect $DEV_IMAGE >/dev/null ); then
+            DEV_IMAGE_EXISTS=true
+          else
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              DEV_IMAGE="localhost:5000/${{ env.DEV_IMAGE_NAME }}:$DEV_IMG_TAG"
+            fi
+          fi
+
+          # add env vars for following steps 
+          echo "IMAGE_TAG=$VERSION"                 >> $GITHUB_ENV
+          echo "GIT_COMMIT_SHA=$git_commit_sha"     >> $GITHUB_ENV
+          echo "IMAGE_VERSION=$DOCKER_TAG"          >> $GITHUB_ENV
+          echo "DEV_IMAGE=$DEV_IMAGE"               >> $GITHUB_ENV
+          echo "DEV_IMAGE_EXISTS=$DEV_IMAGE_EXISTS" >> $GITHUB_ENV
+
+          # print env vars for debugging
+          cat "$GITHUB_ENV"
+
+      - name: Build and push developer image
+        uses: docker/build-push-action@v4
+        if: env.DEV_IMAGE_EXISTS == 'false'
+        with:
+          platforms: linux/amd64
+          context: .
+          file: Dockerfile.develop
+          push: true
+          tags: ${{ env.DEV_IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set dev image for lint and test
+        run: |
+          docker run --rm ${{ env.DEV_IMAGE }} go version
+          echo -n "${{ env.DEV_IMAGE }}" > .develop_image_name
+
+      - name: Run lint
+        run: ./scripts/develop.sh make fmt
+
+      - name: Run unit test
+        run: ./scripts/develop.sh make test
+
+      - name: Build and push controller image
+        uses: docker/build-push-action@v4
+        with:
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          context: .
+          target: runtime
+          pull: true
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          build-args: |
+            DEV_IMAGE=${{ env.DEV_IMAGE }}
+            IMAGE_VERSION=${{ env.IMAGE_VERSION }}
+            COMMIT_SHA=${{ env.GIT_COMMIT_SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
