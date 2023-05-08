@@ -17,6 +17,24 @@ jobs:
   fvt:
     runs-on: ubuntu-latest
     steps:
+      - name: Check disk space before cleanup
+        run: |
+          du -h -d1 /usr/* 2> /dev/null | sort -rh | head -30
+          du -h -d1 /opt/* 2> /dev/null | sort -rh | head -30
+
+      - name: Free up space on GitHub image
+        run: |
+          # https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Check disk space before checkout
+        run: |
+          du -h -d1 /usr/* 2> /dev/null | sort -rh | head -30
+          du -h -d1 /opt/* 2> /dev/null | sort -rh | head -30
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -45,9 +63,9 @@ jobs:
 
       - name: Update configs
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
-        # on reduced resource environments. Also the RollingUpdate strategy for Runtime deployments
-        # is adjusted for these environments.
-        # Disable the torchserve ServingRuntime for now (insufficent resources to run them all).
+        # on reduced resource environments. The RollingUpdate strategy for Runtime deployments
+        # is also adjusted for these environments.
+        # Disable the torchserve ServingRuntime for now (insufficient resources to run them all).
         run: |
           sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
