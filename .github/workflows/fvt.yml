@@ -11,7 +11,7 @@ on:
       - '!.tekton/**'
       - '!**.md'
       - '!docs/**'
-      - '.github/workflows/run-fvt.yml'
+      - '.github/workflows/fvt.yml'
 
 jobs:
   fvt:
