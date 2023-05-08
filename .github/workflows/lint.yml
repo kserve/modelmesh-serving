@@ -6,6 +6,7 @@ on:
       - 'main'
       - 'release-*'
     paths-ignore:
+      - '.github/**'
       - '.tekton/**'
 
 jobs:
@@ -14,12 +15,6 @@ jobs:
     env:
       CI: true
     steps:
-      - name: Check disk space before checkout
-        run: |
-          docker images
-          docker system df
-          df -h
-          du -sh  /*  2> /dev/null | sort -rh
       - uses: actions/checkout@v2
       - name: Build develop image
         run: make build.develop
