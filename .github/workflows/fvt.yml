@@ -100,10 +100,7 @@ jobs:
 
       - name: Prune docker images
         run: |
-          echo "Pruning docker images"
-          docker image prune -a -f
-          docker system df
-          eval $(minikube -p minikube docker-env)
+          echo "Pruning docker images on GH action runner node"
           docker image prune -a -f
           docker system df
           df -h
