@@ -11,12 +11,31 @@ on:
       - '!.tekton/**'
       - '!**.md'
       - '!docs/**'
-      - '.github/workflows/run-fvt.yml'
+      - '.github/workflows/fvt.yml'
 
 jobs:
   fvt:
     runs-on: ubuntu-latest
     steps:
+      - name: Free up disk space
+        run: |
+          # https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
+          # du -sh /*        2> /dev/null | sort -rh  2> /dev/null | head
+          # du -h -d2 /usr   2> /dev/null | sort -rh  2> /dev/null | head
+          echo "Check free disk space before cleanup."
+          df -h
+          echo "Removing non-essential tools and libraries."
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/share/boost
+          # delete libraries for Android (12G), PowerShell (1.3G), Swift (1.7G)
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          echo "Check free disk space after cleanup."
+          df -h
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -45,9 +64,9 @@ jobs:
 
       - name: Update configs
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
-        # on reduced resource environments. Also the RollingUpdate strategy for Runtime deployments
-        # is adjusted for these environments.
-        # Disable the torchserve ServingRuntime for now (insufficent resources to run them all).
+        # on reduced resource environments. The RollingUpdate strategy for Runtime deployments
+        # is also adjusted for these environments.
+        # Disable the torchserve ServingRuntime for now (insufficient resources to run them all).
         run: |
           sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
@@ -79,10 +98,9 @@ jobs:
           kubectl create ns modelmesh-serving
           ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 
-      - name: Free up disk space
+      - name: Prune docker images
         run: |
-          eval $(minikube -p minikube docker-env)
-          echo "Pruning images"
+          echo "Pruning docker images on GH action runner node"
           docker image prune -a -f
           docker system df
           df -h
