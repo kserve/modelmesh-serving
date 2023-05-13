@@ -37,6 +37,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/mlserver-adapter
@@ -290,6 +291,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/mlserver-adapter
@@ -539,6 +541,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - env:
         - name: REST_PROXY_LISTEN_PORT
@@ -810,6 +813,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/mlserver-adapter
@@ -1056,6 +1060,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/ovms-adapter
@@ -1294,6 +1299,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/torchserve-adapter
@@ -1535,6 +1541,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - command:
         - /opt/app/triton-adapter
@@ -1791,6 +1798,7 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - arm64
       containers:
       - env:
         - name: MODEL_DIRECTORY_PATH
