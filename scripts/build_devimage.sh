@@ -28,9 +28,12 @@ DEV_IMG_TAG=$(cat $(ls ${DEV_DEPS}) | ${SHASUM} | head -c 16)
 
 FULL_IMAGE_NAME="${IMAGE_NAME}:${DEV_IMG_TAG}"
 echo "Pulling dev image ${FULL_IMAGE_NAME}..."
-if $ENGINE pull -q ${FULL_IMAGE_NAME}; then
-    echo "Successfully pulled dev image ${FULL_IMAGE_NAME}"
+if $ENGINE inspect "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
+  echo "Found dev image ${FULL_IMAGE_NAME} locally"
+elif $ENGINE pull -q "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
+  echo "Successfully pulled dev image ${FULL_IMAGE_NAME}"
 else
+  echo "Image ${FULL_IMAGE_NAME} does not exist yet"
   mkdir -p $CONTEXT_DIR
   cp ${DEV_DEPS} ${CONTEXT_DIR}
   echo "Building dev image ${FULL_IMAGE_NAME}"

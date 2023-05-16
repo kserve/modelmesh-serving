@@ -27,9 +27,7 @@ usage() {
   exit 1
 }
 
-REGISTRY="kserve"
 PARAMS=""
-CONTROLLER_IMG="modelmesh-controller"
 
 while (("$#")); do
   arg="$1"
@@ -80,8 +78,11 @@ else
   )
 fi
 
+DEVELOPER_IMG=$(cat .develop_image_name)
+DEVELOPER_IMG=${DEVELOPER_IMG:-"kserve/modelmesh-controller-develop:latest"}
+
 # Run the develop container with local source mounted in
 docker run --rm \
   "${docker_run_args[@]}" \
   --env NAMESPACE \
-  "${REGISTRY}/${CONTROLLER_IMG}-develop:latest" "$@"
+  "${DEVELOPER_IMG}" "$@"

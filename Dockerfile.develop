@@ -15,72 +15,91 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
+FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
-ARG GOLANG_VERSION=1.18.9
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
+# see https://github.com/docker/buildx/issues/510
+ARG TARGETOS
+ARG TARGETARCH
+
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
 ARG KUBEBUILDER_VERSION=v3.3.0
 ARG CONTROLLER_GEN_VERSION=v0.8.0
+
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
 
 USER root
+ENV HOME=/root
 
 WORKDIR /workspace
 
-# Copy the Go Modules manifests
-COPY .pre-commit-config.yaml go.mod go.sum ./
+# Install build and dev tools
+RUN --mount=type=cache,target=/root/.cache/dnf:rw \
+    dnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
+       python3 \
+       python3-pip \
+       nodejs \
+       jq \
+    && true
 
-# Install gcc
-RUN microdnf install \
-    diffutils \
-    gcc-c++ \
-    make \
-    wget \
-    tar \
-    vim \
-    git \
-    python38 \
-    nodejs && \
-    pip3 install pre-commit && \
-# Install go
-    set -eux; \
-    wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
-#    sha256sum *go.tgz; \
-    tar -C /usr/local -xzf go.tgz; \
-    go version && rm go.tgz && \
-# Download and initialize the pre-commit environments before copying the source so they will be cached
-    git init && \
-    pre-commit install-hooks && \
-    rm -rf .git && \
-# Download kubebuilder
-    true \
+# Install pre-commit
+ENV PIP_CACHE_DIR=/root/.cache/pip
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install pre-commit
+
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_linux_amd64.tar.gz | tar -xz -C /tmp/ \
-    && mv /tmp/kubebuilder_*_linux_amd64 /usr/local/kubebuilder \
 # Then download and overwrite kubebuilder binary with desired/latest version
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_linux_amd64 -o /usr/local/kubebuilder/bin/kubebuilder \
-    && true && \
-# download openshift-cli
-    curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-linux.tar.gz \
+RUN true \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS}_${TARGETARCH}.tar.gz | tar -xz -C /tmp/ \
+    && mv /tmp/kubebuilder_*_${TARGETOS}_${TARGETARCH} /usr/local/kubebuilder \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS}_${TARGETARCH} -o /usr/local/kubebuilder/bin/kubebuilder \
+    && true
+
+# Download openshift-cli
+RUN true \
+    && curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/${TARGETARCH}/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
     && tar -xvf /tmp/oc_client.tar.gz -C /tmp \
     && mv /tmp/oc /usr/local/bin \
     && mv /tmp/kubectl /usr/local/bin \
     && chmod a+x /usr/local/bin/oc /usr/local/bin/kubectl \
-    && rm -f /tmp/oc_client.tar.gz && \
-# download kustomize
-    curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz \
+    && rm -f /tmp/oc_client.tar.gz \
+    && true
+
+# Download kustomize
+RUN true \
+    && curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
     && tar -xvf /tmp/kustomize.tar.gz -C /tmp \
     && mv /tmp/kustomize /usr/local/bin \
     && chmod a+x /usr/local/bin/kustomize \
-    && rm -v /tmp/kustomize.tar.gz && \
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
-    go mod download && \
+    && rm -v /tmp/kustomize.tar.gz \
+    && true
+
+# Copy the Go Modules manifests
+COPY .pre-commit-config.yaml go.mod go.sum ./
+
+# Download and initialize the pre-commit environments before copying the source so they will be cached
+RUN true\
+    && git init \
+    && pre-commit install-hooks \
+    && rm -rf .git \
+    && true
+
+# Cache dependencies before copying and building sources so that source changes
+# won't invalidate earlier download layers
+RUN go mod download
+
 # Install controller-gen
-    mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
-    && go mod init tmp && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
-    && rm -rf /tmp/controller-gen-tmp
+RUN true \
+    && mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
+    && go mod init tmp \
+    && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
+    && rm -rf /tmp/controller-gen-tmp \
+    && true
 
 RUN go install github.com/onsi/ginkgo/v2/ginkgo
 ENV PATH=/root/go/bin/:$PATH
+
+# the ubi/go-toolset image doesn't define ENTRYPOINT or CMD, but we need it to run 'make develop'
+CMD /bin/bash

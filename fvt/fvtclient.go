@@ -39,6 +39,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	appsv1 "k8s.io/api/apps/v1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -247,6 +248,11 @@ var (
 		Version:  "v1",
 		Resource: "pods", // this must be the plural form
 	}
+	gvrHPA = schema.GroupVersionResource{
+		Group:    "autoscaling",
+		Version:  "v2beta2",
+		Resource: "horizontalpodautoscalers", // this must be the plural form
+	}
 )
 
 func (fvt *FVTClient) CreatePredictorExpectSuccess(resource *unstructured.Unstructured) *unstructured.Unstructured {
@@ -281,6 +287,57 @@ func (fvt *FVTClient) ApplyPredictorExpectSuccess(predictor *unstructured.Unstru
 	Expect(err).ToNot(HaveOccurred())
 	Expect(obj).ToNot(BeNil())
 	Expect(obj.GetKind()).To(Equal(PredictorKind))
+	return obj
+}
+
+func (fvt *FVTClient) ApplyServingRuntimeExpectSuccess(servingRuntime *unstructured.Unstructured) *unstructured.Unstructured {
+	// use server-side-apply with Patch
+	servingRuntime.SetManagedFields(nil)
+	patch, err := yaml.Marshal(servingRuntime)
+	Expect(err).ToNot(HaveOccurred())
+
+	obj, err := fvt.Resource(gvrRuntime).Namespace(fvt.namespace).Patch(context.TODO(), servingRuntime.GetName(), types.ApplyPatchType, patch, applyPatchOptions)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(obj).ToNot(BeNil())
+	Expect(obj.GetKind()).To(Equal(ServingRuntimeKind))
+	return obj
+}
+
+func (fvt *FVTClient) ApplyClusterServingRuntimeExpectSuccess(clusterServingRuntime *unstructured.Unstructured) *unstructured.Unstructured {
+	// use server-side-apply with Patch
+	clusterServingRuntime.SetManagedFields(nil)
+	patch, err := yaml.Marshal(clusterServingRuntime)
+	Expect(err).ToNot(HaveOccurred())
+
+	obj, err := fvt.Resource(gvrCRuntime).Patch(context.TODO(), clusterServingRuntime.GetName(), types.ApplyPatchType, patch, applyPatchOptions)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(obj).ToNot(BeNil())
+	Expect(obj.GetKind()).To(Equal(ClusterServingRuntimeKind))
+	return obj
+}
+
+func (fvt *FVTClient) SetServingRuntimeAnnotation(expectedRuntimeName string, annotations map[string]interface{}) {
+	fvt.log.Info("Set annotations for a runtime: "+expectedRuntimeName, "annotations", annotations)
+
+	var srObject *unstructured.Unstructured
+	if NameSpaceScopeMode {
+		srObject = FVTClientInstance.GetServingRuntime(expectedRuntimeName)
+	} else {
+		srObject = FVTClientInstance.GetClusterServingRuntime(expectedRuntimeName)
+	}
+
+	SetMap(srObject, annotations, "metadata", "annotations")
+
+	if NameSpaceScopeMode {
+		FVTClientInstance.ApplyServingRuntimeExpectSuccess(srObject)
+	} else {
+		FVTClientInstance.ApplyClusterServingRuntimeExpectSuccess(srObject)
+	}
+}
+
+func (fvt *FVTClient) GetClusterServingRuntime(name string) *unstructured.Unstructured {
+	obj, err := fvt.Resource(gvrCRuntime).Get(context.TODO(), name, metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
 	return obj
 }
 
@@ -379,6 +436,13 @@ func (fvt *FVTClient) PrintPredictors() {
 	err := fvt.RunKubectl("get", "predictors")
 	if err != nil {
 		fvt.log.Error(err, "Error running get predictors command")
+	}
+}
+
+func (fvt *FVTClient) PrintHPAs() {
+	err := fvt.RunKubectl("get", "hpa")
+	if err != nil {
+		fvt.log.Error(err, "Error running get hpa command")
 	}
 }
 
@@ -751,6 +815,24 @@ func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
 	deployWatcher, err := fvt.Resource(gvrDeployment).Namespace(fvt.namespace).Watch(context.TODO(), deploymentListOptions)
 	Expect(err).ToNot(HaveOccurred())
 	return deployWatcher
+}
+
+func (fvt *FVTClient) ListHPAs() hpav2beta2.HorizontalPodAutoscalerList {
+	var err error
+
+	listOptions := metav1.ListOptions{LabelSelector: "app.kubernetes.io/managed-by=modelmesh-controller", TimeoutSeconds: &DefaultTimeout}
+	u, err := fvt.Resource(gvrHPA).Namespace(fvt.namespace).List(context.TODO(), listOptions)
+	Expect(err).ToNot(HaveOccurred())
+
+	var hpaList hpav2beta2.HorizontalPodAutoscalerList
+	for _, uh := range u.Items {
+		var h hpav2beta2.HorizontalPodAutoscaler
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uh.Object, &h)
+		Expect(err).ToNot(HaveOccurred())
+		hpaList.Items = append(hpaList.Items, h)
+	}
+
+	return hpaList
 }
 
 func (fvt *FVTClient) ListDeploys() appsv1.DeploymentList {

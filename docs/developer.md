@@ -6,6 +6,8 @@ This document outlines some of the development practices with ModelMesh Serving.
 
 Local Kubernetes clusters can easily be set up using tools like [kind](https://kind.sigs.k8s.io/) and [minikube](https://minikube.sigs.k8s.io/docs/).
 
+_(Note)_ Regarding webhook certificates, there are 2 options: `cert-manager` and `self-signed-certificate`. Please refer to [install help](install/install-script.md#installation-1).
+
 For example, using `kind`:
 
 ```shell
@@ -56,6 +58,16 @@ you will need to restart the controller pod. This can be done through the follow
 
 ```shell
 kubectl rollout restart deploy modelmesh-controller
+```
+
+## Deploying a custom controller image
+
+If you have a custom controller image in your repository, set `MODELMESH_SERVING_IMAGE` to deploy it. The following example deploys the custom controller image `quay.io/$org/modelmesh-controller:custom` in the `modelmesh-serving` namespace with `fvt` dependencies:
+
+```shell
+NAMESPACE=modelmesh-serving \
+MODELMESH_SERVING_IMAGE=quay.io/$org/modelmesh-controller:custom \
+make deploy-release-dev-mode-fvt
 ```
 
 ## Building the developer image

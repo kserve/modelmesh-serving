@@ -437,6 +437,7 @@ func WaitForRuntimeDeploymentsToBeStable(timeToStabilize time.Duration, watcher 
 	}
 
 	Expect(allReady).To(BeTrue(), fmt.Sprintf("Timed out before deployments were ready: %v", deploymentReady))
+
 }
 
 func logPredictorStatus(obj *unstructured.Unstructured) []interface{} {

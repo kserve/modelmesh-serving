@@ -26,6 +26,8 @@ quickstart=false
 fvt=false
 user_ns_array=
 namespace_scope_mode=false # change to true to run in namespace scope
+modelmesh_serving_image=
+enable_self_signed_ca=false
 
 function showHelp() {
   echo "usage: $0 [flags]"
@@ -39,6 +41,8 @@ function showHelp() {
   echo "  --fvt                          Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for development with fvt enabled"
   echo "  -dev, --dev-mode-logging       Enable dev mode logging (stacktraces on warning and no sampling)"
   echo "  --namespace-scope-mode         Run ModelMesh Serving in namespace scope mode"
+  echo "  --modelmesh-serving-image      Set a custom modelmesh serving image"
+  echo "  --enable-self-signed-ca        Enable self-signed-ca, if you don't have cert-manager in the cluster"
   echo
   echo "Installs ModelMesh Serving CRDs, controller, and built-in runtimes into specified"
   echo "Kubernetes namespaces."
@@ -166,9 +170,17 @@ while (($# > 0)); do
     ;;
   --fvt)
     fvt=true
+    enable_self_signed_ca=true
     ;;
   --namespace-scope-mode)
     namespace_scope_mode=true
+    ;;
+  --modelmesh-serving-image)
+    shift
+    modelmesh_serving_image="$1"
+    ;;
+  --enable-self-signed-ca )
+    enable_self_signed_ca=true
     ;;
   -*)
     die "Unknown option: '${1}'"
@@ -290,6 +302,42 @@ else
 fi
 
 info "Installing ModelMesh Serving CRDs and controller"
+if [[ -n $modelmesh_serving_image ]]; then 
+  info "Custom ModelMesh Serving Image: $modelmesh_serving_image"
+  if [[ ! -f manager/kustomization.yaml.ori ]]; then
+    cp manager/kustomization.yaml  manager/kustomization.yaml.ori
+  fi
+  cd manager; kustomize edit set image modelmesh-controller=${modelmesh_serving_image}; cd ../
+fi   
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  info "Enabled Self Signed CA: Update manifest"
+  if [[ ! -f certmanager/kustomization.yaml.ori ]]; then
+    cp certmanager/kustomization.yaml  certmanager/kustomization.yaml.ori
+  fi
+  cd certmanager; kustomize edit remove resource certificate.yaml; cd ../
+
+  if [[ ! -f default/kustomization.yaml.ori ]]; then
+    cp default/kustomization.yaml  default/kustomization.yaml.ori
+  fi
+  cd default; kustomize edit remove resource ../certmanager; cd ../
+
+  # comment out vars
+  configMapGeneratorStartLine=$(grep -n configMapGenerator ./default/kustomization.yaml |cut -d':' -f1)
+  configMapGeneratorBeforeLine=$((configMapGeneratorStartLine-1))
+  sed -i.bak "1,${configMapGeneratorBeforeLine}s/^/#/g" default/kustomization.yaml
+
+  # remove webhookcainjection_patch.yaml
+  sed -i.bak '/webhookcainjection_patch.yaml/d' default/kustomization.yaml
+
+  # create dummy secret 'modelmesh-webhook-server-cert'
+  secretExist=$(kubectl get secret modelmesh-webhook-server-cert --ignore-not-found|wc -l)
+  if [[ $secretExist -eq 0 ]]; then
+    kubectl create secret generic modelmesh-webhook-server-cert 
+  fi
+  rm default/kustomization.yaml.bak
+fi
+
 kustomize build default | kubectl apply -f -
 
 if [[ $dev_mode_logging == "true" ]]; then
@@ -305,7 +353,25 @@ if [[ $namespace_scope_mode == "true" ]]; then
   rm crd/kustomization.yaml.bak
 fi
 
-info "Waiting for ModelMesh Serving controller pod to be up ..."
+if [[ -n $modelmesh_serving_image ]]; then 
+  cp manager/kustomization.yaml.ori  manager/kustomization.yaml
+  rm manager/kustomization.yaml.ori 
+fi
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  cp certmanager/kustomization.yaml.ori  certmanager/kustomization.yaml
+  cp default/kustomization.yaml.ori  default/kustomization.yaml
+  rm certmanager/kustomization.yaml.ori default/kustomization.yaml.ori
+
+  info "Enabled Self Signed CA: Generate certificates and restart controller"
+  
+  # Delete dummy secret for webhook server
+  kubectl delete secret modelmesh-webhook-server-cert
+
+  ../scripts/self-signed-ca.sh --namespace $namespace
+fi
+
+info "Waiting for ModelMesh Serving controller pod to be up..."
 wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
 # Older versions of kustomize have different load restrictor flag formats.

@@ -1,4 +1,4 @@
-[![Build and Push](https://github.com/kserve/modelmesh-serving/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/kserve/modelmesh-serving/actions/workflows/build-and-push.yml)
+[![Build](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml/badge.svg)](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml)
 
 # ModelMesh Serving
 
