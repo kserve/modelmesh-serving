@@ -130,7 +130,7 @@ var _ = Describe("ISVCs", func() {
 			// after changing the storage-config, the runtime pod(s) restart with
 			// updated PVC mounts, wait for stability
 			By("Waiting for stable deploy state")
-			WaitForStableActiveDeployState(time.Second * 60)
+			WaitForStableActiveDeployState(time.Second * 30)
 
 			isvcObject = NewIsvcForFVT(isvcFiles[isvcWithPvcNotInStorageConfig])
 
