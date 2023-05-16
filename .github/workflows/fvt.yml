@@ -80,7 +80,7 @@ jobs:
             config/runtimes/ovms-1.x.yaml
           sed -i 's/maxSurge:.*$/maxSurge: 0/' config/internal/base/deployment.yaml.tmpl
           sed -i 's/maxUnavailable:.*$/maxUnavailable: 100%/' config/internal/base/deployment.yaml.tmpl
-          echo -e '\n disabled: true' >> config/runtimes/torchserve-0.x.yaml
+          echo -e '\n  disabled: true' >> config/runtimes/torchserve-0.x.yaml
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
