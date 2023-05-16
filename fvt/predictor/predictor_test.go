@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -114,14 +114,14 @@ var predictorsArray = []FVTPredictor{
 		differentPredictorFilename: "xgboost-predictor.yaml",
 	},
 	// TorchServe test is currently disabled
-	//{
-	//	predictorName:              "pytorch-mar",
-	//	predictorFilename:          "pytorch-mar-predictor.yaml",
-	//	currentModelPath:           "fvt/pytorch/pytorch-mar/mnist.mar",
-	//	updatedModelPath:           "fvt/pytorch/pytorch-mar-dup/mnist.mar",
-	//	differentPredictorName:     "pytorch",
-	//	differentPredictorFilename: "pytorch-predictor.yaml",
-	//},
+	// {
+	// 	predictorName:              "pytorch-mar",
+	// 	predictorFilename:          "pytorch-mar-predictor.yaml",
+	// 	currentModelPath:           "fvt/pytorch/pytorch-mar/mnist.mar",
+	// 	updatedModelPath:           "fvt/pytorch/pytorch-mar-dup/mnist.mar",
+	// 	differentPredictorName:     "pytorch",
+	// 	differentPredictorFilename: "pytorch-predictor.yaml",
+	// },
 }
 
 type FVTInferenceService struct {
