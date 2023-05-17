@@ -44,64 +44,68 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: all
+## Alias for `manager`
 all: manager
 
-# Run unit tests
 .PHONY: test
+## Run unit tests
 test:
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
 
-# Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 .PHONY: fvt
+## Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 fvt:
 	ginkgo -v -procs=2 --progress --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
 
 
-# Command to regenerate the grpc go files from the proto files
 .PHONY: fvt-protoc
+## Regenerate the grpc go files from the proto files
 fvt-protoc:
 	rm -rf fvt/generated
 	protoc -I=fvt/proto --go_out=plugins=grpc:. --go_opt=module=github.com/kserve/modelmesh-serving $(shell find fvt/proto -iname "*.proto")
 
 .PHONY: fvt-with-deploy
+## Alias for `oc-login, deploy-release-dev-mode, fvt`
 fvt-with-deploy: oc-login deploy-release-dev-mode fvt
 
 .PHONY: oc-login
+## Login
 oc-login:
 	oc login --token=${OCP_TOKEN} --server=https://${OCP_ADDRESS} --insecure-skip-tls-verify=true
 
-# Build manager binary
 .PHONY: manager
+## Build manager binary
 manager: generate fmt
 	go build -o bin/manager main.go
 
-# Run against the configured Kubernetes cluster in ~/.kube/config
 .PHONY: start
+## Run against a k8s cluster
 start: generate fmt manifests
 	go run ./main.go
 
-# Install CRDs into a cluster
 .PHONY: install
+## Install CRDs into a k8s cluster
 install: manifests
 	kustomize build config/crd | kubectl apply -f -
 
-# Uninstall CRDs from a cluster
 .PHONY: uninstall
+## Uninstall CRDs from a k8s cluster
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 .PHONY: deploy
+## Deploy controller in a k8s cluster
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
 
-# artifactory creds set via env var
 .PHONY: deploy-release
+## Deploy release (artifactory creds set via env var)
 deploy-release:
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config
 
 .PHONY: deploy-release-dev-mode
+## Deploy release in dev mode (artifactory creds set via env var)
 deploy-release-dev-mode:
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging
 
@@ -119,8 +123,8 @@ endif
 delete: oc-login
 	./scripts/delete.sh --namespace ${NAMESPACE} --local-config-path config
 
-# Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
+## Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 		# NOTE: We're currently copying the CRD manifests from KServe rather than using this target to regenerate those
 		# that are common (all apart from predictors) because the formatting ends up different depending on the version
@@ -133,50 +137,48 @@ manifests: controller-gen
 	rm -f ./config/crd/bases/serving.kserve.io_trainedmodels.yaml
 	pre-commit run --all-files prettier > /dev/null || true
 
-# Run go fmt against code
 .PHONY: fmt
+## Run go fmt against code
 fmt:
 	./scripts/fmt.sh || (echo "Linter failed: $$?"; git status; exit 1)
 
-# Generate code
 .PHONY: generate
+## Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="scripts/controller-gen-header.go.tmpl" paths="./..."
 	pre-commit run --all-files prettier > /dev/null || true
 
-# Build the final runtime docker image
 .PHONY: build
+## Build runtime docker image
 build:
 	./scripts/build_docker.sh --target runtime --engine $(ENGINE)
 
-# Build the develop docker image
 .PHONY: build.develop
+## Build develop docker image
 build.develop:
 	./scripts/build_devimage.sh $(ENGINE)
 
-# Start a terminal session in the develop docker container
 .PHONY: develop
+## Build develop docker image and run an interactive shell in the develop envionment
 develop: build.develop
 	./scripts/develop.sh
 
-# Run make commands from within the develop docker container
-# For example, `make run fmt` will execute `make fmt` within the docker container
 .PHONY: run
+## Build develop docker image and run a make command in the develop envionment (e.g. `make run fmt` will execute `make fmt` within the docker container)
 run: build.develop
 	./scripts/develop.sh make $(RUN_ARGS)
 
-# Build the docker image
 .PHONY: docker-build
+## Build the docker image
 docker-build: build
 
-# Push the docker image
 .PHONY: docker-push
+## Push the docker image
 docker-push:
 	docker push ${IMG}
 
-# find or download controller-gen
-# download controller-gen if necessary
 .PHONY: controller-gen
+## Find or download controller-gen
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
@@ -192,15 +194,21 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-# Model Mesh gRPC codegen
 .PHONY: mmesh-codegen
+## Model Mesh gRPC codegen
 mmesh-codegen:
 	protoc -I proto/ --go_out=plugins=grpc:generated/ $(PROTO_FILES)
 
-# Check markdown files for invalid links
 .PHONY: check-doc-links
+## Check markdown files for invalid links
 check-doc-links:
 	@python3 scripts/verify_doc_links.py && echo "$@: OK"
+
+.PHONY: help
+## Print Makefile documentation
+help:
+	@perl -0 -nle 'printf("%-25s - %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
+.DEFAULT_GOAL := help
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
