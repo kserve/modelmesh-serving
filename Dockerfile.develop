@@ -15,7 +15,7 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.19
+FROM registry.access.redhat.com/ubi8/go-toolset:1.18
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
