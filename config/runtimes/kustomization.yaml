@@ -32,7 +32,7 @@ images:
 
   - name: torchserve-0
     newName: pytorch/torchserve
-    newTag: 0.6.0-cpu
+    newTag: 0.7.1-cpu
 
 transformers:
   - ../default/metadataLabelTransformer.yaml
