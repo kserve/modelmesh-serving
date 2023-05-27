@@ -69,8 +69,8 @@ Once the `InferenceService` is created, mlserver runtime pods are automatically 
 $ kubectl get pods
 
 NAME                                               READY   STATUS              RESTARTS   AGE
-modelmesh-serving-mlserver-0.x-658b7dd689-46nwm    0/3     ContainerCreating   0          2s
-modelmesh-serving-mlserver-0.x-658b7dd689-46nwm    0/3     ContainerCreating   0          2s
+modelmesh-serving-mlserver-1.x-658b7dd689-46nwm    0/3     ContainerCreating   0          2s
+modelmesh-serving-mlserver-1.x-658b7dd689-46nwm    0/3     ContainerCreating   0          2s
 modelmesh-controller-568c45b959-nl88c              1/1     Running             0          11m
 ```
 
