@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -671,7 +671,7 @@ var _ = Describe("Predictor", func() {
 			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("1 should be equal to 64"))
+			Expect(err.Error()).To(ContainSubstring("INTERNAL: builtins.ValueError"))
 		})
 
 		It("should return model metadata", func() {
@@ -727,7 +727,7 @@ var _ = Describe("Predictor", func() {
 
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("INVALID_ARGUMENT: Invalid input to XGBoostModel"))
+			Expect(err.Error()).To(ContainSubstring("INTERNAL: builtins.ValueError: cannot reshape array"))
 		})
 	})
 
@@ -885,7 +885,7 @@ var _ = Describe("Predictor", func() {
 
 			Expect(inferResponse).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Unexpected <class 'ValueError'>: cannot reshape array"))
+			Expect(err.Error()).To(ContainSubstring("INTERNAL: builtins.ValueError: cannot reshape array"))
 		})
 	})
 })

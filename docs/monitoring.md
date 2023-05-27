@@ -169,7 +169,7 @@ If the ModelMesh Serving metric(s) are missing in the monitoring UIs:
 
   - Check if the annotations are configured in the Serving Runtime deployment:
 
-          kubectl describe deployment modelmesh-serving-mlserver-0.x -n $NAMESPACE | grep "prometheus.io"
+        kubectl describe deployment modelmesh-serving-mlserver-1.x -n $NAMESPACE | grep "prometheus.io"
 
           Annotations:  prometheus.io/path: /metrics
                         prometheus.io/port: 2112
