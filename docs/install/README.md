@@ -64,7 +64,7 @@ The deployed footprint can be significantly reduced in the following ways:
 
 ```shell
 > kubectl edit servingruntime triton-2.x
-> kubectl edit servingruntime mlserver-0.x
+> kubectl edit servingruntime mlserver-1.x
 > kubectl edit servingruntime ovms-1.x
 ```
 
