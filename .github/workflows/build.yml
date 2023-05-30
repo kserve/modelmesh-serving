@@ -133,9 +133,7 @@ jobs:
           echo -n "${{ env.DEV_IMAGE }}" > .develop_image_name
 
       - name: Run lint
-        run: |
-          git config --system --add safe.directory /workspace
-          ./scripts/develop.sh make fmt
+        run: ./scripts/develop.sh make fmt
 
       - name: Run unit test
         run: ./scripts/develop.sh make test
