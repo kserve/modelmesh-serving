@@ -27,5 +27,5 @@ jobs:
 
       - name: Run lint
         run: |
-          git config --add safe.directory /workspace
+          git config --global --add safe.directory /workspace
           ./scripts/develop.sh make fmt
