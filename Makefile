@@ -136,7 +136,7 @@ manifests: controller-gen
 # Run go fmt against code
 .PHONY: fmt
 fmt:
-	./scripts/fmt.sh || (echo "Linter failed: $$?"; exit 1)
+	./scripts/fmt.sh || (echo "Linter failed: $$?"; git status; exit 1)
 
 # Generate code
 .PHONY: generate

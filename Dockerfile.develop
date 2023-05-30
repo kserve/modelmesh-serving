@@ -105,5 +105,8 @@ RUN true \
     && ginkgo version \
     && true
 
+# For GitHub Action 'lint', work around error "detected dubious ownership in repository at '/workspace'"
+RUN git config --system --add safe.directory /workspace
+
 # The ubi/go-toolset image doesn't define ENTRYPOINT or CMD, but we need it to run 'make develop'
 CMD /bin/bash
