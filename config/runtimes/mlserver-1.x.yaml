@@ -14,9 +14,9 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: ClusterServingRuntime
 metadata:
-  name: mlserver-0.x
+  name: mlserver-1.x
   labels:
-    name: modelmesh-serving-mlserver-0.x-SR
+    name: modelmesh-serving-mlserver-1.x-SR
 spec:
   supportedModelFormats:
     - name: sklearn
@@ -38,7 +38,7 @@ spec:
 
   containers:
     - name: mlserver
-      image: mlserver-0:replace
+      image: mlserver-1:replace
       env:
         - name: MLSERVER_MODELS_DIR
           value: "/models/_mlserver_models/"

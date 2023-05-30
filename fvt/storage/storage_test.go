@@ -120,7 +120,7 @@ var _ = Describe("ISVCs", func() {
 			// Currently that is not working. Runtime pod events without it:
 			// ---
 			// TYPE     REASON       MESSAGE
-			// Normal   Scheduled    Successfully assigned modelmesh-serving/modelmesh-serving-mlserver-0.x-54685b95d5-6xmck to 10.87.76.74
+			// Normal   Scheduled    Successfully assigned modelmesh-serving/modelmesh-serving-mlserver-1.x-54685b95d5-6xmck to 10.87.76.74
 			// Warning  FailedMount  Unable to attach or mount volumes: unmounted volumes=[storage-config], unattached volumes=[models-dir models-pvc-3 storage-config tc-config etcd-config kube-api-access-pqz7t]: timed out waiting for the condition
 			// Warning  FailedMount  MountVolume.SetUp failed for volume "storage-config" : secret "storage-config" not found
 			// ---
