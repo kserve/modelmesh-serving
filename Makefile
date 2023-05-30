@@ -28,7 +28,7 @@ IMG ?= kserve/modelmesh-controller:latest
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
-CONTROLLER_GEN_VERSION ?= "v0.7.0"
+CONTROLLER_GEN_VERSION ?= "v0.8.0"
 
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 
@@ -146,7 +146,7 @@ generate: controller-gen
 
 # Build the final runtime docker image
 .PHONY: build
-build:
+build: build.develop
 	./scripts/build_docker.sh --target runtime --engine $(ENGINE)
 
 # Build the develop docker image
@@ -181,11 +181,7 @@ controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else

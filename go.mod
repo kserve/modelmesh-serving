@@ -1,6 +1,6 @@
 module github.com/kserve/modelmesh-serving
 
-go 1.18
+go 1.19
 
 require (
 	github.com/dereklstinson/cifar v0.0.0-20200421171932-5722a3b6a0c7
@@ -124,12 +124,4 @@ require (
 	knative.dev/serving v0.37.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-)
-
-replace (
-	// Update go-restful library to avoid CVE-2022-1996
-	github.com/emicklei/go-restful => github.com/emicklei/go-restful v2.16.0+incompatible
-
-	// Update prometheus client to avoid CVE-2022-21698
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.1
 )
