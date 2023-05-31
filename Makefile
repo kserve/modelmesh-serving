@@ -28,7 +28,7 @@ IMG ?= kserve/modelmesh-controller:latest
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
-CONTROLLER_GEN_VERSION ?= "v0.8.0"
+CONTROLLER_GEN_VERSION ?= "v0.11.4"
 
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 
