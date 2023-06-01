@@ -24,6 +24,10 @@ import (
 
 func modelMeshEnabled(n *corev1.Namespace, controllerNamespace string) bool {
 	if v, ok := n.Labels["modelmesh-enabled"]; ok {
+		// Returns false if the namespace state is terminating even though the namespace have the 'modelmesh-enabled=true' label.
+		if n.Status.Phase == corev1.NamespaceTerminating {
+			return false
+		}
 		return v == "true"
 	}
 	return n.Name == controllerNamespace

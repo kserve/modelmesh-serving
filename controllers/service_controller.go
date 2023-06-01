@@ -119,24 +119,34 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		namespace = req.Name
 		n := &corev1.Namespace{}
 		if err := r.Client.Get(ctx, req.NamespacedName, n); err != nil {
+			if k8serr.IsNotFound(err) {
+				err = nil
+			}
 			return ctrl.Result{}, err
 		}
 		if !modelMeshEnabled(n, r.ControllerDeployment.Namespace) {
 			sl := &corev1.ServiceList{}
-			err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace))
-			if err == nil {
+			if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
+				return ctrl.Result{}, err
+			} else {
 				for i := range sl.Items {
 					s := &sl.Items[i]
-					if err2 := r.Delete(ctx, s); err2 != nil && err == nil {
-						err = err2
+					if err := r.Delete(ctx, s); err != nil {
+						return ctrl.Result{}, err
 					}
 				}
 			}
+
 			if mms := r.MMServices.Get(namespace); mms != nil {
 				mms.Disconnect()
 				r.MMServices.Delete(namespace)
+				//requeue is never expected here
+				if _, err, _ := r.reconcileService(ctx, mms, namespace, owner); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
-			return ctrl.Result{}, err
+
+			return ctrl.Result{}, nil
 		}
 		owner = n
 	} else {
@@ -226,6 +236,18 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, mms *mmesh.MMS
 	if err := r.List(ctx, sl, client.HasLabels{"modelmesh-service"}, client.InNamespace(namespace)); err != nil {
 		return nil, err, false
 	}
+
+	n := &corev1.Namespace{}
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: namespace}, n); err != nil {
+		return nil, err, false
+	}
+
+	if !modelMeshEnabled(n, r.ControllerDeployment.Namespace) {
+		r.ModelEventStream.RemoveWatchedService(serviceName, namespace)
+		r.Log.Info("Deleted Watched Service", "name", serviceName, "namespace", namespace)
+		return nil, nil, false
+	}
+
 	var s *corev1.Service
 	for i := range sl.Items {
 		ss := &sl.Items[i]
