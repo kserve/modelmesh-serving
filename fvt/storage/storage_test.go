@@ -24,12 +24,16 @@ import (
 )
 
 var isvcFiles = map[string]string{
+	"isvc-https":            "isvc-https.yaml",
 	"isvc-pvc-storage-uri":  "isvc-pvc-uri.yaml",
 	"isvc-pvc-storage-path": "isvc-pvc-path.yaml",
 	"isvc-pvc2":             "isvc-pvc-2.yaml",
 	"isvc-pvc3":             "isvc-pvc-3.yaml",
 	"isvc-pvc4":             "isvc-pvc-4.yaml",
 }
+
+// ISVC using a model from GitHub via HTTPS URI
+var isvcViaHttps = "isvc-https"
 
 // ISVCs using PVCs from the FVT `storage-config` Secret (config/dependencies/fvt.yaml)
 var isvcWithPvcInStorageConfig = []string{"isvc-pvc-storage-uri", "isvc-pvc-storage-path", "isvc-pvc2"}
@@ -42,6 +46,30 @@ var isvcWithPvcNotInStorageConfig = "isvc-pvc3"
 var isvcWithNonExistentPvc = "isvc-pvc4"
 
 var _ = Describe("ISVCs", func() {
+
+	Describe("with HTTPS storage URI", Ordered, func() {
+		var isvcName string
+		var fileName string
+
+		BeforeAll(func() {
+			isvcName = isvcViaHttps
+			fileName = isvcFiles[isvcName]
+		})
+
+		It("should successfully load a model", func() {
+			isvcObject := NewIsvcForFVT(fileName)
+			isvcName = isvcObject.GetName()
+			CreateIsvcAndWaitAndExpectReady(isvcObject, PredictorTimeout)
+		})
+
+		It("should successfully run inference", func() {
+			ExpectSuccessfulInference_sklearnMnistSvm(isvcName)
+		})
+
+		AfterAll(func() {
+			FVTClientInstance.DeleteIsvc(isvcName)
+		})
+	})
 
 	Describe("with PVC in storage-config", Ordered, func() {
 
