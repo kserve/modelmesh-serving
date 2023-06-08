@@ -390,6 +390,7 @@ func concreteModelName(predictor *api.Predictor, sourceId string) string {
 // "There are no running instances that meet the label requirements of type _default: [_no_runtime]"
 const noHomeMessage string = "There are no running instances that meet the label requirements of type "
 
+//If this function setting the error, "RuntimeNotRecognize" should've to be controlled before "RuntimeUnhealthy". So, order changed.
 func decodeModelState(status *mmeshapi.ModelStatusInfo) (api.ModelState, api.FailureReason, string) {
 	reason := api.FailureReason("")
 	msg := ""
@@ -406,12 +407,16 @@ func decodeModelState(status *mmeshapi.ModelStatusInfo) (api.ModelState, api.Fai
 	if !strings.HasPrefix(msg, noHomeMessage) {
 		return api.FailedToLoad, api.ModelLoadFailed, msg
 	}
+        if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
+                return api.FailedToLoad, api.RuntimeNotRecognized, "Specified runtime name not recognized"
+        }
+
 	if !strings.HasSuffix(msg, "["+modelmesh.ModelTypeLabelThatNoRuntimeSupports+"]") {
 		return api.Loading, api.RuntimeUnhealthy, "Waiting for supporting runtime Pod to become available"
 	}
-	if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
-		return api.FailedToLoad, api.RuntimeNotRecognized, "Specified runtime name not recognized"
-	}
+	//if msg[len(noHomeMessage):len(noHomeMessage)+3] == "rt:" {
+	//	return api.FailedToLoad, api.RuntimeNotRecognized, "Specified runtime name not recognized"
+	//}
 	return api.FailedToLoad, api.NoSupportingRuntime, "No ServingRuntime supports specified model type and/or protocol"
 }
 
