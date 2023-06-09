@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package mmesh
 
 import (
@@ -31,16 +32,17 @@ import (
 )
 
 type mockClient struct {
+	client.Client
 	t       *testing.T
-	getfunc func(context.Context, client.ObjectKey, *v1.Endpoints) error
+	getfunc func(context.Context, client.ObjectKey, *v1.Endpoints, []client.GetOption) error
 }
 
-func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (m mockClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	assert.NotNil(m.t, ctx)
 	assert.IsType(m.t, &v1.Endpoints{}, obj)
 	assert.Equal(m.t, "modelmesh-serving", key.Name)
 	assert.Equal(m.t, "namespace", key.Namespace)
-	return m.getfunc(ctx, key, obj.(*v1.Endpoints))
+	return m.getfunc(ctx, key, obj.(*v1.Endpoints), opts)
 }
 
 type mockCC struct {
@@ -57,7 +59,7 @@ func (m mockCC) UpdateState(state resolver.State) error {
 // Test for basic functionality
 func Test_KubeResolver_AddRemove(t *testing.T) {
 	mClient := mockClient{t: t}
-	mClient.getfunc = func(ctx context.Context, key client.ObjectKey, ep *v1.Endpoints) error {
+	mClient.getfunc = func(ctx context.Context, key client.ObjectKey, ep *v1.Endpoints, opts []client.GetOption) error {
 		ep.Subsets = []v1.EndpointSubset{
 			{
 				Addresses: []v1.EndpointAddress{

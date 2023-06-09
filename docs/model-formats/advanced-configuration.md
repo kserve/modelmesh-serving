@@ -78,8 +78,8 @@ To pass runtime specific configuration through to MLServer, include a non-empty
 └── <model-data>
 ```
 
-For details on the specification of this configuration, refer to the definition of
-[MLServer's ModelSettings class](https://github.com/SeldonIO/MLServer/blob/0.3.2/mlserver/settings.py#L49).
+For details on the specification of this configuration, refer to
+[MLServer's Model Settings documentation](https://github.com/SeldonIO/MLServer/blob/1.3.2/docs/reference/model-settings.md).
 
 ---
 

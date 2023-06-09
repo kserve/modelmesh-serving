@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package hpa
 
 import (
@@ -31,7 +32,7 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 	// constants
 	testPredictorObject := NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
 	// runtime expected to serve the test predictor
-	expectedRuntimeName := "mlserver-0.x"
+	expectedRuntimeName := "mlserver-1.x"
 
 	// checkDeploymentState returns the replicas value for the expected runtime
 	// and expects others to be scaled to zero
