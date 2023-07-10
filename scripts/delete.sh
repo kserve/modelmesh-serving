@@ -122,6 +122,37 @@ if [[ ! -z $user_ns_array ]]; then
   rm runtimes.yaml
 fi
 
+# If there is `modelmesh-webhook-server-cert` Certificate object in a namespace, it assumes that cert-manager operator is being used for generating a certificate.
+# However, if there is no Certificate object in the namespace, it needs to exclude cert-manager part from kustomization.yaml to generate manifests properly. 
+export enable_self_signed_ca=true
+if kubectl get certificates modelmesh-webhook-server-cert -n $namespace &> /dev/null; then
+  echo "Cert Manager is installed"
+  export enable_self_signed_ca=false
+fi
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  echo "Enabled Self Signed CA: Update manifest"
+  if [[ ! -f certmanager/kustomization.yaml.ori ]]; then
+    cp certmanager/kustomization.yaml  certmanager/kustomization.yaml.ori
+  fi
+  cd certmanager; kustomize edit remove resource certificate.yaml; cd ../
+
+  if [[ ! -f default/kustomization.yaml.ori ]]; then
+    cp default/kustomization.yaml  default/kustomization.yaml.ori
+  fi
+  cd default; kustomize edit remove resource ../certmanager; cd ../
+
+  # comment out vars
+  configMapGeneratorStartLine=$(grep -n configMapGenerator ./default/kustomization.yaml |cut -d':' -f1)
+  configMapGeneratorBeforeLine=$((configMapGeneratorStartLine-1))
+  sed -i.bak "1,${configMapGeneratorBeforeLine}s/^/#/g" default/kustomization.yaml
+
+  # remove webhookcainjection_patch.yaml
+  sed -i.bak '/webhookcainjection_patch.yaml/d' default/kustomization.yaml
+
+  rm default/kustomization.yaml.bak
+fi
+
 # Determine whether a modelmesh-controller-rolebinding clusterrolebinding exists and is
 # associated with the service account in this namespace. If not, don't delete the cluster level RBAC.
 set +e
@@ -146,4 +177,10 @@ kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 # Roll back to previous status
 if [[ "$namespace" != "$old_namespace" ]]; then
   kubectl config set-context --current --namespace=${old_namespace}
+fi
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  cp certmanager/kustomization.yaml.ori  certmanager/kustomization.yaml
+  cp default/kustomization.yaml.ori  default/kustomization.yaml
+  rm certmanager/kustomization.yaml.ori default/kustomization.yaml.ori 
 fi
