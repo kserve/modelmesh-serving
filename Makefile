@@ -53,6 +53,7 @@ endif
 .PHONY: all
 all: manager
 
+# Run unit tests, requires kubebuilder, etcd, kube-apiserver, envtest
 .PHONY: test
 test:
 	KUBEBUILDER_ASSETS="$$(setup-envtest use $(KUBERNETES_VERSION) -p path)" \
@@ -63,7 +64,6 @@ test:
 .PHONY: fvt
 fvt:
 	ginkgo -v -procs=2 --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
-
 
 # Command to regenerate the grpc go files from the proto files
 .PHONY: fvt-protoc
