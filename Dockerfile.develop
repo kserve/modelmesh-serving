@@ -25,7 +25,7 @@ ARG TARGETARCH
 
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
-ARG KUBEBUILDER_VERSION=v3.3.0
+ARG KUBEBUILDER_VERSION=v3.11.0
 ARG CONTROLLER_GEN_VERSION=v0.11.4
 
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
@@ -103,6 +103,12 @@ RUN true \
 RUN true \
     && go install github.com/onsi/ginkgo/v2/ginkgo \
     && ginkgo version \
+    && true
+
+# Setup envtest for kubebuilder to use k8s v1.23+ for autoscaling/v2 (HPA)
+RUN true \
+    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest \
+    && setup-envtest use >1.23.0 \
     && true
 
 # For GitHub Action 'lint', work around error "detected dubious ownership in repository at '/workspace'"
