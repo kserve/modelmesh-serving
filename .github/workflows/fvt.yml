@@ -50,7 +50,7 @@ jobs:
         with:
           minikube-version: 1.27.1
           container-runtime: docker
-          kubernetes-version: v1.25.2
+          kubernetes-version: v1.26.1
           cpus: max
           memory: max
 
