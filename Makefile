@@ -25,10 +25,17 @@ ENGINE ?= "docker"
 
 # Image URL to use all building/pushing image targets
 IMG ?= kserve/modelmesh-controller:latest
+
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
 CONTROLLER_GEN_VERSION ?= "v0.11.4"
+
+# Kubernetes version needs to be 1.23 or newer for autoscaling/v2 (HPA)
+# https://github.com/kubernetes-sigs/controller-runtime/tree/main/tools/setup-envtest
+# install with `go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest`
+# find available versions by running `setup-envtest list`
+KUBERNETES_VERSION ?= 1.23
 
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 
@@ -46,16 +53,17 @@ endif
 .PHONY: all
 all: manager
 
-# Run unit tests
+# Run unit tests, requires kubebuilder, etcd, kube-apiserver, envtest
 .PHONY: test
 test:
+	KUBEBUILDER_ASSETS="$$(setup-envtest use $(KUBERNETES_VERSION) -p path)" \
+	KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT=120s \
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
 
 # Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
 .PHONY: fvt
 fvt:
 	ginkgo -v -procs=2 --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
-
 
 # Command to regenerate the grpc go files from the proto files
 .PHONY: fvt-protoc

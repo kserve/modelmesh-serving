@@ -20,7 +20,7 @@ import (
 
 	"github.com/kserve/kserve/pkg/constants"
 	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
-	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
+	hpav2 "k8s.io/api/autoscaling/v2"
 
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
@@ -61,10 +61,10 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 		Expect(replicas).To(BeEquivalentTo(int32(0)))
 	}
 
-	checkHPAState := func() *hpav2beta2.HorizontalPodAutoscaler {
+	checkHPAState := func() *hpav2.HorizontalPodAutoscaler {
 		hpaList := FVTClientInstance.ListHPAs()
 
-		var hpa *hpav2beta2.HorizontalPodAutoscaler
+		var hpa *hpav2.HorizontalPodAutoscaler
 		if len(hpaList.Items) == 0 {
 			hpa = nil
 		} else {
