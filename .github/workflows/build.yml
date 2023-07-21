@@ -8,7 +8,7 @@ on:
       - 'release-[0-9].[0-9]+'
     tags:
       - 'v*'
-    paths-ignore:    
+    paths-ignore:
       - '.github/**'
       - '.tekton/**'
       - '**.md'
