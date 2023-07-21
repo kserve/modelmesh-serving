@@ -1,13 +1,14 @@
 name: Build
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
       - 'release-[0-9].[0-9]+'
     tags:
       - 'v*'
-    paths-ignore:
+    paths-ignore:    
       - '.github/**'
       - '.tekton/**'
       - '**.md'
@@ -53,7 +54,7 @@ jobs:
           driver-opts: network=host
 
       - name: Login to DockerHub
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USER }}
