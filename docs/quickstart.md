@@ -2,6 +2,8 @@
 
 To quickly get started using ModelMesh Serving, here is a brief guide.
 
+> **Note**: To install the latest stable release, please follow the [Quick Start Guide for version 0.11](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/quickstart.md).
+
 ## Prerequisites
 
 - A Kubernetes cluster v 1.16+ with cluster administrative privileges
