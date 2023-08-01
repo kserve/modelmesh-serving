@@ -40,17 +40,22 @@ A secret named `model-serving-etcd` will be created and passed to the controller
 
 ## Installation
 
-Install the latest release of [modelmesh-serving](https://github.com/kserve/modelmesh-serving/releases/latest) by first cloning the corresponding release branch:
+<!-- Remove the following note on the `release-*` branch -->
+To install the most recent _stable release_ of [modelmesh-serving](https://github.com/kserve/modelmesh-serving/releases/latest)
+follow the [Installation instructions](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/install/install-script.md) for version `v0.11.0`.
 
+Start by cloning the [modelmesh-serving](https://github.com/kserve/modelmesh-serving.git) repository:
+
+<!-- Replace with RELEASE="release-0.11" on the `release-*` branch -->
 ```shell
-RELEASE=release-0.10
+RELEASE="main"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
 
 Run the script to install ModelMesh Serving CRDs, controller, and built-in runtimes into the specified Kubernetes namespaces, after reviewing the command line flags below.
 
-A Kubernetes `--namespace` is required, which must already exist. You must also have cluster-admin authority and cluster access must be configured prior to running the install script.
+A Kubernetes `--namespace` is required, which must already exist. You must also have cluster-admin authority and cluster access must be configured prior to running the installation script.
 
 A list of Kubernetes namespaces `--user-namespaces` is optional to enable user namespaces for ModelMesh Serving. The script will skip the namespaces which don't already exist.
 

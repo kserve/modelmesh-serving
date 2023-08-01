@@ -9,6 +9,6 @@
 #### Version support
 
 | Platform         | Minimum version |
-| ---------------- | :-------------: |
-| Kubernetes       |      1.16       |
+|------------------|:---------------:|
+| Kubernetes       |      1.23       |
 | CPU architecture |     x86_64      |
