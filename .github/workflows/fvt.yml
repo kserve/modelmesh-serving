@@ -112,11 +112,11 @@ jobs:
           docker pull seldonio/mlserver:1.3.2
           docker pull openvino/model_server:2022.2
           # docker pull pytorch/torchserve:0.7.1-cpu
-          docker pull kserve/modelmesh:v0.11.0-rc1
-          docker pull kserve/modelmesh-minio-dev-examples:v0.11.0-rc1
-          docker pull kserve/modelmesh-minio-examples:v0.11.0-rc1
-          docker pull kserve/modelmesh-runtime-adapter:v0.11.0-rc1
-          docker pull kserve/rest-proxy:v0.11.0-rc1
+          docker pull kserve/modelmesh:v0.11.0
+          docker pull kserve/modelmesh-minio-dev-examples:v0.11.0
+          docker pull kserve/modelmesh-minio-examples:v0.11.0
+          docker pull kserve/modelmesh-runtime-adapter:v0.11.0
+          docker pull kserve/rest-proxy:v0.11.0
 
       - name: Check installation
         run: |
