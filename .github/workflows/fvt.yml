@@ -114,6 +114,7 @@ jobs:
           # docker pull pytorch/torchserve:0.7.1-cpu
           docker pull kserve/modelmesh:latest
           docker pull kserve/modelmesh-minio-dev-examples:latest
+          docker pull kserve/modelmesh-minio-examples:latest
           docker pull kserve/modelmesh-runtime-adapter:latest
           docker pull kserve/rest-proxy:latest
 
