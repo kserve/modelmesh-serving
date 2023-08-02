@@ -2,29 +2,27 @@
 
 To quickly get started using ModelMesh Serving, here is a brief guide.
 
-> **Note**: To install the latest stable release, please follow the [Quick Start Guide for version 0.11](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/quickstart.md).
-
 ## Prerequisites
 
-- A Kubernetes cluster v 1.16+ with cluster administrative privileges
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
+- A Kubernetes cluster v1.23+ with cluster administrative privileges
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0+)
 - At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
 ## 1. Install ModelMesh Serving
 
-### Get the latest release
+### Clone the ModelMesh repository
 
 ```shell
-RELEASE=release-0.11
+RELEASE="release-0.11"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
 
-### Run install script
+### Run the installation script
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart --enable-self-signed-ca
 ```
 
 This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
@@ -34,7 +32,7 @@ Eventually after running this script, you should see a `Successfully installed M
 
 To see more details about installation, click [here](./install/install-script.md).
 
-### Verify installation
+### Verify the installation
 
 Check that the pods are running:
 
@@ -270,7 +268,7 @@ This should give you a response like the following:
 
 To see more detailed instructions and information, click [here](./predictors/run-inference.md).
 
-## 4. (Optional) Deleting your ModelMesh Serving installation
+## 4. (Optional) Delete the ModelMesh Serving installation
 
 To delete all ModelMesh Serving resources that were installed, run the following
 command from the root of the project:
