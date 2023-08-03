@@ -149,31 +149,31 @@ generate: controller-gen
 	pre-commit run --all-files prettier > /dev/null || true
 
 .PHONY: build
-## Build runtime docker image
+## Build runtime Docker image
 build:
 	./scripts/build_docker.sh --target runtime --engine $(ENGINE)
 
 .PHONY: build.develop
-## Build develop docker image
+## Build develop container image
 build.develop:
 	./scripts/build_devimage.sh $(ENGINE)
 
 .PHONY: develop
-## Build develop docker image and run an interactive shell in the develop envionment
+## Run interactive shell inside developer container
 develop: build.develop
 	./scripts/develop.sh
 
 .PHONY: run
-## Build develop docker image and run a make command in the develop envionment (e.g. `make run fmt` will execute `make fmt` within the docker container)
+## Run make target inside developer container (e.g. `make run fmt`)
 run: build.develop
 	./scripts/develop.sh make $(RUN_ARGS)
 
 .PHONY: docker-build
-## Build the docker image
+## Build the Docker image
 docker-build: build
 
 .PHONY: docker-push
-## Push the docker image
+## Push the Docker image
 docker-push:
 	docker push ${IMG}
 
@@ -204,11 +204,11 @@ mmesh-codegen:
 check-doc-links:
 	@python3 scripts/verify_doc_links.py && echo "$@: OK"
 
+.DEFAULT_GOAL := help
 .PHONY: help
 ## Print Makefile documentation
 help:
-	@perl -0 -nle 'printf("%-25s - %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
-.DEFAULT_GOAL := help
+	@perl -0 -nle 'printf("\033[36m  %-15s\033[0m %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w.-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
