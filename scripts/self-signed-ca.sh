@@ -32,7 +32,7 @@ The following flags are optional.
        --service           Service name of webhook. Default: modelmesh-webhook-server-service
        --namespace         Namespace where webhook service and secret reside. Default: model-serving
        --secret            Secret name for CA certificate and server certificate/key pair. Default: modelmesh-webhook-server-cert
-       --webhookName       Name for the mutating and validating webhook config. Default: servingruntime.serving.kserve.io
+       --webhookName       Name for the mutating and validating webhook config. Default: modelmesh-servingruntime.serving.kserve.io
        --webhookDeployment deployment name of the webhook controller. Default: modelmesh-controller
 EOF
     exit 1
@@ -70,7 +70,7 @@ done
 [ -z ${secret} ] && secret=modelmesh-webhook-server-cert
 [ -z ${namespace} ] && namespace=model-serving
 [ -z ${webhookDeployment} ] && webhookDeployment=modelmesh-controller
-[ -z ${webhookName} ] && webhookName=servingruntime.serving.kserve.io
+[ -z ${webhookName} ] && webhookName=modelmesh-servingruntime.serving.kserve.io
 [ -z ${service} ] && service=modelmesh-webhook-server-service
 webhookDeploymentName=${webhookDeployment}
 webhookConfigName=${webhookName}
