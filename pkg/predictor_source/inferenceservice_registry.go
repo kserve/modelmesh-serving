@@ -188,8 +188,10 @@ func processInferenceServiceStorage(inferenceService *v1beta1.InferenceService, 
 				uriParameters["account_name"] = hostParts[0]
 				modelPath = strings.Join(pathParts[1:], "/")
 			} else {
+				modelPath = strings.TrimPrefix(u.Path, "/")
+				u.Path = ""
 				uriParameters["type"] = "http"
-				uriParameters["url"] = *storageUri
+				uriParameters["url"] = u.String()
 			}
 		default:
 			err = fmt.Errorf("the InferenceService %v has an unsupported storageUri scheme %v", nname, u.Scheme)

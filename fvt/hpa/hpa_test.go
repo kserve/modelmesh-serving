@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package hpa
 
 import (
@@ -19,7 +20,7 @@ import (
 
 	"github.com/kserve/kserve/pkg/constants"
 	mmcontstant "github.com/kserve/modelmesh-serving/pkg/constants"
-	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
+	hpav2 "k8s.io/api/autoscaling/v2"
 
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,7 +32,7 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 	// constants
 	testPredictorObject := NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
 	// runtime expected to serve the test predictor
-	expectedRuntimeName := "mlserver-0.x"
+	expectedRuntimeName := "mlserver-1.x"
 
 	// checkDeploymentState returns the replicas value for the expected runtime
 	// and expects others to be scaled to zero
@@ -60,10 +61,10 @@ var _ = Describe("Scaling of runtime deployments with HPA Autoscaler", Ordered, 
 		Expect(replicas).To(BeEquivalentTo(int32(0)))
 	}
 
-	checkHPAState := func() *hpav2beta2.HorizontalPodAutoscaler {
+	checkHPAState := func() *hpav2.HorizontalPodAutoscaler {
 		hpaList := FVTClientInstance.ListHPAs()
 
-		var hpa *hpav2beta2.HorizontalPodAutoscaler
+		var hpa *hpav2.HorizontalPodAutoscaler
 		if len(hpaList.Items) == 0 {
 			hpa = nil
 		} else {

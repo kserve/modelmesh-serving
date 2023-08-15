@@ -25,10 +25,17 @@ ENGINE ?= "docker"
 
 # Image URL to use all building/pushing image targets
 IMG ?= kserve/modelmesh-controller:latest
+
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
-CONTROLLER_GEN_VERSION ?= "v0.7.0"
+CONTROLLER_GEN_VERSION ?= "v0.11.4"
+
+# Kubernetes version needs to be 1.23 or newer for autoscaling/v2 (HPA)
+# https://github.com/kubernetes-sigs/controller-runtime/tree/main/tools/setup-envtest
+# install with `go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest`
+# find available versions by running `setup-envtest list`
+KUBERNETES_VERSION ?= 1.23
 
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 
@@ -48,15 +55,16 @@ endif
 all: manager
 
 .PHONY: test
-## Run unit tests
+## Run unit tests (Requires kubebuilder, etcd, kube-apiserver, envtest)
 test:
+	KUBEBUILDER_ASSETS="$$(setup-envtest use $(KUBERNETES_VERSION) -p path)" \
+	KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT=120s \
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
 
 .PHONY: fvt
-## Run fvt tests. This requires an etcd, kubernetes connection, and model serving installation. Ginkgo CLI is used to run them in parallel
+## Run FVT tests (Requires ModelMesh Serving deployment and GinkGo CLI)
 fvt:
-	ginkgo -v -procs=2 --progress --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
-
+	ginkgo -v -procs=2 --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
 
 .PHONY: fvt-protoc
 ## Regenerate the grpc go files from the proto files
@@ -69,32 +77,32 @@ fvt-protoc:
 fvt-with-deploy: oc-login deploy-release-dev-mode fvt
 
 .PHONY: oc-login
-## Login
+## Login to OCP cluster
 oc-login:
 	oc login --token=${OCP_TOKEN} --server=https://${OCP_ADDRESS} --insecure-skip-tls-verify=true
 
 .PHONY: manager
-## Build manager binary
+## Build `manager` binary
 manager: generate fmt
 	go build -o bin/manager main.go
 
 .PHONY: start
-## Run against a k8s cluster
+## Run against a Kubernetes cluster
 start: generate fmt manifests
 	go run ./main.go
 
 .PHONY: install
-## Install CRDs into a k8s cluster
+## Install CRDs into a Kubernetes cluster
 install: manifests
 	kustomize build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-## Uninstall CRDs from a k8s cluster
+## Uninstall CRDs from a Kubernetes cluster
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
 .PHONY: deploy
-## Deploy controller in a k8s cluster
+## Deploy controller in a Kubernetes cluster
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
@@ -120,6 +128,7 @@ endif
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging --fvt ${extra_options}
 
 .PHONY: delete
+## Undeploy the ModelMesh Serving installation
 delete: oc-login
 	./scripts/delete.sh --namespace ${NAMESPACE} --local-config-path config
 
@@ -138,7 +147,7 @@ manifests: controller-gen
 	pre-commit run --all-files prettier > /dev/null || true
 
 .PHONY: fmt
-## Run go fmt against code
+## Auto-format source code and report code-style violations (lint)
 fmt:
 	./scripts/fmt.sh || (echo "Linter failed: $$?"; git status; exit 1)
 
@@ -149,12 +158,12 @@ generate: controller-gen
 	pre-commit run --all-files prettier > /dev/null || true
 
 .PHONY: build
-## Build runtime Docker image
-build:
+## Build runtime container image
+build: build.develop
 	./scripts/build_docker.sh --target runtime --engine $(ENGINE)
 
 .PHONY: build.develop
-## Build develop container image
+## Build developer container image
 build.develop:
 	./scripts/build_devimage.sh $(ENGINE)
 
@@ -172,9 +181,9 @@ run: build.develop
 ## Build the Docker image
 docker-build: build
 
-.PHONY: docker-push
-## Push the Docker image
-docker-push:
+.PHONY: push
+## Push the controller runtime image
+push:
 	docker push ${IMG}
 
 .PHONY: controller-gen
@@ -183,11 +192,7 @@ controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
@@ -195,7 +200,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 .PHONY: mmesh-codegen
-## Model Mesh gRPC codegen
+## Generate ModelMesh gRPC code stubs
 mmesh-codegen:
 	protoc -I proto/ --go_out=plugins=grpc:generated/ $(PROTO_FILES)
 

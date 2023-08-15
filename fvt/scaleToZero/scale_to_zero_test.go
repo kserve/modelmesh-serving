@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package scaleToZero
 
 import (
@@ -29,7 +30,7 @@ var _ = Describe("Scaling of runtime deployments to zero", Ordered, func() {
 	// constants
 	testPredictorObject := NewPredictorForFVT("mlserver-sklearn-predictor.yaml")
 	// runtime expected to serve the test predictor
-	expectedRuntimeName := "mlserver-0.x"
+	expectedRuntimeName := "mlserver-1.x"
 
 	// helper expectation functions
 	// these use the "constants" so are created within the Describe's scope

@@ -15,7 +15,7 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.18
+FROM registry.access.redhat.com/ubi8/go-toolset:1.19
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
@@ -25,8 +25,8 @@ ARG TARGETARCH
 
 ARG OPENSHIFT_VERSION=4.9
 ARG KUSTOMIZE_VERSION=4.5.2
-ARG KUBEBUILDER_VERSION=v3.3.0
-ARG CONTROLLER_GEN_VERSION=v0.8.0
+ARG KUBEBUILDER_VERSION=v3.11.0
+ARG CONTROLLER_GEN_VERSION=v0.11.4
 
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
 
@@ -90,16 +90,29 @@ RUN true\
 # won't invalidate earlier download layers
 RUN go mod download
 
-# Install controller-gen
+# Export the Go binary path for controller-gen and ginkgo CLIs
+ENV PATH $HOME/go/bin:$PATH
+
+# Install controller-gen to generate util code and Kubernetes YAMLs for API changes
 RUN true \
-    && mkdir /tmp/controller-gen-tmp && cd /tmp/controller-gen-tmp \
-    && go mod init tmp \
-    && go get sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
-    && rm -rf /tmp/controller-gen-tmp \
+    && go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION} \
+    && controller-gen --version \
     && true
 
-RUN go install github.com/onsi/ginkgo/v2/ginkgo
-ENV PATH=/root/go/bin/:$PATH
+# Install the Ginkgo test framework
+RUN true \
+    && go install github.com/onsi/ginkgo/v2/ginkgo \
+    && ginkgo version \
+    && true
 
-# the ubi/go-toolset image doesn't define ENTRYPOINT or CMD, but we need it to run 'make develop'
+# Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA)
+RUN true \
+    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest \
+    && setup-envtest use 1.23 \
+    && true
+
+# For GitHub Action 'lint', work around error "detected dubious ownership in repository at '/workspace'"
+RUN git config --system --add safe.directory /workspace
+
+# The ubi/go-toolset image doesn't define ENTRYPOINT or CMD, but we need it to run 'make develop'
 CMD /bin/bash

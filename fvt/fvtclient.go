@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package fvt
 
 import (
@@ -39,7 +40,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	appsv1 "k8s.io/api/apps/v1"
-	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
+	hpav2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -250,7 +251,7 @@ var (
 	}
 	gvrHPA = schema.GroupVersionResource{
 		Group:    "autoscaling",
-		Version:  "v2beta2",
+		Version:  "v2",
 		Resource: "horizontalpodautoscalers", // this must be the plural form
 	}
 )
@@ -817,16 +818,16 @@ func (fvt *FVTClient) StartWatchingDeploys() watch.Interface {
 	return deployWatcher
 }
 
-func (fvt *FVTClient) ListHPAs() hpav2beta2.HorizontalPodAutoscalerList {
+func (fvt *FVTClient) ListHPAs() hpav2.HorizontalPodAutoscalerList {
 	var err error
 
 	listOptions := metav1.ListOptions{LabelSelector: "app.kubernetes.io/managed-by=modelmesh-controller", TimeoutSeconds: &DefaultTimeout}
 	u, err := fvt.Resource(gvrHPA).Namespace(fvt.namespace).List(context.TODO(), listOptions)
 	Expect(err).ToNot(HaveOccurred())
 
-	var hpaList hpav2beta2.HorizontalPodAutoscalerList
+	var hpaList hpav2.HorizontalPodAutoscalerList
 	for _, uh := range u.Items {
-		var h hpav2beta2.HorizontalPodAutoscaler
+		var h hpav2.HorizontalPodAutoscaler
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uh.Object, &h)
 		Expect(err).ToNot(HaveOccurred())
 		hpaList.Items = append(hpaList.Items, h)

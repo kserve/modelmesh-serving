@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package controllers
 
 import (
@@ -53,7 +54,7 @@ func waitForAndGetRuntimeDeployment(runtimeName string) *appsv1.Deployment {
 
 var _ = Describe("Sample Runtime", func() {
 	samplesToTest := []string{
-		"config/runtimes/mlserver-0.x.yaml",
+		"config/runtimes/mlserver-1.x.yaml",
 		"config/runtimes/triton-2.x.yaml",
 		"config/runtimes/ovms-1.x.yaml",
 		"config/runtimes/torchserve-0.x.yaml",
@@ -98,7 +99,7 @@ var _ = Describe("Prometheus metrics configuration", func() {
 		reconcilerConfig.Metrics.Enabled = true
 
 		By("create a sample runtime")
-		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
+		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-1.x.yaml"))
 		m.Client = mfc.NewClient(k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 		m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))
@@ -177,7 +178,7 @@ var _ = Describe("REST Proxy configuration", func() {
 		reconcilerConfig.RESTProxy.Enabled = true
 
 		By("create a sample runtime")
-		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
+		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-1.x.yaml"))
 		m.Client = mfc.NewClient(k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 		m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))
@@ -204,7 +205,7 @@ var _ = Describe("Add Payload Processor", func() {
 		resetToPayloadConfig(false)
 
 		By("create a sample runtime")
-		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-0.x.yaml"))
+		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-1.x.yaml"))
 		m.Client = mfc.NewClient(k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 		m, err = m.Transform(convertToServingRuntime, mf.InjectNamespace(namespace))

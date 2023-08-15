@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package storage
 
 import (
@@ -57,7 +58,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	// ensure a stable deploy state, on each process since we updated the storage config
 	Log.Info("Waiting for stable deploy state")
-	WaitForStableActiveDeployState(time.Second * 60)
+	WaitForStableActiveDeployState(time.Second * 120)
 
 	return nil
 }, func(_ []byte) {

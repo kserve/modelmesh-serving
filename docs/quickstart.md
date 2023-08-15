@@ -2,27 +2,33 @@
 
 To quickly get started using ModelMesh Serving, here is a brief guide.
 
+<!-- Remove the following note on the `release-*` branch -->
+
+> **Note**: This document describes how to install the _latest unreleased_ version of ModelMesh for developers and early adopters. To install the most recent _stable release_, please follow the [Quick Start Guide for version 0.11](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/quickstart.md).
+
 ## Prerequisites
 
-- A Kubernetes cluster v 1.16+ with cluster administrative privileges
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v3.2.0+)
+- A Kubernetes cluster v1.23+ with cluster administrative privileges
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0+)
 - At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
 
 ## 1. Install ModelMesh Serving
 
-### Get the latest release
+### Clone the ModelMesh repository
+
+<!-- Replace with RELEASE="release-0.11" on the `release-*` branch -->
 
 ```shell
-RELEASE=release-0.10
+RELEASE="main"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
 
-### Run install script
+### Run the installation script
 
 ```shell
 kubectl create namespace modelmesh-serving
-./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart
+./scripts/install.sh --namespace-scope-mode --namespace modelmesh-serving --quickstart --enable-self-signed-ca
 ```
 
 This will install ModelMesh Serving in the `modelmesh-serving` namespace, along with an etcd and MinIO instances.
@@ -32,7 +38,7 @@ Eventually after running this script, you should see a `Successfully installed M
 
 To see more details about installation, click [here](./install/install-script.md).
 
-### Verify installation
+### Verify the installation
 
 Check that the pods are running:
 
@@ -51,7 +57,7 @@ Check that the `ServingRuntime`s are available:
 kubectl get servingruntimes
 
 NAME           DISABLED   MODELTYPE    CONTAINERS   AGE
-mlserver-0.x              sklearn      mlserver     5m
+mlserver-1.x              sklearn      mlserver     5m
 ovms-1.x                  openvino_ir  ovms         5m
 torchserve-0.x            pytorch-mar  torchserve   5m
 triton-2.x                tensorflow   triton       5m
@@ -63,7 +69,7 @@ are:
 
 | ServingRuntime | Supported Frameworks                |
 | -------------- | ----------------------------------- |
-| mlserver-0.x   | sklearn, xgboost, lightgbm          |
+| mlserver-1.x   | sklearn, xgboost, lightgbm          |
 | ovms-1.x       | openvino_ir, onnx                   |
 | torchserve-0.x | pytorch-mar                         |
 | triton-2.x     | tensorflow, pytorch, onnx, tensorrt |
@@ -134,8 +140,8 @@ Eventually, you should see the `ServingRuntime` pods that will hold the SKLearn 
 kubectl get pods
 
 ...
-modelmesh-serving-mlserver-0.x-7db675f677-twrwd   3/3     Running   0          2m
-modelmesh-serving-mlserver-0.x-7db675f677-xvd8q   3/3     Running   0          2m
+modelmesh-serving-mlserver-1.x-7db675f677-twrwd   3/3     Running   0          2m
+modelmesh-serving-mlserver-1.x-7db675f677-xvd8q   3/3     Running   0          2m
 ```
 
 Then, checking on the `InferenceService` again, you should see that the one we deployed is now ready with a provided URL:
@@ -268,7 +274,7 @@ This should give you a response like the following:
 
 To see more detailed instructions and information, click [here](./predictors/run-inference.md).
 
-## 4. (Optional) Deleting your ModelMesh Serving installation
+## 4. (Optional) Delete the ModelMesh Serving installation
 
 To delete all ModelMesh Serving resources that were installed, run the following
 command from the root of the project:

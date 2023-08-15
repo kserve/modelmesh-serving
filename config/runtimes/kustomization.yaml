@@ -13,18 +13,18 @@
 # limitations under the License.
 resources:
   - triton-2.x.yaml
-  - mlserver-0.x.yaml
+  - mlserver-1.x.yaml
   - ovms-1.x.yaml
   - torchserve-0.x.yaml
 
 images:
   - name: tritonserver-2
     newName: nvcr.io/nvidia/tritonserver
-    newTag: "21.06.1-py3"
+    newTag: "23.04-py3"
 
-  - name: mlserver-0
+  - name: mlserver-1
     newName: seldonio/mlserver
-    newTag: "0.5.2"
+    newTag: "1.3.2"
 
   - name: ovms-1
     newName: openvino/model_server
@@ -32,7 +32,7 @@ images:
 
   - name: torchserve-0
     newName: pytorch/torchserve
-    newTag: 0.6.0-cpu
+    newTag: 0.7.1-cpu
 
 transformers:
   - ../default/metadataLabelTransformer.yaml

@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package modelmesh
 
 import (
@@ -260,24 +261,24 @@ func (m *Deployment) addMMEnvVars(deployment *appsv1.Deployment) error {
 	}
 
 	if m.EnableAccessLogging {
-		// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L50
+		// See https://github.com/kserve/modelmesh/blob/v0.11.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L55
 		if err := setEnvironmentVar(ModelMeshContainerName, "MM_LOG_EACH_INVOKE", "true", deployment); err != nil {
 			return err
 		}
 	}
 
 	if m.GrpcMaxMessageSize > 0 {
-		// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L34
+		// See https://github.com/kserve/modelmesh/blob/v0.11.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L38
 		if err := setEnvironmentVar(ModelMeshContainerName, "MM_SVC_GRPC_MAX_MSG_SIZE", strconv.Itoa(m.GrpcMaxMessageSize), deployment); err != nil {
 			return err
 		}
 	}
 
-	// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L27
+	// See https://github.com/kserve/modelmesh/blob/v0.11.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L31
 	if err := setEnvironmentVar(ModelMeshContainerName, "MM_KVSTORE_PREFIX", ModelMeshEtcdPrefix, deployment); err != nil {
 		return err
 	}
-	// See https://github.com/kserve/modelmesh/blob/v0.10.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L63
+	// See https://github.com/kserve/modelmesh/blob/v0.11.0/src/main/java/com/ibm/watson/modelmesh/ModelMeshEnvVars.java#L68
 	if err := setEnvironmentVar(ModelMeshContainerName, "MM_DEFAULT_VMODEL_OWNER", m.DefaultVModelOwner, deployment); err != nil {
 		return err
 	}

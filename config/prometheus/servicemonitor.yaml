@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    modelmesh-service: modelmesh-serving
+  name: modelmesh-service-monitor
+  namespace: monitoring
+spec:
+  endpoints:
+    - path: /metrics
+      port: "prometheus"
+      scheme: "https"
+      tlsConfig:
+        insecureSkipVerify: true
+  selector:
+    matchLabels:
+      modelmesh-service: modelmesh-serving
+  namespaceSelector:
+    matchNames:
+      - modelmesh-serving

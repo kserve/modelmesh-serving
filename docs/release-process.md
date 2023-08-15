@@ -69,8 +69,8 @@ version numbers. Most IDEs support searching an entire project using `command`-`
 
 Some of the steps below need to be performed at least twice:
 
-- at least once for the release candidate(s) (`v0.10.0-rc0`, `v0.10.0-rc1`, ...) and
-- once more for the actual release (`v0.10.0`).
+- at least once for the release candidate(s) (`v0.11.0-rc0`, `v0.11.0-rc1`, ...) and
+- once more for the actual release (`v0.11.0`).
 
 While creating a pre-release is not technically required, it is considered good
 practice. It allows other stakeholders to deploy and test the designated release,
@@ -98,8 +98,8 @@ with KServe.
    - [ ] [kserve/modelmesh-runtime-adapter](https://hub.docker.com/r/kserve/modelmesh-runtime-adapter/tags)
    - [ ] [kserve/rest-proxy](https://hub.docker.com/r/kserve/rest-proxy/tags)
 
-3. In this `modelmesh-serving` repository, update the container image tags to
-   the corresponding release versions for:
+3. In this `modelmesh-serving` repository, on the `release-*` branch, update the
+   container image tags to the corresponding release versions for:
 
    - `kserve/modelmesh`
    - `kserve/modelmesh-controller`
@@ -109,6 +109,11 @@ with KServe.
 
    The version tags should be updated in the following files:
 
+   - [ ] `.github/workflows/fvt.yml`:
+     - [ ] `docker pull kserve/modelmesh:v...`
+     - [ ] `docker pull kserve/modelmesh-minio-dev-examples:v...`
+     - [ ] `docker pull kserve/modelmesh-runtime-adapter:v...`
+     - [ ] `docker pull kserve/rest-proxy:v...`
    - [ ] `config/default/config-defaults.yaml`:
      - [ ] `kserve/modelmesh`
      - [ ] `kserve/rest-proxy`
@@ -118,9 +123,11 @@ with KServe.
    - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
    - [ ] `docs/component-versions.md`: update the version and component versions
    - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the
-         `Installation` section to the new `release-*` branch name
+         `Installation` section to the new `release-*` branch name and remove the
+         note pointing to the (old) `release-*` branch
    - [ ] `docs/quickstart.md`: update the `RELEASE` variable in the
-         _"Get the latest release"_ section to the new `release-*` branch name
+         _"Clone the ModelMesh repository"_ section to the new `release-*` branch
+         and remove the note of caution in the introduction above
    - [ ] `scripts/setup_user_namespaces.sh`: change the `modelmesh_release` version
 
    You can copy the checklist above into the PR description in the next step.
@@ -128,8 +135,10 @@ with KServe.
 4. Submit your PR to the `release-*` branch that was created earlier and wait for
    it to merge.
 
-5. Update the following files in the `main` branch with the same versions as in the
-   steps above, submit them in a PR to `main`, and wait for that PR to be merged:
+5. Update the following files in the `main` branch, replacing all occurrences
+   pointing to the old `release-*` branch or the previous release version tag
+   (e.g. `v0.11.0`) with the new release branch name or new version tags.
+   Submit them in a PR to `main`, and wait for that PR to be merged:
 
    - [ ] `docs/component-versions.md`
    - [ ] `docs/quickstart.md`
@@ -176,12 +185,12 @@ with KServe.
    ```
 
 4. Create the new release in the GitHub UI from the `release-*` branch (or from the
-   tag created in the previous step). Enter the release tag value (e.g. `v0.10.0`) in
+   tag created in the previous step). Enter the release tag value (e.g. `v0.11.0`) in
    the "Release title" field and upload the generated installation manifests ("Release assets")
    in the "Attach binaries ..." section. Click the "Generate release notes" button which
    will generate the release description.
 
-   **Note**, if you generated a pre-release (e.g. `v0.10.0-rc0`) then copy the release
+   **Note**, if you generated a pre-release (e.g. `v0.11.0-rc0`) then copy the release
    notes from that and remove them from the pre-release description and revise accordingly.
 
    https://github.com/kserve/modelmesh-serving/releases/new
