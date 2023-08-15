@@ -66,15 +66,15 @@ test:
 fvt:
 	ginkgo -v -procs=2 --fail-fast fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m
 
-.PHONY: fvt-protoc
-## Regenerate the grpc go files from the proto files
-fvt-protoc:
+.PHONY: codegen-fvt
+## Regenerate grpc code stubs for FVT
+codegen-fvt:
 	rm -rf fvt/generated
 	protoc -I=fvt/proto --go_out=plugins=grpc:. --go_opt=module=github.com/kserve/modelmesh-serving $(shell find fvt/proto -iname "*.proto")
 
 .PHONY: fvt-with-deploy
-## Alias for `oc-login, deploy-release-dev-mode, fvt`
-fvt-with-deploy: oc-login deploy-release-dev-mode fvt
+## Alias for `oc-login, deploy-release-fvt, fvt`
+fvt-with-deploy: oc-login deploy-release-fvt fvt
 
 .PHONY: oc-login
 ## Login to OCP cluster
@@ -102,7 +102,7 @@ uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
 .PHONY: deploy
-## Deploy controller in a Kubernetes cluster
+## Deploy manifests to Kubernetes cluster
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
@@ -112,13 +112,14 @@ deploy: manifests
 deploy-release:
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config
 
-.PHONY: deploy-release-dev-mode
+.PHONY: deploy-release-dev
 ## Deploy release in dev mode (artifactory creds set via env var)
-deploy-release-dev-mode:
+deploy-release-dev:
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging
 
-.PHONY: deploy-release-dev-mode-fvt
-deploy-release-dev-mode-fvt:
+.PHONY: deploy-release-fvt
+## Deploy release in dev mode for FVT tests
+deploy-release-fvt:
 ifdef MODELMESH_SERVING_IMAGE
 	$(eval extra_options += --modelmesh-serving-image ${MODELMESH_SERVING_IMAGE})
 endif
@@ -127,9 +128,9 @@ ifdef NAMESPACE_SCOPE_MODE
 endif
 	./scripts/install.sh --namespace ${NAMESPACE} --install-config-path config --dev-mode-logging --fvt ${extra_options}
 
-.PHONY: delete
+.PHONY: undeploy-release
 ## Undeploy the ModelMesh Serving installation
-delete: oc-login
+undeploy-release:
 	./scripts/delete.sh --namespace ${NAMESPACE} --local-config-path config
 
 .PHONY: manifests
@@ -177,10 +178,6 @@ develop: build.develop
 run: build.develop
 	./scripts/develop.sh make $(RUN_ARGS)
 
-.PHONY: docker-build
-## Build the Docker image
-docker-build: build
-
 .PHONY: push
 ## Push the controller runtime image
 push:
@@ -199,9 +196,9 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-.PHONY: mmesh-codegen
-## Generate ModelMesh gRPC code stubs
-mmesh-codegen:
+.PHONY: codegen
+## Generate gRPC code stubs (protoc)
+codegen:
 	protoc -I proto/ --go_out=plugins=grpc:generated/ $(PROTO_FILES)
 
 .PHONY: check-doc-links
@@ -213,7 +210,7 @@ check-doc-links:
 .PHONY: help
 ## Print Makefile documentation
 help:
-	@perl -0 -nle 'printf("\033[36m  %-15s\033[0m %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w.-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
+	@perl -0 -nle 'printf("\033[36m  %-20s\033[0m %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w.-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)

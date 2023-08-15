@@ -67,7 +67,7 @@ If you have a custom controller image in your repository, set `MODELMESH_SERVING
 ```shell
 NAMESPACE=modelmesh-serving \
 MODELMESH_SERVING_IMAGE=quay.io/$org/modelmesh-controller:custom \
-make deploy-release-dev-mode-fvt
+make deploy-release-fvt
 ```
 
 ## Building the developer image
