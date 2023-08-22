@@ -351,6 +351,8 @@ if [[ $namespace_scope_mode == "true" ]]; then
   # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation
   sed -i.bak 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
   rm crd/kustomization.yaml.bak
+else
+  kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=false
 fi
 
 if [[ -n $modelmesh_serving_image ]]; then 

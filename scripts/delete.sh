@@ -133,7 +133,9 @@ if [[ "$crb_ns" == "$namespace" ]]; then
 fi
 kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
-kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
+if [[ $(kubectl exec deploy/modelmesh-controller -- printenv NAMESPACE_SCOPE) == true ]]; then
+  kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
+fi
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 
