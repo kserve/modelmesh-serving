@@ -151,13 +151,13 @@ func checkName(name string, internalNames sets.Set[string], logStr string) error
 	return nil
 }
 
-var internalContainerNames = sets.New(
+var internalContainerNames = sets.New[string](
 	modelmesh.ModelMeshContainerName,
 	modelmesh.RESTProxyContainerName,
 	modelmesh.PullerContainerName,
 )
 
-var internalOnlyVolumeMounts = sets.New(
+var internalOnlyVolumeMounts = sets.New[string](
 	modelmesh.ConfigStorageMount,
 	modelmesh.EtcdVolume,
 	modelmesh.InternalConfigMapName,
