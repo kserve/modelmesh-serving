@@ -140,7 +140,7 @@ func validateVolumes(rts *kserveapi.ServingRuntimeSpec, _ *config.Config) error 
 	return nil
 }
 
-func checkName(name string, internalNames sets.String, logStr string) error {
+func checkName(name string, internalNames sets.Set[string], logStr string) error {
 	if internalNames.Has(name) {
 		return fmt.Errorf("%s %s is reserved for internal use", logStr, name)
 	}
@@ -151,29 +151,29 @@ func checkName(name string, internalNames sets.String, logStr string) error {
 	return nil
 }
 
-var internalContainerNames = sets.NewString(
+var internalContainerNames = sets.New(
 	modelmesh.ModelMeshContainerName,
 	modelmesh.RESTProxyContainerName,
 	modelmesh.PullerContainerName,
 )
 
-var internalOnlyVolumeMounts = sets.NewString(
+var internalOnlyVolumeMounts = sets.New(
 	modelmesh.ConfigStorageMount,
 	modelmesh.EtcdVolume,
 	modelmesh.InternalConfigMapName,
 	modelmesh.SocketVolume,
 )
 
-var internalNamedPorts = sets.NewString("grpc", "http", "prometheus")
+var internalNamedPorts = sets.New[string]("grpc", "http", "prometheus")
 
-var internalPorts = sets.NewInt32(
+var internalPorts = sets.New[int32](
 	8080, // is used for LiteLinks communication in Model Mesh
 	8085, // is the port the built-in adapter listens on
 	8089, // is used for Model Mesh probes
 	8090, // is used for default preStop hooks
 )
 
-var internalVolumes = sets.NewString(
+var internalVolumes = sets.New[string](
 	modelmesh.ConfigStorageMount,
 	modelmesh.EtcdVolume,
 	modelmesh.InternalConfigMapName,

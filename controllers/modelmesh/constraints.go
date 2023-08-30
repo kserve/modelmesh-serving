@@ -18,6 +18,8 @@ import (
 	"errors"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -68,5 +70,5 @@ func (m *Deployment) addModelTypeConstraints(deployment *appsv1.Deployment) erro
 }
 
 func generateLabelsEnvVar(rts *kserveapi.ServingRuntimeSpec, restProxyEnabled bool, rtName string) string {
-	return strings.Join(GetServingRuntimeLabelSet(rts, restProxyEnabled, rtName).List(), ",")
+	return strings.Join(sets.List(GetServingRuntimeLabelSet(rts, restProxyEnabled, rtName)), ",")
 }
