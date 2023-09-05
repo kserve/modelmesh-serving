@@ -35,8 +35,14 @@ CONTROLLER_GEN_VERSION ?= "v0.11.4"
 # https://github.com/kubernetes-sigs/controller-runtime/tree/main/tools/setup-envtest
 # install with `go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest`
 # find available versions by running `setup-envtest list`
-KUBERNETES_VERSION ?= 1.23
+KUBERNETES_VERSION ?= 1.26
 
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 
 # Model Mesh gRPC API Proto Generation
@@ -56,8 +62,8 @@ all: manager
 
 .PHONY: test
 ## Run unit tests (Requires kubebuilder, etcd, kube-apiserver, envtest)
-test:
-	KUBEBUILDER_ASSETS="$$(setup-envtest use $(KUBERNETES_VERSION) -p path)" \
+test: envtest
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(KUBERNETES_VERSION) -p path)" \
 	KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT=120s \
 	go test -coverprofile cover.out `go list ./... | grep -v fvt`
 
@@ -211,6 +217,12 @@ check-doc-links:
 ## Print Makefile documentation
 help:
 	@perl -0 -nle 'printf("\033[36m  %-20s\033[0m %s\n", "$$2", "$$1") while m/^##\s*([^\r\n]+)\n^([\w.-]+):[^=]/gm' $(MAKEFILE_LIST) | sort
+
+.PHONY: envtest
+## Download envtest-setup locally if necessary.
+envtest: $(ENVTEST)
+$(ENVTEST): $(LOCALBIN)
+	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 # Override targets if they are included in RUN_ARGs so it doesn't run them twice
 $(eval $(RUN_ARGS):;@:)
