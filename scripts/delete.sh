@@ -133,11 +133,11 @@ if [[ "$crb_ns" == "$namespace" ]]; then
 fi
 
 # Determine whether deployment is namespace-scoped before deleting runtime resources
-is_namespace_scoped=$(kubectl exec deploy/modelmesh-controller -- printenv NAMESPACE_SCOPE)
+is_namespace_scoped=$(kubectl exec deploy/modelmesh-controller -- printenv NAMESPACE_SCOPE 2> /dev/null || echo "false") || :
 kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
-if [[ ! $is_namespace_scoped ]]; then
-  kustomize build runtimes --load_restrictor none | kubectl apply -f -
+if [[ ! "$is_namespace_scoped" == "true" ]]; then
+  echo false
 fi
 
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
