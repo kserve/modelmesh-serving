@@ -137,7 +137,7 @@ is_namespace_scoped=$(kubectl exec deploy/modelmesh-controller -- printenv NAMES
 kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
 if [[ ! "$is_namespace_scoped" == "true" ]]; then
-  echo false
+  kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
 fi
 
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
