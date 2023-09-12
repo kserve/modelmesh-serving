@@ -135,7 +135,7 @@ var _ = Describe("ISVCs", func() {
 				config[k] = v
 			}
 
-			// scale to 0 for resource-constraint environments (only 2 CPUs on GH actions)
+			// scale to 0 for resource-constrained environments (only 2 CPUs on GH actions)
 			// to stop and remove runtimes which are not used for this test
 			//   Warning   FailedScheduling   pod/modelmesh-serving-mlserver-1.x-...
 			//     0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available:
@@ -209,7 +209,7 @@ var _ = Describe("ISVCs", func() {
 				config[k] = v
 			}
 
-			// scale to 0 for resource-constraint environments (only 2 CPUs on GH actions)
+			// scale to 0 for resource-constrained environments (only 2 CPUs on GH actions)
 			// to stop and remove runtimes which are not used for this test
 			//   Warning   FailedScheduling   pod/modelmesh-serving-mlserver-1.x-...
 			//     0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available:
