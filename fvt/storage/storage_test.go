@@ -130,11 +130,18 @@ var _ = Describe("ISVCs", func() {
 			//   from the old to the new pod
 
 			// make a shallow copy of default configmap (don't modify the DefaultConfig reference)
-			// keeping 1 pod per runtime and don't scale to 0
+			// we should keep 1 pod per runtime and don't scale to 0
 			config := make(map[string]interface{})
 			for k, v := range DefaultConfig {
 				config[k] = v
 			}
+
+			// scale to 0 for resource constraint environments (only 2 CPUs on GH actions)
+			config["scaleToZero"] = map[string]interface{}{
+				"enabled":            true,
+				"gracePeriodSeconds": 5,
+			}
+
 			// update the model-serving-config to allow any PVC
 			config["allowAnyPVC"] = true
 

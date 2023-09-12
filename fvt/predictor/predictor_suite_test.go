@@ -56,7 +56,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	FVTClientInstance.CreateTLSSecrets()
 
 	// ensure a stable deploy state
-	WaitForStableActiveDeployState(time.Second * 30)
+	WaitForStableActiveDeployState(time.Second * 45)
 
 	return nil
 }, func(_ []byte) {
