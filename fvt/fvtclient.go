@@ -59,8 +59,8 @@ import (
 	torchserveapi "github.com/kserve/modelmesh-serving/fvt/generated/torchserve/apis"
 )
 
-const PredictorTimeout = time.Second * 120       // absolute time to wait for predictor to become ready
-const TimeForStatusToStabilize = time.Second * 5 // time to wait between watcher events before assuming a stable state
+const PredictorTimeout = time.Second * 120        // absolute time to wait for predictor to become ready
+const TimeForStatusToStabilize = time.Second * 10 // time to wait between watcher events before assuming a stable state
 
 type ModelServingConnectionType int
 
