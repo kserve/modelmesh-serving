@@ -243,11 +243,6 @@ issues:
         - staticcheck
       text: "SA9003:"
 
-    # Exclude some deprecation errors
-    - linters:
-        - staticcheck
-      text: "SA1019:"
-
     # Exclude lll issues for long lines with go:generate
     - linters:
         - lll

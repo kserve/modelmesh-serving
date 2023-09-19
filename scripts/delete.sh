@@ -95,13 +95,7 @@ popd
 
 # Older versions of kustomize have different load restrictor flag formats.
 # Can be removed once Kubeflow installation stops requiring v3.2.
-kustomize_version=$(kustomize version --short | grep -o -E "[0-9]\.[0-9]\.[0-9]")
-kustomize_load_restrictor_arg="--load-restrictor LoadRestrictionsNone"
-if [[ -n "$kustomize_version" && "$kustomize_version" < "3.4.0" ]]; then
-    kustomize_load_restrictor_arg="--load_restrictor none"
-elif [[ -n "$kustomize_version" && "$kustomize_version" < "4.0.1" ]]; then
-    kustomize_load_restrictor_arg="--load_restrictor LoadRestrictionsNone"
-fi
+kustomize_load_restrictor_arg=$( kustomize build --help | grep -o -E "\-\-load.restrictor[^,]+" | sed -E "s/(--load.restrictor).+'(.*none)'/\1 \2/I" )
 
 if [[ ! -z $user_ns_array ]]; then
   kustomize build runtimes ${kustomize_load_restrictor_arg} > runtimes.yaml
@@ -122,6 +116,37 @@ if [[ ! -z $user_ns_array ]]; then
   rm runtimes.yaml
 fi
 
+# If there is `modelmesh-webhook-server-cert` Certificate object in a namespace, it assumes that cert-manager operator is being used for generating a certificate.
+# However, if there is no Certificate object in the namespace, it needs to exclude cert-manager part from kustomization.yaml to generate manifests properly. 
+export enable_self_signed_ca=true
+if kubectl get certificates modelmesh-webhook-server-cert -n $namespace &> /dev/null; then
+  echo "Cert Manager is installed"
+  export enable_self_signed_ca=false
+fi
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  echo "Enabled Self Signed CA: Update manifest"
+  if [[ ! -f certmanager/kustomization.yaml.ori ]]; then
+    cp certmanager/kustomization.yaml  certmanager/kustomization.yaml.ori
+  fi
+  cd certmanager; kustomize edit remove resource certificate.yaml; cd ../
+
+  if [[ ! -f default/kustomization.yaml.ori ]]; then
+    cp default/kustomization.yaml  default/kustomization.yaml.ori
+  fi
+  cd default; kustomize edit remove resource ../certmanager; cd ../
+
+  # comment out vars
+  configMapGeneratorStartLine=$(grep -n configMapGenerator ./default/kustomization.yaml |cut -d':' -f1)
+  configMapGeneratorBeforeLine=$((configMapGeneratorStartLine-1))
+  sed -i.bak "1,${configMapGeneratorBeforeLine}s/^/#/g" default/kustomization.yaml
+
+  # remove webhookcainjection_patch.yaml
+  sed -i.bak '/webhookcainjection_patch.yaml/d' default/kustomization.yaml
+
+  rm default/kustomization.yaml.bak
+fi
+
 # Determine whether a modelmesh-controller-rolebinding clusterrolebinding exists and is
 # associated with the service account in this namespace. If not, don't delete the cluster level RBAC.
 set +e
@@ -131,13 +156,25 @@ if [[ "$crb_ns" == "$namespace" ]]; then
   echo "deleting cluster scope RBAC"
   kustomize build rbac/cluster-scope | kubectl delete -f - --ignore-not-found=true
 fi
+
+# Determine whether deployment is namespace-scoped before deleting runtime resources
+is_namespace_scoped=$(kubectl exec deploy/modelmesh-controller -- printenv NAMESPACE_SCOPE 2> /dev/null || echo "false") || :
 kustomize build default | kubectl delete -f - --ignore-not-found=true
 kustomize build rbac/namespace-scope | kubectl delete -f - --ignore-not-found=true
-kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
+if [[ ! "$is_namespace_scoped" == "true" ]]; then
+  kustomize build runtimes ${kustomize_load_restrictor_arg} | kubectl delete -f - --ignore-not-found=true
+fi
+
 kubectl delete -f dependencies/quickstart.yaml --ignore-not-found=true
 kubectl delete -f dependencies/fvt.yaml --ignore-not-found=true
 
 # Roll back to previous status
 if [[ "$namespace" != "$old_namespace" ]]; then
   kubectl config set-context --current --namespace=${old_namespace}
+fi
+
+if [[ $enable_self_signed_ca == "true" ]]; then
+  cp certmanager/kustomization.yaml.ori  certmanager/kustomization.yaml
+  cp default/kustomization.yaml.ori  default/kustomization.yaml
+  rm certmanager/kustomization.yaml.ori default/kustomization.yaml.ori 
 fi

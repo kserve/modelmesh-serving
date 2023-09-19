@@ -19,6 +19,8 @@ import (
 	"sort"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/constants"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
@@ -82,11 +84,11 @@ func TestGetServingRuntimeLabelSets(t *testing.T) {
 	if expectedRtLabel != rtLabel {
 		t.Errorf("Missing expected entry [%s] in set: %v", expectedRtLabel, rtLabel)
 	}
-	if !reflect.DeepEqual(mtLabelSet.List(), expectedMtLabels) {
-		t.Errorf("Labels [%s] don't match expected: %v", mtLabelSet.List(), expectedMtLabels)
+	if !reflect.DeepEqual(sets.List(mtLabelSet), expectedMtLabels) {
+		t.Errorf("Labels [%s] don't match expected: %v", sets.List(mtLabelSet), expectedMtLabels)
 	}
-	if !reflect.DeepEqual(pvLabelSet.List(), expectedPvLabels) {
-		t.Errorf("Labels [%s] don't match expected: %v", pvLabelSet.List(), expectedPvLabels)
+	if !reflect.DeepEqual(sets.List(pvLabelSet), expectedPvLabels) {
+		t.Errorf("Labels [%s] don't match expected: %v", sets.List(pvLabelSet), expectedPvLabels)
 	}
 }
 

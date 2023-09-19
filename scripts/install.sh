@@ -351,6 +351,8 @@ if [[ $namespace_scope_mode == "true" ]]; then
   # Reset crd/kustomization.yaml back to CSR crd since we used the same file for namespace scope mode installation
   sed -i.bak 's/#- bases\/serving.kserve.io_clusterservingruntimes.yaml/- bases\/serving.kserve.io_clusterservingruntimes.yaml/g' crd/kustomization.yaml
   rm crd/kustomization.yaml.bak
+else
+  kubectl set env deploy/modelmesh-controller NAMESPACE_SCOPE=false
 fi
 
 if [[ -n $modelmesh_serving_image ]]; then 
@@ -376,13 +378,7 @@ wait_for_pods_ready "-l control-plane=modelmesh-controller"
 
 # Older versions of kustomize have different load restrictor flag formats.
 # Can be removed once Kubeflow installation stops requiring v3.2.
-kustomize_version=$(kustomize version --short | grep -o -E "[0-9]\.[0-9]\.[0-9]")
-kustomize_load_restrictor_arg="--load-restrictor LoadRestrictionsNone"
-if [[ -n "$kustomize_version" && "$kustomize_version" < "3.4.0" ]]; then
-    kustomize_load_restrictor_arg="--load_restrictor none"
-elif [[ -n "$kustomize_version" && "$kustomize_version" < "4.0.1" ]]; then
-    kustomize_load_restrictor_arg="--load_restrictor LoadRestrictionsNone"
-fi
+kustomize_load_restrictor_arg=$( kustomize build --help | grep -o -E "\-\-load.restrictor[^,]+" | sed -E "s/(--load.restrictor).+'(.*none)'/\1 \2/I" )
 
 info "Installing ModelMesh Serving built-in runtimes"
 if [[ $namespace_scope_mode == "true" ]]; then
