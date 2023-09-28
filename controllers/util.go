@@ -18,6 +18,7 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,7 +43,10 @@ func modelMeshEnabled2(ctx context.Context, namespace, controllerNamespace strin
 	}
 	n := &corev1.Namespace{}
 	if err := client.Get(ctx, types.NamespacedName{Name: namespace}, n); err != nil {
-		return false, err
+		if errors.IsNotFound(err) {
+			// If the namespace has already been deleted, it can not be modelmesh namespace
+			return false, nil
+		}
 	}
 	return modelMeshEnabled(n, controllerNamespace), nil
 }
