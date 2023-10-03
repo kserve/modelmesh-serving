@@ -4,7 +4,7 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 
 <!-- Remove the following note on the `release-*` branch -->
 
-> **Note**: This document describes how to install the _latest unreleased_ version of ModelMesh for developers and early adopters. To install the most recent _stable release_, please follow the [Quick Start Guide for version 0.11](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/quickstart.md).
+> **Note**: This document describes how to install the _latest unreleased_ version of ModelMesh for developers and early adopters. To install the most recent _stable release_, please follow the [Quick Start Guide for version 0.11.1](https://github.com/kserve/modelmesh-serving/blob/release-0.11.1/docs/quickstart.md).
 
 ## Prerequisites
 
@@ -16,10 +16,10 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 
 ### Clone the ModelMesh repository
 
-<!-- Replace with RELEASE="release-0.11" on the `release-*` branch -->
+<!-- Replace with RELEASE="release-0.11.1" on the `release-*` branch -->
 
 ```shell
-RELEASE="main"
+RELEASE="release-0.11.1"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
