@@ -30,7 +30,7 @@ bin
 .vscode
 *~
 
-# Modelmesh development related artifacts
+# ModelMesh development related artifacts
 devbuild
 .develop_image_name
 .dev/

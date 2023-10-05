@@ -2,13 +2,13 @@
 
 ## Format
 
-Full documentation on OpenVINO IR format can be found [here](https://docs.openvino.ai/2022.1/openvino_docs_MO_DG_IR_and_opsets.html#intermediate-representation-used-in-openvino).
+Full documentation on OpenVINO IR format can be found [here](https://docs.openvino.ai/2022.3/openvino_docs_MO_DG_IR_and_opsets.html#intermediate-representation-used-in-openvino).
 
 OpenVINO™ toolkit introduces its own format of graph representation and its own operation set. A graph is represented with two files: an XML file and a binary file. This representation is commonly referred to as the Intermediate Representation or IR.
 
-An example of a small IR XML file can be found in the same [link above](https://docs.openvino.ai/2022.1/openvino_docs_MO_DG_IR_and_opsets.html#intermediate-representation-used-in-openvino). The XML file doesn’t have big constant values, like convolution weights. Instead, it refers to a part of the accompanying binary file that stores such values in a binary format.
+An example of a small IR XML file can be found in the same [link above](https://docs.openvino.ai/2022.3/openvino_docs_MO_DG_IR_and_opsets.html#intermediate-representation-used-in-openvino). The XML file doesn’t have big constant values, like convolution weights. Instead, it refers to a part of the accompanying binary file that stores such values in a binary format.
 
-Models trained in other formats (Caffe, TensorFlow, MXNet, PaddlePaddle and ONNX) can be converted to OpenVINO IR format. To do so, use OpenVINO’s [Model Optimizer](https://docs.openvino.ai/2022.1/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html).
+Models trained in other formats (Caffe, TensorFlow, MXNet, PaddlePaddle and ONNX) can be converted to OpenVINO IR format. To do so, use OpenVINO’s [Model Optimizer](https://docs.openvino.ai/2022.3/openvino_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html).
 
 ## Configuration
 
@@ -20,7 +20,7 @@ Here is an example of client code:
 input_tensorname = 'input'
 request.inputs[input_tensorname].CopyFrom(make_tensor_proto(img, shape=(1, 3, 224, 224)))
 
-.....
+...
 
 output_tensorname = 'resnet_v1_50/predictions/Reshape_1'
 predictions = make_ndarray(result.outputs[output_tensorname])
@@ -46,21 +46,22 @@ More details on model configuration can be found [here](https://docs.openvino.ai
 
 The OpenVINO models need to be placed and mounted in a particular directory structure:
 
-```
+```shell
 tree models/
+
 models/
 ├── model1
-│   ├── 1
-│   │   ├── ir_model.bin
-│   │   └── ir_model.xml
-│   └── 2
-│       ├── ir_model.bin
-│       └── ir_model.xml
+│   ├── 1
+│   │   ├── ir_model.bin
+│   │   └── ir_model.xml
+│   └── 2
+│       ├── ir_model.bin
+│       └── ir_model.xml
 └── model2
-│   └── 1
-│       ├── ir_model.bin
-│       ├── ir_model.xml
-│       └── mapping_config.json
+│   └── 1
+│       ├── ir_model.bin
+│       ├── ir_model.xml
+│       └── mapping_config.json
 └── model3
     └── 1
         └── model.onnx

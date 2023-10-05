@@ -105,7 +105,7 @@ Models can be stored on [Kubernetes Persistent Volumes](https://kubernetes.io/do
 There are two ways to enable PVC support in ModelMesh:
 
 1. The Persistent Volume Claims can be added in the `storage-config` secret. This way all PVCs will be mounted to all serving runtime pods.
-2. The `allowAnyPVC` configuration flag can be set to `true`. This way the Modelmesh controller will dynamically mount the PVC to a runtime pod at the time a predictor or inference service requiring it is being deployed.
+2. The `allowAnyPVC` configuration flag can be set to `true`. This way the ModelMesh controller will dynamically mount the PVC to a runtime pod at the time a predictor or inference service requiring it is being deployed.
 
 Follow the example instructions below to create a PVC, store a model on it, and configure ModelMesh to mount the PVC to the runtime serving pods so that the model can be loaded for inferencing.
 
@@ -230,7 +230,7 @@ As an alternative to preconfiguring all _allowed_ PVCs in the `storage-config` s
 
 Let's update (or create) the `model-serving-config` ConfigMap.
 
-Note, if you already have a `model-serving-config` ConfigMap, you might want to retain the existing config overrides. You can check your current configuration flags by running:
+**Note**, if you already have a `model-serving-config` ConfigMap, you might want to retain the existing config overrides. You can check your current configuration flags by running:
 
 ```shell
 kubectl get cm "model-serving-config" -o jsonpath="{.data['config\.yaml']}"`
@@ -319,7 +319,7 @@ The response should look like the following:
 {
   "model_name": "sklearn-pvc-example__isvc-3d2daa3370",
   "outputs": [
-    {"name": "predict", "datatype": "INT64", "shape": [1], "data": [8]}
+    {"name": "predict", "datatype": "INT64", "shape": [1,1], "data": [8]}
   ]
 }
 ```
