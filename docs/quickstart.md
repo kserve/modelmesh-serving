@@ -267,7 +267,7 @@ This should give you a response like the following:
     {
       "name": "predict",
       "datatype": "FP32",
-      "shape": [1,1],
+      "shape": [1, 1],
       "data": [8]
     }
   ]

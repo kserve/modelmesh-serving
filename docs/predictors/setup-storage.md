@@ -319,7 +319,7 @@ The response should look like the following:
 {
   "model_name": "sklearn-pvc-example__isvc-3d2daa3370",
   "outputs": [
-    {"name": "predict", "datatype": "INT64", "shape": [1,1], "data": [8]}
+    {"name": "predict", "datatype": "INT64", "shape": [1, 1], "data": [8]}
   ]
 }
 ```

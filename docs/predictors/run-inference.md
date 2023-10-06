@@ -190,7 +190,7 @@ This would give a response similar to the following:
     {
       "name": "predict",
       "datatype": "FP32",
-      "shape": [1,1],
+      "shape": [1, 1],
       "data": [8]
     }
   ]

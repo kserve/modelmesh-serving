@@ -1,5 +1,8 @@
 # general
 .env
+.DS_Store
+.run/
+temp/
 
 public/
 target/
