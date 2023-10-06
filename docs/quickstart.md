@@ -87,6 +87,7 @@ Here, we deploy an SKLearn MNIST model which is served from the local MinIO cont
 
 ```shell
 kubectl apply -f - <<EOF
+---
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
@@ -109,6 +110,7 @@ using the `storageUri` field in lieu of the storage spec:
 
 ```shell
 kubectl apply -f - <<EOF
+---
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
 metadata:
@@ -127,7 +129,7 @@ EOF
 
 After applying this `InferenceService`, you should see that it is likely not yet ready.
 
-```
+```shell
 kubectl get isvc
 
 NAME                    URL   READY   PREV   LATEST   PREVROLLEDOUTREVISION   LATESTREADYREVISION   AGE
@@ -229,7 +231,7 @@ This should give you output like the following:
     {
       "name": "predict",
       "datatype": "INT64",
-      "shape": ["1"],
+      "shape": ["1", "1"],
       "contents": {
         "int64Contents": ["8"]
       }
@@ -264,8 +266,8 @@ This should give you a response like the following:
   "outputs": [
     {
       "name": "predict",
-      "datatype": "FP32",
-      "shape": [1],
+      "datatype": "INT64",
+      "shape": [1, 1],
       "data": [8]
     }
   ]
@@ -281,4 +283,5 @@ command from the root of the project:
 
 ```shell
 ./scripts/delete.sh --namespace modelmesh-serving
+kubectl delete namespace modelmesh-serving
 ```

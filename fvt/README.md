@@ -30,6 +30,7 @@ The FVTs rely on a set of models existing in a configured `localMinIO` storage. 
 If starting with a fresh namespace, install ModelMesh Serving configured for the FVTs with:
 
 ```Shell
+kubectl create namespace modelmesh-serving
 ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 ```
 
