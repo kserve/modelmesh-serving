@@ -59,8 +59,11 @@ func getHPAMetrics(metadata metav1.ObjectMeta) []hpav2.MetricSpec {
 	resourceName := corev1.ResourceCPU
 
 	if value, ok := annotations[constants.TargetUtilizationPercentage]; ok {
-		utilizationInt, _ := strconv.Atoi(value)
-		utilization = int32(utilizationInt)
+		if valueInt, err := strconv.ParseInt(value, 10, 32); err != nil {
+			log.Error(err, "Could not parse TargetUtilizationPercentage", "value", value)
+		} else {
+			utilization = int32(valueInt)
+		}
 	}
 
 	if value, ok := annotations[constants.AutoscalerMetrics]; ok {
@@ -90,13 +93,19 @@ func createHPA(runtimeMeta metav1.ObjectMeta, mmDeploymentName string, mmNamespa
 	annotations := runtimeMeta.Annotations
 
 	if value, ok := annotations[mmcontstant.MinScaleAnnotationKey]; ok {
-		minReplicasInt, _ := strconv.Atoi(value)
-		minReplicas = int32(minReplicasInt)
-
+		if valueInt, err := strconv.ParseInt(value, 10, 32); err != nil {
+			log.Error(err, "Could not parse MinScaleAnnotationKey", "value", value)
+		} else {
+			minReplicas = int32(valueInt)
+		}
 	}
+
 	if value, ok := annotations[mmcontstant.MaxScaleAnnotationKey]; ok {
-		maxReplicasInt, _ := strconv.Atoi(value)
-		maxReplicas = int32(maxReplicasInt)
+		if valueInt, err := strconv.ParseInt(value, 10, 32); err != nil {
+			log.Error(err, "Could not parse MaxScaleAnnotationKey", "value", value)
+		} else {
+			maxReplicas = int32(valueInt)
+		}
 	}
 
 	if maxReplicas < minReplicas {
