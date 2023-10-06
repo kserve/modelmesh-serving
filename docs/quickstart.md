@@ -266,7 +266,7 @@ This should give you a response like the following:
   "outputs": [
     {
       "name": "predict",
-      "datatype": "FP32",
+      "datatype": "INT64",
       "shape": [1, 1],
       "data": [8]
     }
