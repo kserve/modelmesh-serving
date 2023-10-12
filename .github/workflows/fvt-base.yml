@@ -90,7 +90,6 @@ jobs:
           ./scripts/build_docker.sh --target runtime --tag ${{ env.IMAGE_TAG }}
 
       - name: Install ModelMesh Serving
-        if: ${{ inputs.perform_deploy }}
         run: |
           export NAMESPACE_SCOPE_MODE=${{ inputs.namespace-scope-mode }}
           kubectl create ns modelmesh-serving
@@ -122,6 +121,7 @@ jobs:
           docker images
           kubectl get pods
           kubectl get clusterservingruntimes
+          kubectl get servingruntimes
 
       - name: Run FVTs
         run: |
