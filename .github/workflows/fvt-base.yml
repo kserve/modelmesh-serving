@@ -119,9 +119,10 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker images
+          kubectl get svc
           kubectl get pods
-          kubectl get clusterservingruntimes
-          kubectl get servingruntimes
+          kubectl get clusterservingruntimes 2> /dev/null || :
+          kubectl get servingruntimes 2> /dev/null || :
 
       - name: Run FVTs
         run: |
