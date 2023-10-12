@@ -15,7 +15,7 @@ on:
       - '.github/workflows/fvt*.yml'
 
 jobs:
-  fvt-namespace-scope:
+  fvt-cluster-scope:
     uses: ./.github/workflows/fvt-base.yml
     with:
       namespace-scope-mode: false
