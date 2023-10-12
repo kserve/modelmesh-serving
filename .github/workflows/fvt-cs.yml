@@ -1,0 +1,22 @@
+name: FVT Cluster Scope
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - 'release-[0-9].[0-9]+'
+    paths:
+      - '**'
+      - '!.github/**'
+      - '!.tekton/**'
+      - '!**.md'
+      - '!docs/**'
+      - '.github/workflows/fvt*.yml'
+
+jobs:
+  fvt-cluster-scope:
+    uses: ./.github/workflows/fvt-base.yml
+    with:
+      namespace-scope-mode: false
+    secrets: inherit

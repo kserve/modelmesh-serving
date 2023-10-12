@@ -1,18 +1,13 @@
-name: FVT
+name: FVT Base
 
 on:
-  workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-      - 'release-[0-9].[0-9]+'
-    paths:
-      - '**'
-      - '!.github/**'
-      - '!.tekton/**'
-      - '!**.md'
-      - '!docs/**'
-      - '.github/workflows/fvt.yml'
+  workflow_call:
+    inputs:
+      namespace-scope-mode:
+        description: 'Whether to deploy ModelMesh Serving in namespace-scope mode'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   fvt:
@@ -96,6 +91,7 @@ jobs:
 
       - name: Install ModelMesh Serving
         run: |
+          export NAMESPACE_SCOPE_MODE=${{ inputs.namespace-scope-mode }}
           kubectl create ns modelmesh-serving
           ./scripts/install.sh --namespace modelmesh-serving --fvt --dev-mode-logging
 
@@ -123,13 +119,15 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker images
+          kubectl get svc
           kubectl get pods
-          kubectl get clusterservingruntimes
+          kubectl get clusterservingruntimes 2> /dev/null || :
+          kubectl get servingruntimes 2> /dev/null || :
 
       - name: Run FVTs
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo
           export PATH=/root/go/bin/:$PATH
           export NAMESPACE=modelmesh-serving
-          export NAMESPACESCOPEMODE=false
+          export NAMESPACESCOPEMODE=${{ inputs.namespace-scope-mode }}
           make fvt

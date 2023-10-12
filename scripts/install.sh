@@ -25,7 +25,7 @@ dev_mode_logging=false
 quickstart=false
 fvt=false
 user_ns_array=
-namespace_scope_mode=false # change to true to run in namespace scope
+namespace_scope_mode=${NAMESPACE_SCOPE_MODE:-false}
 modelmesh_serving_image=
 enable_self_signed_ca=false
 
