@@ -36,18 +36,20 @@ ENV HOME=/root
 WORKDIR /workspace
 
 # Install build and dev tools
+# NOTE: Require python38 to install pre-commit
 RUN --mount=type=cache,target=/root/.cache/dnf:rw \
     dnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
-       python3 \
-       python3-pip \
        nodejs \
        jq \
+       python38 \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip \
     && true
 
 # Install pre-commit
 ENV PIP_CACHE_DIR=/root/.cache/pip
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install pre-commit
+    pip install pre-commit
 
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
 # Then download and overwrite kubebuilder binary with desired/latest version
