@@ -88,7 +88,7 @@ kubectl create secret tls <secret-name> --cert <cert-file> --key <key-file>
             kind: Issuer
         EOF
 
-     Above, `${NAMESPACE}` is the namespace where the ModelMesh Serving Service resides, and `modelmesh-serving` is the name of that service (configured via the `inferenceServiceName` [global ConfigMap](./README.md). parameter). You can also replace `issuerRef.name` to match the name of the issuer used above if necessary. 
+    Above, `${NAMESPACE}` is the namespace where the ModelMesh Serving Service resides, and `modelmesh-serving` is the name of that service (configured via the `inferenceServiceName` [global ConfigMap](./README.md). parameter). You can also replace `issuerRef.name` to match the name of the issuer used above if necessary.
 
     `${HOSTNAME}` is optional, but should be set when configuring an external Kubernetes Ingress or OpenShift route as described [here](./README.md#exposing-an-external-endpoint-using-an-openshift-route):
 
