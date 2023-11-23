@@ -126,5 +126,15 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-// Update Go Networking to avoid CVE-2023-44487 and CVE-2023-39325
-replace golang.org/x/net => golang.org/x/net v0.17.0
+replace (
+	// Fixes CVE-2022-21698 and CVE-2023-45142
+	// this dependency comes from k8s.io/component-base@v0.26.4 and k8s.io/apiextensions-apiserver@v0.26.4
+	// before removing it make sure that the next version of the related k8s dependencies contains the fix
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
+	// Update Go Networking to avoid CVE-2023-44487 and CVE-2023-39325
+	golang.org/x/net => golang.org/x/net v0.17.0
+	// remove when upgrade to controller-runtime 0.15.x or apimachinery to 0.27.x
+	// Fixes github.com/elazarl/goproxy Denial of Service (DoS)
+	// This dependency was removed from apimachinery 0.27.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.27.0
+)
