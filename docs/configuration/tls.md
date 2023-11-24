@@ -17,7 +17,7 @@ SECRET_NAME="modelmesh-certificate"
 
 Create an OpenSSL configuration file named `openssl-san.config`:
 
-``` shell
+```shell
 cat > openssl-san.config << EOF
 [ req ]
 distinguished_name = req
@@ -69,7 +69,7 @@ First, define the variables that will be used in the commands below and change t
 
 ```shell
 NAMESPACE="modelmesh-serving" # the controller namespace where ModelMesh Serving was deployed
-SECRET_NAME="modelmesh-certificate" 
+SECRET_NAME="modelmesh-certificate"
 HOSTNAME=localhost
 ```
 
@@ -117,7 +117,9 @@ HOSTNAME=localhost
         kind: Issuer
     EOF
     ```
-    
+
+    **Note:** `${HOSTNAME}` is optional but should be set when configuring an external Kubernetes Ingress or OpenShift route as described [here](./README.md#exposing-an-external-endpoint-using-an-openshift-route).
+
     If the certificate request is successful, a TLS secret with the PEM-encoded certs will be created as `modelmesh-serving-cert`, assuming `metadata.name` wasn't modified.
 
 4.  Wait for the certificate to be successfully issued:
@@ -125,13 +127,14 @@ HOSTNAME=localhost
     ```shell
     kubectl get certificate/modelmesh-serving-cert --watch
     ```
-    
+
     Once you see `READY` as `True`, proceed to the next step.
+
     ```
     NAME                     READY   SECRET                        AGE
     modelmesh-serving-cert   True    modelmesh-certificate         21h
     ```
-    
+
 5.  Enable TLS in ModelMesh Serving by adding a value for `tls.secretName` in the ConfigMap, pointing to the secret created with the TLS key/cert details.
 
     ```shell
@@ -146,6 +149,7 @@ HOSTNAME=localhost
           secretName: ${SECRET_NAME}
     EOF
     ```
+
 6.  Retrieve the `ca.crt` (to be used in clients):
 
     ```shell
