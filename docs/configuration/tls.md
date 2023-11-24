@@ -30,8 +30,8 @@ Use the following command to create a SAN key/cert:
 
 ```shell
 openssl req -x509 -newkey rsa:4096 -sha256 -days 3560 -nodes \
-    -keyout example.key \
-    -out example.crt \
+    -keyout server.key \
+    -out server.crt \
     -subj "/CN=${NAMESPACE}" \
     -extensions san \
     -config openssl-san.config
@@ -49,9 +49,9 @@ metadata:
   name: ${SECRET_NAME}
 type: kubernetes.io/tls
 stringData:
-  tls.crt: $(cat example.crt)
-  tls.key: $(cat example.key)
-  ca.crt: $(cat example.crt)
+  tls.crt: $(cat server.crt)
+  tls.key: $(cat server.key)
+  ca.crt: $(cat server.crt)
 EOF
 ```
 
@@ -60,7 +60,7 @@ EOF
 Alternatively, you can create this secret imperatively using:
 
 ```
-kubectl create secret tls ${SECRET_NAME} --cert "example.crt" --key "example.key"
+kubectl create secret tls ${SECRET_NAME} --cert "server.crt" --key "server.key"
 ```
 
 ## Creating TLS Certificates using CertManager
