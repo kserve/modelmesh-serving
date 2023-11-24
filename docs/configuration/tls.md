@@ -4,120 +4,154 @@ TLS can be configured via the `tls.secretName` and `tls.clientAuth` parameters o
 
 When TLS is enabled for the external inferencing interface, all of the ModelMesh Serving internal (intra-Pod) communication will be secured using the same certificates. The internal links will use mutual TLS regardless of whether client authentication is required for the external connections.
 
-There are various ways to generate TLS certificates, below are steps on how to do this using OpenSSL or CertManager.
+There are various ways to generate TLS certificates. Below are steps on how to do this using OpenSSL or CertManager.
 
 ## Generating TLS Certificates for Dev/Test using OpenSSL
 
-To create a SAN key/cert for TLS, use command:
+First, define the variables that will be used in the commands below. Change the values to suit your environment:
 
 ```shell
-openssl req -x509 -newkey rsa:4096 -sha256 -days 3560 -nodes -keyout example.key -out example.crt -subj '/CN=modelmesh-serving' -extensions san -config openssl-san.config
+NAMESPACE="modelmesh-serving"  # the controller namespace where ModelMesh Serving was deployed
+SECRET_NAME="modelmesh-certificate"
 ```
 
-Where the contents of `openssl-san.config` look like:
+Create an OpenSSL configuration file named `openssl-san.config`:
 
-```
+```shell
+cat > openssl-san.config << EOF
 [ req ]
 distinguished_name = req
 [ san ]
 subjectAltName = DNS:modelmesh-serving.${NAMESPACE},DNS:localhost,IP:0.0.0.0
+EOF
 ```
 
-With the generated key/cert, create a kube secret with contents like:
+Use the following command to create a SAN key/cert:
 
-```yaml
+```shell
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3560 -nodes \
+    -keyout server.key \
+    -out server.crt \
+    -subj "/CN=${NAMESPACE}" \
+    -extensions san \
+    -config openssl-san.config
+```
+
+From there, you can create a secret using the generated certificate and key:
+
+```shell
+kubectl apply -f - <<EOF
+---
 apiVersion: v1
 kind: Secret
 metadata:
+  namespace: ${NAMESPACE}
   name: ${SECRET_NAME}
 type: kubernetes.io/tls
 stringData:
-  tls.crt: <contents-of-example.crt>
-  tls.key: <contents-of-example.key>
-  ca.crt: <contents-of-example.crt>
+  tls.crt: $(cat server.crt)
+  tls.key: $(cat server.key)
+  ca.crt: $(cat server.crt)
+EOF
 ```
 
-For basic TLS, only the fields `tls.crt` and `tls.key` are needed in the kube secret. For mutual TLS, add `ca.crt` in the kube secret and set the configuration `tls.clientAuth` to `require` in the ConfigMap `model-serving-config`.
+**Note:** For basic TLS, only the fields `tls.crt` and `tls.key` are required. For mutual TLS, `ca.crt` should be included and `tls.clientAuth` should be set to `require` in the [`model-serving-config` ConfigMap](./README.md).
+
+Alternatively, you can create this secret imperatively using:
+
+```
+kubectl create secret tls ${SECRET_NAME} --cert "server.crt" --key "server.key"
+```
 
 ## Creating TLS Certificates using CertManager
 
-1.  If necessary, install `cert-manager` in the cluster - follow the steps here: https://cert-manager.io/docs/installation/.
+First, define the variables that will be used in the commands below and change the values as needed.
 
-2.  Create an `Issuer` CR
+```shell
+NAMESPACE="modelmesh-serving" # the controller namespace where ModelMesh Serving was deployed
+SECRET_NAME="modelmesh-certificate"
+HOSTNAME=localhost
+```
 
-        kubectl apply -f - <<EOF
-        apiVersion: cert-manager.io/v1
+1.  [Install `cert-manager`](https://cert-manager.io/docs/installation/) in the cluster.
+
+2.  Create an `Issuer` CR, modifying its name if needed:
+
+    ```shell
+    kubectl apply -f - <<EOF
+    ---
+    apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: modelmesh-serving-selfsigned-issuer
+    spec:
+      selfSigned: {}
+    EOF
+    ```
+
+3.  Create a `Certificate` CR:
+
+    ```shell
+    kubectl apply -f - <<EOF
+    ---
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: modelmesh-serving-cert
+    spec:
+      secretName: ${SECRET_NAME}
+      duration: 2160h0m0s # 90d
+      renewBefore: 360h0m0s # 15d
+      commonName: modelmesh-serving
+      isCA: true
+      privateKey:
+        size: 4096
+        algorithm: RSA
+        encoding: PKCS8
+      dnsNames:
+      - ${HOSTNAME}
+      - modelmesh-serving.${NAMESPACE}
+      - modelmesh-serving
+      issuerRef:
+        name: modelmesh-serving-selfsigned-issuer
         kind: Issuer
-        metadata:
-          name: modelmesh-serving-selfsigned-issuer
-        spec:
-          selfSigned: {}
-        EOF
+    EOF
+    ```
 
-3.  Create a `Certificate` CR
+    **Note:** `${HOSTNAME}` is optional but should be set when configuring an external Kubernetes Ingress or OpenShift route as described [here](./README.md#exposing-an-external-endpoint-using-an-openshift-route).
 
-        kubectl apply -f - <<EOF
-        apiVersion: cert-manager.io/v1
-        kind: Certificate
-        metadata:
-          name: modelmesh-serving-cert
-        spec:
+    If the certificate request is successful, a TLS secret with the PEM-encoded certs will be created as `modelmesh-serving-cert`, assuming `metadata.name` wasn't modified.
+
+4.  Wait for the certificate to be successfully issued:
+
+    ```shell
+    kubectl get certificate/modelmesh-serving-cert --watch
+    ```
+
+    Once you see `READY` as `True`, proceed to the next step.
+
+    ```
+    NAME                     READY   SECRET                        AGE
+    modelmesh-serving-cert   True    modelmesh-certificate         21h
+    ```
+
+5.  Enable TLS in ModelMesh Serving by adding a value for `tls.secretName` in the ConfigMap, pointing to the secret created with the TLS key/cert details.
+
+    ```shell
+    kubectl create -f - <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: model-serving-config
+    data:
+      config.yaml: |
+        tls:
           secretName: ${SECRET_NAME}
-          duration: 2160h0m0s # 90d
-          renewBefore: 360h0m0s # 15d
-          commonName: modelmesh-serving
-          isCA: true
-          privateKey:
-            size: 4096
-            algorithm: RSA
-            encoding: PKCS8
-          dnsNames:
-          - ${HOSTNAME}
-          - modelmesh-serving.${NAMESPACE}
-          - modelmesh-serving
-          issuerRef:
-            name: modelmesh-serving-selfsigned-issuer
-            kind: Issuer
-        EOF
+    EOF
+    ```
 
-    Where `${NAMESPACE}` is the namespace where the ModelMesh Serving Service resides, and `modelmesh-serving` is the name of that service (configured via the `inferenceServiceName` global ConfigMap parameter).
+6.  Retrieve the `ca.crt` (to be used in clients):
 
-    Replace `modelmesh-serving-selfsigned-issuer` by the name of the issuer that you're using if needed (see previous step).
-
-    `${HOSTNAME}` is optional but should be set as follows when configuring an external Kubernetes Ingress or OpenShift route as described [here](./README.md#exposing-an-external-endpoint-using-an-openshift-route):
-
-        HOSTNAME=`oc get route modelmesh-serving -o jsonpath='{.spec.host}'`
-
-    If the certificate request is successful, a TLS secret with the PEM-encoded certs will be created as `${SECRET_NAME}`.
-
-4.  Wait for the certificate to be successfully issued
-
-        kubectl get certificate/${SECRET_NAME} --watch
-
-    Once you see `Ready` as `True`, proceed to the next step.
-
-        NAME                     READY   SECRET                        AGE
-        modelmesh-serving-cert   True    ${SECRET_NAME}                21h
-
-5.  Enable TLS in ModelMesh Serving
-
-    As explained before, TLS is enabled through adding a value for `tls.secretName` in the user's ConfigMap that points to an existing kube secret with TLS key/cert details.
-
-    So in this case, it would be `${SECRET_NAME}`, which gets created once the `certificate` is `ready`.
-
-    **Example:**
-
-        kubectl create -f - <<EOF
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: model-serving-config
-        data:
-          config.yaml: |
-            tls:
-              secretName: ${SECRET_NAME}
-        EOF
-
-6.  Retrieve the `ca.crt` (to be used in clients)
-
-        kubectl get secret ${SECRET_NAME} -o jsonpath="{.data.ca\.crt}" > ca.crt
+    ```shell
+    kubectl get secret ${SECRET_NAME} -o jsonpath="{.data.ca\.crt}" > ca.crt
+    ```
