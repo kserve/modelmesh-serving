@@ -20,7 +20,7 @@ set -xe
 REGION=${REGION:-"us-south"}
 RUN_TASK=${RUN_TASK:-"build"}
 
-DOCKER_BUILDKIT=1
+export DOCKER_BUILDKIT=1
 
 retry() {
   local max=$1; shift
@@ -48,11 +48,11 @@ build_image() {
   # Will build develop and then runtime images.
 
   echo "==============================Build dev image ================================"
-  DOCKER_BUILDKIT=1 make build.develop
+  make build.develop
   docker images
   docker inspect "kserve/modelmesh-controller-develop:latest"
   echo "==========================Build runtime image ================================"
-  DOCKER_BUILDKIT=1 make build
+  make build
   docker images
   docker inspect "kserve/modelmesh-controller:latest"
 

@@ -21,6 +21,8 @@ IMAGE_NAME=kserve/modelmesh-controller-develop
 DEV_DEPS="$0 Dockerfile.develop go.mod go.sum .pre-commit-config.yaml"
 ENGINE=${1:-docker}
 
+echo "DOCKER_BUILDKIT=${DOCKER_BUILDKIT}"
+
 # command is shasum on osx
 SHASUM=sha1sum
 if ! which $SHASUM; then SHASUM=shasum; fi
