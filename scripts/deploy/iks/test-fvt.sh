@@ -10,8 +10,6 @@ echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
 echo "REGION=${REGION}"
-echo "ORG=${ORG}"
-echo "SPACE=${SPACE}"
 echo "RESOURCE_GROUP=${RESOURCE_GROUP}"
 
 # These env vars should come from the pipeline run environment properties
@@ -65,7 +63,7 @@ run_fvt() {
 }
 
 retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
+retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
 retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 
 RESULT=0

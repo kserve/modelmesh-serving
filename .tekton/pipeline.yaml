@@ -32,7 +32,7 @@ spec:
       description: dockersandbox namespace
     - name: resource-group
       description: resource group
-      default: default
+      default: Default
     - name: org
       description: organization
     - name: region
@@ -80,12 +80,8 @@ spec:
           value: $(params.docker-password)
         - name: resource-group
           value: $(params.resource-group)
-        - name: org
-          value: $(params.org)
         - name: region
           value: $(params.region)
-        - name: space
-          value: $(params.space)
       workspaces:
       - name: task-pvc
         workspace: pipeline-pvc
@@ -260,12 +256,8 @@ spec:
           value: $(params.serving-ns)
         - name: resource-group
           value: $(params.resource-group)
-        - name: org
-          value: $(params.org)
         - name: region
           value: $(params.region)
-        - name: space
-          value: $(params.space)
         - name: test-commands
           value: |
             kubectl get ns

@@ -20,12 +20,12 @@ spec:
       description: iam api key
     - name: resource-group
       description: resource group
-      default: "Default"
+      default: Default
     - name: org
       description: organization
     - name: region
       description: region
-      default: "us-south"
+      default: us-south
     - name: space
       description: space
     - name: archive-dir
@@ -48,10 +48,6 @@ spec:
           value: $(params.repository)
         - name: REGION
           value: $(params.region)
-        - name: ORG
-          value: $(params.org)
-        - name: SPACE
-          value: $(params.space)
         - name: RESOURCE_GROUP
           value: $(params.resource-group)
         - name: GIT_BRANCH
@@ -415,12 +411,12 @@ spec:
       default: kubeflow
     - name: resource-group
       description: resource group
-      default: default
+      default: Default
     - name: org
       description: organization
     - name: region
       description: region
-      default: "us-south"
+      default: us-south
     - name: space
       description: space
     - name: archive-dir
@@ -446,10 +442,6 @@ spec:
           value: $(params.serving-ns)
         - name: REGION
           value: $(params.region)
-        - name: ORG
-          value: $(params.org)
-        - name: SPACE
-          value: $(params.space)
         - name: RESOURCE_GROUP
           value: $(params.resource-group)
         - name: PIPELINE_URL

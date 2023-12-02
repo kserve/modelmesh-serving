@@ -24,7 +24,7 @@ spec:
       default: dev
     - name: resource-group
       description: resource group
-      default: default
+      default: Default
     - name: docker-username
       description: ibm container registry username
       default: iamapikey
@@ -112,10 +112,6 @@ spec:
           value: $(params.dockersandbox-namespace)
         - name: resource-group
           value: $(params.resource-group)
-        - name: org
-          value: $(params.org)
-        - name: space
-          value: $(params.space)
         - name: kubernetes-cluster
           value: $(params.kubernetes-cluster)
         - name: serving-ns

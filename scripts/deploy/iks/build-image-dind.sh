@@ -13,15 +13,11 @@ set -xe
 # The following envs could be loaded from `build.properties` that
 # `run-setup.sh` generates.
 # - REGION:               cloud region (us-south as default)
-# - ORG:                  target organization (dev-advo as default)
-# - SPACE:                target space (dev as default)
 # - GIT_BRANCH:           git branch
 # - GIT_COMMIT:           git commit hash
 # - GIT_COMMIT_SHORT:     git commit hash short
 
 REGION=${REGION:-"us-south"}
-ORG=${ORG:-"dev-advo"}
-SPACE=${SPACE:-"dev"}
 RUN_TASK=${RUN_TASK:-"build"}
 
 DOCKER_BUILDKIT=1
@@ -41,7 +37,6 @@ retry() {
 }
 
 retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-#retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
 retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
 
 
@@ -53,11 +48,11 @@ build_image() {
   # Will build develop and then runtime images.
 
   echo "==============================Build dev image ================================"
-  make build.develop
+  DOCKER_BUILDKIT=1 make build.develop
   docker images
   docker inspect "kserve/modelmesh-controller-develop:latest"
   echo "==========================Build runtime image ================================"
-  make build
+  DOCKER_BUILDKIT=1 make build
   docker images
   docker inspect "kserve/modelmesh-controller:latest"
 
