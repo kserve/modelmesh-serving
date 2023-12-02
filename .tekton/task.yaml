@@ -20,11 +20,12 @@ spec:
       description: iam api key
     - name: resource-group
       description: resource group
-      default: default
+      default: "Default"
     - name: org
       description: organization
     - name: region
       description: region
+      default: "us-south"
     - name: space
       description: space
     - name: archive-dir
@@ -116,7 +117,6 @@ spec:
       description: docker sandbox namespace
     - name: publish-tag
       description: image publish tag
-
   workspaces:
   - name: task-pvc
     mountPath: /artifacts
@@ -420,6 +420,7 @@ spec:
       description: organization
     - name: region
       description: region
+      default: "us-south"
     - name: space
       description: space
     - name: archive-dir
@@ -481,7 +482,7 @@ spec:
 
           # Set up kubernetes config
           retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-          retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
+          retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
           retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 
           $(params.test-commands)
