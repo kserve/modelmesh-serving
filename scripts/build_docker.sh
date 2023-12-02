@@ -37,6 +37,8 @@ CONTROLLER_IMG="kserve/modelmesh-controller"
 DEV_IMAGE="$(cat .develop_image_name)"
 ENGINE="docker"
 
+echo "DOCKER_BUILDKIT=${DOCKER_BUILDKIT}"
+
 while (("$#")); do
   arg="$1"
   case $arg in

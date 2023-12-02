@@ -54,6 +54,7 @@ build_image() {
   make build.develop
   docker images
   docker inspect "kserve/modelmesh-controller-develop:latest"
+
   echo "==========================Build runtime image ================================"
   make build
   docker images
