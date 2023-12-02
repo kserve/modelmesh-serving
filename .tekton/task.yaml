@@ -21,13 +21,9 @@ spec:
     - name: resource-group
       description: resource group
       default: Default
-    - name: org
-      description: organization
     - name: region
       description: region
       default: us-south
-    - name: space
-      description: space
     - name: archive-dir
       description: archive directory
       default: "."
@@ -412,13 +408,9 @@ spec:
     - name: resource-group
       description: resource group
       default: Default
-    - name: org
-      description: organization
     - name: region
       description: region
       default: us-south
-    - name: space
-      description: space
     - name: archive-dir
       description: archive directory
       default: "."

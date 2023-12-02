@@ -33,12 +33,8 @@ spec:
     - name: resource-group
       description: resource group
       default: Default
-    - name: org
-      description: organization
     - name: region
       description: region
-    - name: space
-      description: space
     - name: serving-ns
       description: modelmesh serving namespace
       default: modelmesh-serving

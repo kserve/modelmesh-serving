@@ -17,11 +17,6 @@ spec:
     - name: region
       description: the ibmcloud registry region
       default: us-south
-    - name: org
-      description: organization
-    - name: space
-      description: space
-      default: dev
     - name: resource-group
       description: resource group
       default: Default
