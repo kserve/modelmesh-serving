@@ -47,6 +47,9 @@ build_image() {
   echo "=======================Build modelmesh controller image======================="
   # Will build develop and then runtime images.
 
+  docker version
+  docker pull docker/dockerfile:experimental
+
   echo "==============================Build dev image ================================"
   make build.develop
   docker images
