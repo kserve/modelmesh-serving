@@ -47,12 +47,12 @@ run_fvt() {
 
   export NAMESPACE=${SERVING_NS}
   export NAMESPACESCOPEMODE=false
-  ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+  ginkgo -v --procs=4 --compilers=4 --keep-going fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m --flake-attempts=3 > fvt.out
   cat fvt.out
 
   if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
     export NAMESPACE="modelmesh-user"
-    ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+    ginkgo -v --procs=4 --compilers=4 --keep-going fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m --flake-attempts=3 > fvt.out
     cat fvt.out
     if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
       REV=0
