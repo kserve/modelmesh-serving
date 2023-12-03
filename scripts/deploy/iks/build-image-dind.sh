@@ -44,11 +44,12 @@ retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
 # Build image                                                                        #
 ######################################################################################
 build_image() {
-  echo "=======================Build modelmesh controller image======================="
+  echo "=======================Build ModelMesh controller image======================="
   # Will build develop and then runtime images.
 
   docker version
-  docker pull docker/dockerfile:experimental
+  # docker pull docker/dockerfile:experimental # syntax=docker/dockerfile:experimental
+  docker pull docker/dockerfile:1.3 # syntax=docker/dockerfile:1.3
 
   echo "==============================Build dev image ================================"
   make build.develop
