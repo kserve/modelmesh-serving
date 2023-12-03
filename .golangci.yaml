@@ -93,16 +93,13 @@ linters:
   fast: false
   enable:
     # These are the defaults for golangci-lint
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
 
     # Also enable these
     - goconst

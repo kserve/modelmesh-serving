@@ -1,1 +1,14 @@
+.DS_Store
+.dev
+.dockerignore
 .env
+.github
+.idea
+.pre-commit.log
+.tekton
+.vscode
+Dockerfile
+devbuild
+docs
+fvt
+temp
