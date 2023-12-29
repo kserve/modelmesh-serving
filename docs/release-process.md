@@ -81,7 +81,7 @@ with KServe.
 1. Create new (pre-)release tags (`v...-rc0`) in these repositories:
 
    - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/releases)
-   - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
+   - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-minio-examples/releases)
    - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
    - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/releases)
 
