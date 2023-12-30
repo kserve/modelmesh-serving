@@ -93,16 +93,13 @@ linters:
   fast: false
   enable:
     # These are the defaults for golangci-lint
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
 
     # Also enable these
     - goconst
@@ -248,7 +245,13 @@ issues:
         - lll
       source: "^//go:generate "
 
-  # Independently from option `exclude` we use default exclude patterns,
+    # Exclude typecheck "undeclared name" errors for . imports in fvt package
+    - linters:
+        - typecheck
+      text: "undeclared name:"
+      path: fvt/
+
+  # Independent of option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all
   # excluded by default patterns execute `golangci-lint run --help`.
   # Default value for this option is true.
