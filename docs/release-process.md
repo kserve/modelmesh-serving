@@ -71,8 +71,10 @@ Create a (new) `release-*` branch in these 5 repositories:
 - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/branches)
 
 **Note**: Technically, it is only _required_ to create a release branch in the
-[`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches) repository, where configuration files have to be
-modified with specific image tags corresponding to the new release being drafted.
+[`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches) repository,
+where configuration files have to be modified with specific image tags corresponding 
+to the new release being drafted.
+
 
 ## Update Release Tags
 
