@@ -41,6 +41,8 @@ latest pre-release version:
 - [ ] `config/crd/bases/serving.kserve.io_clusterservingruntimes.yaml`
 - [ ] `config/crd/bases/serving.kserve.io_servingruntimes.yaml`
 
+These changes should be committed to `main`, before creating a release branch.
+
 ## Create Release Branches
 
 A release branch should be substantially _feature complete_ with respect to the
@@ -73,7 +75,9 @@ Create a (new) `release-*` branch in these 5 repositories:
 **Note**: Technically, it is only _required_ to create a release branch in the
 [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches) repository,
 where configuration files have to be modified with specific image tags corresponding
-to the new release being drafted.
+to the new release being drafted. For the remaining repositories, a dedicated release
+branch can be created from the release tag at a later time, should the need arise to
+fix/patch a previous release.
 
 ## Update Release Tags
 
