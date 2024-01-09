@@ -57,9 +57,7 @@ jobs:
 
       - name: Set controller image tag
         run: |
-          # TODO: remove this next line and reinstate the original line after that
-          echo "IMAGE_TAG=7284872" >> $GITHUB_ENV
-          # echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
 
       - name: Update configs
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
@@ -67,7 +65,7 @@ jobs:
         # is also adjusted for these environments.
         # Disable the torchserve ServingRuntime for now (insufficient resources to run them all).
         run: |
-          sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
+          sed -i 's/newTag:.*$/newTag: "'${{ env.IMAGE_TAG }}'"/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-1.x.yaml \
