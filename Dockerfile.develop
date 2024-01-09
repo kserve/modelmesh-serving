@@ -20,7 +20,7 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.19
+FROM registry.access.redhat.com/ubi8/go-toolset:1.20
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
@@ -28,7 +28,7 @@ FROM registry.access.redhat.com/ubi8/go-toolset:1.19
 ARG TARGETOS
 ARG TARGETARCH
 
-ARG OPENSHIFT_VERSION=4.9
+ARG OPENSHIFT_VERSION=4.12
 ARG KUSTOMIZE_VERSION=4.5.2
 ARG KUBEBUILDER_VERSION=v3.11.0
 ARG CONTROLLER_GEN_VERSION=v0.11.4
@@ -115,7 +115,7 @@ RUN true \
 # Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA)
 RUN true \
     && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest \
-    && setup-envtest use 1.23 \
+    && setup-envtest use 1.26 \
     && true
 
 # For GitHub Action 'lint', work around error "detected dubious ownership in repository at '/workspace'"
