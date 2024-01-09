@@ -74,8 +74,7 @@ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack
 mv kustomize /usr/local/bin/kustomize
 
 # Update target tag and namespace/organization
-# enclose commit short hash in quotes to avoid it being interpreted as an int
-sed -i.bak 's/newTag:.*$/newTag: "'${GIT_COMMIT_SHORT}'"/' config/manager/kustomization.yaml
+sed -i.bak 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomization.yaml
 sed -i.bak 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-controller"'/' config/manager/kustomization.yaml
 rm config/manager/kustomization.yaml.bak
 

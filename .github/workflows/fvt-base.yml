@@ -64,7 +64,7 @@ jobs:
         # is also adjusted for these environments.
         # Disable the torchserve ServingRuntime for now (insufficient resources to run them all).
         run: |
-          sed -i 's/newTag:.*$/newTag: "'${{ env.IMAGE_TAG }}'"/' config/manager/kustomization.yaml
+          sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-1.x.yaml \
