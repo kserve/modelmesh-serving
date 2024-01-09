@@ -17,6 +17,15 @@ on the [`#kserve` Kubeflow Slack channel](https://kubeflow.slack.com/archives/CH
 Before starting the actual release process, make sure that the features and bug
 fixes that were designated to be part of the release are completed and fully tested.
 
+Check the _Security_ tab for each of the ModelMesh repositories and make sure all
+outstanding vulnerabilities were addressed:
+
+- [ ] [`modelmesh`](https://github.com/kserve/modelmesh/security)
+- [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-minio-examples/security)
+- [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/security)
+- [ ] [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/security)
+- [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/security)
+
 Update the `go` dependency to `github.com/kserve/kserve` in `go.mod` and run
 `go mod tidy`. Since the KServe and ModelMesh releases are aligned, there should
 already be a `v...-rc0` (or `-rc1`) of KServe before the ModelMesh release process
@@ -31,6 +40,8 @@ latest pre-release version:
 - [ ] `config/crd/bases/serving.kserve.io_inferenceservices.yaml`
 - [ ] `config/crd/bases/serving.kserve.io_clusterservingruntimes.yaml`
 - [ ] `config/crd/bases/serving.kserve.io_servingruntimes.yaml`
+
+These changes should be committed to `main`, before creating a release branch.
 
 ## Create Release Branches
 
@@ -53,13 +64,20 @@ Release branches serve several purposes:
    particular release stream (e.g., producing a `v0.6.1` from `release-0.6`),
    when appropriate.
 
-These 5 repositories need a (new) `release-*` branch:
+Create a (new) `release-*` branch in these 5 repositories:
 
 - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/branches)
 - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-minio-examples/branches)
 - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/branches)
 - [ ] [`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches)
 - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/branches)
+
+**Note**: Technically, it is only _required_ to create a release branch in the
+[`modelmesh-serving`](https://github.com/kserve/modelmesh-serving/branches) repository,
+where configuration files have to be modified with specific image tags corresponding
+to the new release being drafted. For the remaining repositories, a dedicated release
+branch can be created from the release tag at a later time, should the need arise to
+fix/patch a previous release.
 
 ## Update Release Tags
 
@@ -81,7 +99,7 @@ with KServe.
 1. Create new (pre-)release tags (`v...-rc0`) in these repositories:
 
    - [ ] [`modelmesh`](https://github.com/kserve/modelmesh/releases)
-   - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
+   - [ ] [`modelmesh-minio-examples`](https://github.com/kserve/modelmesh-minio-examples/releases)
    - [ ] [`modelmesh-runtime-adapter`](https://github.com/kserve/modelmesh-runtime-adapter/releases)
    - [ ] [`rest-proxy`](https://github.com/kserve/rest-proxy/releases)
 

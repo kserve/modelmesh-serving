@@ -44,6 +44,7 @@ elif [ "$RETURN_CODE" -ne 0 ]; then
       echoError 'fail, but may automatically format some files. Stage the changed files and'
       echoError 'manually correct any other issues before committing and building again.'
     fi
+    git diff -R --ws-error-highlight=all --color --exit-code
 fi
 
 exit $RETURN_CODE
