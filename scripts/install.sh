@@ -338,6 +338,29 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   rm default/kustomization.yaml.bak
 fi
 
+# watch out when newTag has no non-numeric characters, and gets interpreted as an int, rather than srting
+# sed -i.bak 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomization.yaml
+# ++ sed -i.bak 's/newTag:.*$/newTag: 7284872/' config/manager/kustomization.yaml
+# Error: accumulating resources from '../manager':
+#   '/config/manager' must resolve to a file':
+#     couldn't make target for path '/config/manager':
+#       invalid Kustomization:
+#         json: cannot unmarshal number into Go struct field
+#           Image.images.newTag of type string
+# error: no objects passed to apply
+# CLI check:
+#   git log -1 --format=%h --abbrev=7
+#     7284872
+# This happened 7 times as of 2023/12/02:
+#   git log --format=%h --abbrev=7 | grep -E "^[0-9]+$"
+#     7284872
+#     4808804
+#     4746079
+#     0281170
+#     1631706
+#     5293579
+#     4207065
+info "kustomize build default"
 kustomize build default | kubectl apply -f -
 
 if [[ $dev_mode_logging == "true" ]]; then

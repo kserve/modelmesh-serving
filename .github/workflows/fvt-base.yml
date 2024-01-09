@@ -56,7 +56,10 @@ jobs:
           kubectl get pods -n kube-system
 
       - name: Set controller image tag
-        run: echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
+        run: |
+          # TODO: remove this next line and reinstate the original line after that
+          echo "IMAGE_TAG=7284872" >> $GITHUB_ENV
+          # echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
 
       - name: Update configs
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
