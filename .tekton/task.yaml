@@ -20,13 +20,10 @@ spec:
       description: iam api key
     - name: resource-group
       description: resource group
-      default: default
-    - name: org
-      description: organization
+      default: Default
     - name: region
       description: region
-    - name: space
-      description: space
+      default: us-south
     - name: archive-dir
       description: archive directory
       default: "."
@@ -35,7 +32,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: run-setup-script
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: DOCKER_USERNAME
           value: $(params.docker-username)
@@ -47,10 +44,6 @@ spec:
           value: $(params.repository)
         - name: REGION
           value: $(params.region)
-        - name: ORG
-          value: $(params.org)
-        - name: SPACE
-          value: $(params.space)
         - name: RESOURCE_GROUP
           value: $(params.resource-group)
         - name: GIT_BRANCH
@@ -116,13 +109,12 @@ spec:
       description: docker sandbox namespace
     - name: publish-tag
       description: image publish tag
-
   workspaces:
   - name: task-pvc
     mountPath: /artifacts
   steps:
     - name: process-image
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: DOCKER_USERNAME
           value: $(params.docker-username)
@@ -243,7 +235,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: deploy-modelmesh-serving
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: DOCKER_USERNAME
           value: $(params.docker-username)
@@ -295,7 +287,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: run-test
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: IBM_CLOUD_API_KEY
           value: $(params.apikey)
@@ -347,7 +339,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: run-performance-test
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: SERVING_KUBERNETES_CLUSTER_NAME
           value: $(params.kubernetes-cluster)
@@ -384,7 +376,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: undeploy-modelmesh-serving
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: SERVING_KUBERNETES_CLUSTER_NAME
           value: $(params.kubernetes-cluster)
@@ -415,13 +407,10 @@ spec:
       default: kubeflow
     - name: resource-group
       description: resource group
-      default: default
-    - name: org
-      description: organization
+      default: Default
     - name: region
       description: region
-    - name: space
-      description: space
+      default: us-south
     - name: archive-dir
       description: archive directory
       default: "."
@@ -433,7 +422,7 @@ spec:
     mountPath: /artifacts
   steps:
     - name: run-cleanup-script
-      image: docker.io/aipipeline/pipeline-base-image:1.2
+      image: docker.io/aipipeline/pipeline-base-image:1.5
       env:
         - name: IBM_CLOUD_API_KEY
           value: $(params.apikey)
@@ -445,10 +434,6 @@ spec:
           value: $(params.serving-ns)
         - name: REGION
           value: $(params.region)
-        - name: ORG
-          value: $(params.org)
-        - name: SPACE
-          value: $(params.space)
         - name: RESOURCE_GROUP
           value: $(params.resource-group)
         - name: PIPELINE_URL
@@ -481,7 +466,7 @@ spec:
 
           # Set up kubernetes config
           retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-          retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
+          retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
           retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 
           $(params.test-commands)

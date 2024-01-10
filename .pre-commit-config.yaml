@@ -16,6 +16,11 @@ repos:
     rev: v1.51.2
     hooks:
       - id: golangci-lint
+        entry: golangci-lint run
+        exclude: ^(generated/)
+        args:
+          - --skip-dirs='^(generated/)'
+        log_file: .pre-commit.log
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.4.1
     hooks:
@@ -23,3 +28,4 @@ repos:
         exclude: ^(.github/|.tekton/)
         args:
           - --no-bracket-spacing
+        log_file: .pre-commit.log

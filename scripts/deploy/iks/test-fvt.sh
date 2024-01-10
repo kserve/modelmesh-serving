@@ -10,8 +10,6 @@ echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
 echo "REGION=${REGION}"
-echo "ORG=${ORG}"
-echo "SPACE=${SPACE}"
 echo "RESOURCE_GROUP=${RESOURCE_GROUP}"
 
 # These env vars should come from the pipeline run environment properties
@@ -49,12 +47,12 @@ run_fvt() {
 
   export NAMESPACE=${SERVING_NS}
   export NAMESPACESCOPEMODE=false
-  ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+  ginkgo -v --procs=2 --compilers=2 --keep-going fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m --flake-attempts=3 > fvt.out
   cat fvt.out
 
   if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
     export NAMESPACE="modelmesh-user"
-    ginkgo -v --progress --fail-fast -p fvt/predictor fvt/scaleToZero --timeout 40m > fvt.out
+    ginkgo -v --procs=2 --compilers=2 --keep-going fvt/predictor fvt/scaleToZero fvt/storage fvt/hpa --timeout=50m --flake-attempts=3 > fvt.out
     cat fvt.out
     if [[ $(grep "Test Suite Passed" fvt.out) ]]; then
       REV=0
@@ -65,7 +63,7 @@ run_fvt() {
 }
 
 retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
+retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
 retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 
 RESULT=0

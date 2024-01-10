@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.3
+
 # Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# NOTE: for syntax, either use "experimental" or "1.3" (or later) to enable multi-arch build with mount option
+# see https://hub.docker.com/r/docker/dockerfile (https://github.com/moby/buildkit/releases/tag/dockerfile%2F1.3.0)
 
 ###############################################################################
 # Create the develop, test, and build environment

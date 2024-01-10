@@ -5,13 +5,9 @@ set -xe
 
 # Environment variables needed by this script:
 # - REGION: cloud region (us-south as default)
-# - ORG:    target organization (dev-advo as default)
-# - SPACE:  target space (dev as default)
 
 REGION=${REGION:-"us-south"}
-ORG=${ORG:-"dev-advo"}
-SPACE=${SPACE:-"dev"}
-RESOURCE_GROUP=${RESOURCE_GROUP:-"default"}
+RESOURCE_GROUP=${RESOURCE_GROUP:-"Default"}
 GIT_COMMIT_SHORT=$(git log -n1 --format=format:"%h")
 
 # Git repo cloned at $WORKING_DIR, copy into $ARCHIVE_DIR and
@@ -33,8 +29,6 @@ fi
   echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
   echo "BUILD_NUMBER=${BUILD_NUMBER}"
   echo "REGION=${REGION}"
-  echo "ORG=${ORG}"
-  echo "SPACE=${SPACE}"
   echo "RESOURCE_GROUP=${RESOURCE_GROUP}"
 } >> "${ARCHIVE_DIR}/build.properties"
 grep -v -i password "${ARCHIVE_DIR}/build.properties"
