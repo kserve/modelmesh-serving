@@ -127,8 +127,9 @@ with KServe.
 
    The version tags should be updated in the following files:
 
-   - [ ] `.github/workflows/fvt.yml`:
+   - [ ] `.github/workflows/fvt-base.yml`:
      - [ ] `docker pull kserve/modelmesh:v...`
+     - [ ] `docker pull kserve/modelmesh-minio-examples:v...`
      - [ ] `docker pull kserve/modelmesh-minio-dev-examples:v...`
      - [ ] `docker pull kserve/modelmesh-runtime-adapter:v...`
      - [ ] `docker pull kserve/rest-proxy:v...`
@@ -136,10 +137,17 @@ with KServe.
      - [ ] `kserve/modelmesh`
      - [ ] `kserve/rest-proxy`
      - [ ] `kserve/modelmesh-runtime-adapter`
+   - [ ] `config/dependencies/fvt.yaml`:
+      - [ ] `image: kserve/modelmesh-minio-dev-examples:v...`
+      - [ ] `image: kserve/modelmesh-minio-examples:v...`
    - [ ] `config/dependencies/quickstart.yaml`:
-     - [ ] `kserve/modelmesh-minio-examples`
-   - [ ] `config/manager/kustomization.yaml`: edit the `newTag`
-   - [ ] `docs/component-versions.md`: update the version and component versions
+     - [ ] `image: kserve/modelmesh-minio-examples:v...`
+   - [ ] `config/manager/kustomization.yaml`: update the `newTag` to `v...`
+   - [ ] `docs/component-versions.md`: update tags and repo links
+     - [ ] ModelMesh Serving release
+     - [ ] ModelMesh
+     - [ ] ModelMesh Runtime Adapter
+     - [ ] REST Proxy
    - [ ] `docs/install/install-script.md`: update the `RELEASE` variable in the
          `Installation` section to the new `release-*` branch name and remove the
          note pointing to the (old) `release-*` branch
