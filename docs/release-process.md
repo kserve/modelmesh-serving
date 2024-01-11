@@ -113,6 +113,7 @@ with KServe.
 
    - [ ] [kserve/modelmesh](https://hub.docker.com/r/kserve/modelmesh/tags)
    - [ ] [kserve/modelmesh-minio-examples](https://hub.docker.com/r/kserve/modelmesh-minio-examples/tags)
+   - [ ] [kserve/modelmesh-minio-dev-examples](https://hub.docker.com/r/kserve/modelmesh-minio-dev-examples/tags)
    - [ ] [kserve/modelmesh-runtime-adapter](https://hub.docker.com/r/kserve/modelmesh-runtime-adapter/tags)
    - [ ] [kserve/rest-proxy](https://hub.docker.com/r/kserve/rest-proxy/tags)
 
@@ -122,6 +123,7 @@ with KServe.
    - `kserve/modelmesh`
    - `kserve/modelmesh-controller`
    - `kserve/modelmesh-minio-examples`
+   - `kserve/modelmesh-minio-dev-examples`
    - `kserve/modelmesh-runtime-adapter`
    - `kserve/rest-proxy`
 
@@ -129,8 +131,8 @@ with KServe.
 
    - [ ] `.github/workflows/fvt-base.yml`:
      - [ ] `docker pull kserve/modelmesh:v...`
-     - [ ] `docker pull kserve/modelmesh-minio-examples:v...`
      - [ ] `docker pull kserve/modelmesh-minio-dev-examples:v...`
+     - [ ] `docker pull kserve/modelmesh-minio-examples:v...`
      - [ ] `docker pull kserve/modelmesh-runtime-adapter:v...`
      - [ ] `docker pull kserve/rest-proxy:v...`
    - [ ] `config/default/config-defaults.yaml`:
@@ -138,8 +140,8 @@ with KServe.
      - [ ] `kserve/rest-proxy`
      - [ ] `kserve/modelmesh-runtime-adapter`
    - [ ] `config/dependencies/fvt.yaml`:
-      - [ ] `image: kserve/modelmesh-minio-dev-examples:v...`
-      - [ ] `image: kserve/modelmesh-minio-examples:v...`
+     - [ ] `image: kserve/modelmesh-minio-dev-examples:v...`
+     - [ ] `image: kserve/modelmesh-minio-examples:v...`
    - [ ] `config/dependencies/quickstart.yaml`:
      - [ ] `image: kserve/modelmesh-minio-examples:v...`
    - [ ] `config/manager/kustomization.yaml`: update the `newTag` to `v...`
@@ -166,9 +168,9 @@ with KServe.
    (e.g. `v0.11.0`) with the new release branch name or new version tags.
    Submit them in a PR to `main`, and wait for that PR to be merged:
 
+   - [ ] `docs/install/install-script.md`
    - [ ] `docs/component-versions.md`
    - [ ] `docs/quickstart.md`
-   - [ ] `docs/install/install-script.md`
    - [ ] `scripts/setup_user_namespaces.sh`
 
 ## Generate Release Artifacts and Publish the Release

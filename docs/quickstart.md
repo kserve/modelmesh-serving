@@ -4,19 +4,24 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 
 <!-- Remove the following note on the `release-*` branch -->
 
-> **Note**: This document describes how to install the _latest unreleased_ version of ModelMesh for developers and early adopters. To install the most recent _stable release_, please follow the [Quick Start Guide for version 0.11](https://github.com/kserve/modelmesh-serving/blob/release-0.11/docs/quickstart.md).
+> **Note**: This document describes how to install the _latest unreleased_
+> version of ModelMesh for developers and early adopters. To install the
+> most recent _stable release_, please follow the
+> [Quick Start Guide for version 0.11.2](https://github.com/kserve/modelmesh-serving/blob/release-0.11.2/docs/quickstart.md).
 
 ## Prerequisites
 
 - A Kubernetes cluster v1.23+ with cluster administrative privileges
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0+)
-- At least 4 vCPU and 8 GB memory. For more details, please see [here](install/README.md#deployed-components).
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and
+  [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0+)
+- At least 4 vCPU and 8 GB memory. For more details, please see
+  [here](install/README.md#deployed-components).
 
 ## 1. Install ModelMesh Serving
 
 ### Clone the ModelMesh repository
 
-<!-- Replace with RELEASE="release-0.11" on the `release-*` branch -->
+<!-- Replace with RELEASE="release-0.12" on the `release-0.12` branch -->
 
 ```shell
 RELEASE="main"
