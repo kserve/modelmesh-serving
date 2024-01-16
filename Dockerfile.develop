@@ -53,6 +53,7 @@ RUN --mount=type=cache,target=/root/.cache/dnf:rw \
 
 # Install pre-commit
 ENV PIP_CACHE_DIR=/root/.cache/pip
+RUN python3 -m pip install --upgrade pip
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install pre-commit
 
