@@ -45,14 +45,14 @@ elif [ "$RETURN_CODE" -ne 0 ]; then
     fi
     if [ "${CI}" != "true" ]; then
       echoError 'Pre-commit linter failed, but it may have automatically formatted your files.'
-      echoError 'Check your changed files and/or manually fix the errors above then stage and commit.'
+      echoError 'Check your changed files and/or manually fix the errors above.'
     else
       echoError "This test failed because your code isn't formatted and linted correctly."
-      echoError 'To format and check the linter locally, run `make fmt`. It will appear to'
-      echoError 'fail, but may automatically format some files. Stage the changed files and'
-      echoError 'manually correct any other issues before committing and building again.'
+      echoError 'To format and check the linter locally, run `make fmt` or `make run fmt`.'
+      echoError 'It will appear to fail, but may automatically format some files.'
+      echoError 'Manually correct any other issues before committing and building again.'
+      git diff -R --ws-error-highlight=all --color --exit-code
     fi
-    git diff -R --ws-error-highlight=all --color --exit-code
 fi
 
 exit $RETURN_CODE
