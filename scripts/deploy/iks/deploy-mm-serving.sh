@@ -18,8 +18,6 @@ echo "GIT_BRANCH=${GIT_BRANCH}"
 echo "GIT_COMMIT=${GIT_COMMIT}"
 echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
 echo "REGION=${REGION}"
-echo "ORG=${ORG}"
-echo "SPACE=${SPACE}"
 echo "RESOURCE_GROUP=${RESOURCE_GROUP}"
 
 # These env vars should come from the pipeline run environment properties
@@ -46,7 +44,7 @@ retry() {
 }
 
 retry 3 3 ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region
-retry 3 3 ibmcloud target -r "$REGION" -o "$ORG" -s "$SPACE" -g "$RESOURCE_GROUP"
+retry 3 3 ibmcloud target -r "$REGION" -g "$RESOURCE_GROUP"
 retry 3 3 ibmcloud ks cluster config -c "$SERVING_KUBERNETES_CLUSTER_NAME"
 
 kubectl create ns "$SERVING_NS"
@@ -76,7 +74,8 @@ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack
 mv kustomize /usr/local/bin/kustomize
 
 # Update target tag and namespace/organization
-sed -i.bak 's/newTag:.*$/newTag: '"$GIT_COMMIT_SHORT"'/' config/manager/kustomization.yaml
+# enclose commit short hash in quotes to avoid it being interpreted as an int
+sed -i.bak 's/newTag:.*$/newTag: "'${GIT_COMMIT_SHORT}'"/' config/manager/kustomization.yaml
 sed -i.bak 's/newName:.*$/newName: '"$DOCKERSANDBOX_NAMESPACE\/modelmesh-controller"'/' config/manager/kustomization.yaml
 rm config/manager/kustomization.yaml.bak
 

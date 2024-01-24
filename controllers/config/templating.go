@@ -49,7 +49,7 @@ func templateSource(r io.Reader, context interface{}) mf.Source {
 	if err != nil {
 		panic(err)
 	}
-	t, err := template.New("foo").Parse(string(b))
+	t, err := template.New("ModelMeshTemplate").Parse(string(b))
 	if err != nil {
 		panic(err)
 	}

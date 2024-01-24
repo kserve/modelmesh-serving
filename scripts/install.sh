@@ -338,6 +338,7 @@ if [[ $enable_self_signed_ca == "true" ]]; then
   rm default/kustomization.yaml.bak
 fi
 
+info "kustomize build default"
 kustomize build default | kubectl apply -f -
 
 if [[ $dev_mode_logging == "true" ]]; then

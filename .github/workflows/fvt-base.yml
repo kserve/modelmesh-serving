@@ -38,7 +38,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: '1.20'
 
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.13
@@ -56,7 +56,8 @@ jobs:
           kubectl get pods -n kube-system
 
       - name: Set controller image tag
-        run: echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
+        run: |
+          echo "IMAGE_TAG=$(date +'%Y%m%dT%H%M%S%Z')" >> $GITHUB_ENV
 
       - name: Update configs
         # Update the image tag and reduce some resource request amounts to allow FVTs to run
@@ -64,7 +65,7 @@ jobs:
         # is also adjusted for these environments.
         # Disable the torchserve ServingRuntime for now (insufficient resources to run them all).
         run: |
-          sed -i 's/newTag:.*$/newTag: '"${{ env.IMAGE_TAG }}"'/' config/manager/kustomization.yaml
+          sed -i 's/newTag:.*$/newTag: "'${{ env.IMAGE_TAG }}'"/' config/manager/kustomization.yaml
           sed -i '0,/cpu:.*$/s/cpu:.*$/cpu: 100m/' \
             config/default/config-defaults.yaml \
             config/runtimes/mlserver-1.x.yaml \

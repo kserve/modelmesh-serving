@@ -37,3 +37,4 @@ bin
 devbuild
 .develop_image_name
 .dev/
+.pre-commit.log
