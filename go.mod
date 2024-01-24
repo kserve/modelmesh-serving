@@ -23,7 +23,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.uber.org/atomic v1.11.0
 	google.golang.org/grpc v1.56.3
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.32.0
 	k8s.io/api v0.26.4
 	k8s.io/apimachinery v0.26.4
 	k8s.io/client-go v0.26.4
