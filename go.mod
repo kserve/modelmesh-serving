@@ -11,16 +11,16 @@ require (
 	github.com/manifestival/controller-runtime-client v0.4.0
 	github.com/manifestival/manifestival v0.7.1
 	github.com/moverest/mnist v0.0.0-20160628192128-ec5d9d203b59
-	github.com/onsi/ginkgo/v2 v2.9.7
-	github.com/onsi/gomega v1.27.7
+	github.com/onsi/ginkgo/v2 v2.11.0
+	github.com/onsi/gomega v1.27.10
 	github.com/operator-framework/operator-lib v0.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.0
 	github.com/spf13/viper v1.11.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/tommy351/goldga v0.5.0
-	go.etcd.io/etcd/api/v3 v3.5.7
-	go.etcd.io/etcd/client/v3 v3.5.7
+	go.etcd.io/etcd/api/v3 v3.5.9
+	go.etcd.io/etcd/client/v3 v3.5.9
 	go.uber.org/atomic v1.11.0
 	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.32.0
@@ -28,7 +28,7 @@ require (
 	k8s.io/apimachinery v0.27.6
 	k8s.io/client-go v0.27.6
 	knative.dev/pkg v0.0.0-20231023151236-29775d7c9e5c
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.14.7
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -95,7 +95,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.7 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
@@ -143,3 +143,13 @@ replace golang.org/x/net => golang.org/x/net v0.17.0
 
 // Update knative/serving to avoid CVE-2023-48713
 replace knative.dev/serving => knative.dev/serving v0.39.0
+
+// kserve v0.11.2 needs controller-runtime v0.14.7 (< v0.15.0)
+// but controller-runtime v0.14.7 does not work with k8s.io/client-go > v0.27.0
+// https://github.com/kubernetes-sigs/controller-runtime/issues/2302
+// https://github.com/kubernetes-sigs/controller-runtime/commit/13bba74
+replace (
+	k8s.io/api => k8s.io/api v0.26.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.26.4
+	k8s.io/client-go => k8s.io/client-go v0.26.4
+)
