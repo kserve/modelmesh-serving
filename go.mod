@@ -23,10 +23,11 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.uber.org/atomic v1.11.0
 	google.golang.org/grpc v1.58.3
-	knative.dev/pkg v0.0.0-20231023151236-29775d7c9e5c
 	google.golang.org/protobuf v1.32.0
-	k8s.io/apimachinery v0.26.4
-	k8s.io/client-go v0.26.4
+	k8s.io/api v0.27.6
+	k8s.io/apimachinery v0.27.6
+	k8s.io/client-go v0.27.6
+	knative.dev/pkg v0.0.0-20231023151236-29775d7c9e5c
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.3.0
 )
@@ -129,19 +130,16 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-replace (
-	// Fixes CVE-2022-21698 and CVE-2023-45142
-	// this dependency comes from k8s.io/component-base@v0.26.4 and k8s.io/apiextensions-apiserver@v0.26.4
-	// before removing it make sure that the next version of the related k8s dependencies contains the fix
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
-	// Update Go Crypto to avoid CVE-2022-27191, CVE-2021-43565, CVE-2020-29652, CVE-2023-48795
-	golang.org/x/crypto => golang.org/x/crypto v0.17.0
-	// Update Go Networking to avoid CVE-2023-44487 and CVE-2023-39325
-	golang.org/x/net => golang.org/x/net v0.17.0
-	// remove when upgrade to controller-runtime 0.15.x or apimachinery to 0.27.x
-	// Fixes github.com/elazarl/goproxy Denial of Service (DoS)
-	// This dependency was removed from apimachinery 0.27.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.27.0
-	// Update knative/serving to avoid CVE-2023-48713
-	knative.dev/serving => knative.dev/serving v0.39.0
-)
+// Fixes CVE-2022-21698 and CVE-2023-45142
+// this dependency comes from k8s.io/component-base@v0.26.4 and k8s.io/apiextensions-apiserver@v0.26.4
+// before removing it make sure that the next version of the related k8s dependencies contains the fix
+replace go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
+
+// Update Go Crypto to avoid CVE-2022-27191, CVE-2021-43565, CVE-2020-29652, CVE-2023-48795
+replace golang.org/x/crypto => golang.org/x/crypto v0.17.0
+
+// Update Go Networking to avoid CVE-2023-44487 and CVE-2023-39325
+replace golang.org/x/net => golang.org/x/net v0.17.0
+
+// Update knative/serving to avoid CVE-2023-48713
+replace knative.dev/serving => knative.dev/serving v0.39.0
