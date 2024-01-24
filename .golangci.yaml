@@ -245,10 +245,10 @@ issues:
         - lll
       source: "^//go:generate "
 
-    # Exclude typecheck "undeclared name" errors for . imports in fvt package
+    # Exclude typecheck "undeclared name"/"undefined" errors for . imports in fvt package
     - linters:
         - typecheck
-      text: "undeclared name:"
+      text: "undefined: "
       path: fvt/
 
   # Independent of option `exclude` we use default exclude patterns,
