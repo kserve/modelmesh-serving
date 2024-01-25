@@ -27,11 +27,13 @@ require (
 	k8s.io/api v0.26.4
 	k8s.io/apimachinery v0.26.4
 	k8s.io/client-go v0.26.4
-	knative.dev/pkg v0.0.0-20230502134655-db8a35330281
+	knative.dev/pkg v0.0.0-20231023160942-0c39ce4b3a7f
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.3.0
 )
 
+// when adding/remove replace, remove the following block of indirect dependencies
+// and run `go mod tidy -compat=1.20` (based on go version above)
 require (
 	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/compute v1.19.3 // indirect
@@ -121,7 +123,7 @@ require (
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
-	knative.dev/networking v0.0.0-20230511122402-33636d99d870 // indirect
+	knative.dev/networking v0.0.0-20231012063223-0b0f2107abef // indirect
 	knative.dev/serving v0.37.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
@@ -140,4 +142,6 @@ replace (
 	// Fixes github.com/elazarl/goproxy Denial of Service (DoS)
 	// This dependency was removed from apimachinery 0.27.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.27.0
+	// Fixes CVE-2023-48713
+	knative.dev/serving => knative.dev/serving v0.37.5
 )

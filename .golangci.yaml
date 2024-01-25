@@ -245,6 +245,12 @@ issues:
         - lll
       source: "^//go:generate "
 
+    # Exclude typecheck "undeclared name"/"undefined" errors for . imports in fvt package
+    - linters:
+        - typecheck
+      text: "undefined: "
+      path: fvt/
+
   # Independent of option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all
   # excluded by default patterns execute `golangci-lint run --help`.
