@@ -142,7 +142,7 @@ replace golang.org/x/crypto => golang.org/x/crypto v0.17.0
 replace golang.org/x/net => golang.org/x/net v0.17.0
 
 // Update knative/serving to avoid CVE-2023-48713
-replace knative.dev/serving => knative.dev/serving v0.39.0
+replace knative.dev/serving => knative.dev/serving v0.39.3
 
 // Fixes github.com/elazarl/goproxy Denial of Service (DoS)
 // This dependency was removed from apimachinery 0.27.0
