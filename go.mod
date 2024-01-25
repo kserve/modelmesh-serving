@@ -144,12 +144,17 @@ replace golang.org/x/net => golang.org/x/net v0.17.0
 // Update knative/serving to avoid CVE-2023-48713
 replace knative.dev/serving => knative.dev/serving v0.39.0
 
+// Fixes github.com/elazarl/goproxy Denial of Service (DoS)
+// This dependency was removed from apimachinery 0.27.0
+// remove after upgrade to controller-runtime 0.15.x or apimachinery to 0.27.x
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.27.0
+
 // kserve v0.11.2 needs controller-runtime v0.14.7 (< v0.15.0)
-// but controller-runtime v0.14.7 does not work with k8s.io/client-go > v0.27.0
+// but controller-runtime v0.14.7 does not work with k8s.io/client-go >= v0.27.0
 // https://github.com/kubernetes-sigs/controller-runtime/issues/2302
 // https://github.com/kubernetes-sigs/controller-runtime/commit/13bba74
 replace (
 	k8s.io/api => k8s.io/api v0.26.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.26.4
 	k8s.io/client-go => k8s.io/client-go v0.26.4
+	k8s.io/code-generator => k8s.io/code-generator v0.26.4
 )
