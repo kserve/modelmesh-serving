@@ -39,6 +39,15 @@ spec:
     - name: tensorrt
       version: "7" # 7.2.1
       autoSelect: true
+    - name: sklearn
+      version: "1" # v1.4.0
+      autoSelect: false
+    - name: xgboost
+      version: "2" # v2.0.3
+      autoSelect: false
+    - name: lightgbm
+      version: "4" # v4.3.1
+      autoSelect: false
 
   protocolVersions:
     - grpc-v2

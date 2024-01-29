@@ -28,6 +28,10 @@ s3://modelmesh-example-models/
 │   └── mnist.h5
 ├── lightgbm
 │   └── mushroom.bst
+│   └── mushroom-fil
+│       ├── 1
+│       │   └── model.txt
+│       └── config.pbtxt
 ├── onnx
 │   └── mnist.onnx
 ├── pytorch
@@ -45,6 +49,10 @@ s3://modelmesh-example-models/
 │           └── variables.index
 └── xgboost
     └── mushroom.json
+    └── mushroom-fil
+        ├── 1
+        │   └── xgboost.json
+        └── config.pbtxt
 ```
 
 ### Example Inference Requests
@@ -275,5 +283,36 @@ Response:
       }
     }
   ]
+}
+```
+
+#### XGBoost (Triton FIL):
+
+This is a sample inference request to an XGBoost model trained on a [mushroom dataset](https://archive.ics.uci.edu/ml/datasets/Mushroom) and served using the [FIL backend for Triton](https://github.com/triton-inference-server/fil_backend):
+
+```shell
+MODEL_NAME=example-xgboost-mushroom-fil
+grpcurl \
+  -plaintext \
+  -proto fvt/proto/kfs_inference_v2.proto \
+  -d '{ "model_name": "'"${MODEL_NAME}"'", "inputs": [{ "name": "input__0", "shape": [1, 126], "datatype": "FP32", "contents": { "fp32_contents": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0] }}]}' \
+  localhost:8033 \
+  inference.GRPCInferenceService.ModelInfer
+```
+
+Response:
+
+```json
+{
+  "modelName": "example-xgboost-mushroom-fil__isvc-ffe6a3f20b",
+  "modelVersion": "1",
+  "outputs": [
+    {
+      "name": "output__0",
+      "datatype": "FP32",
+      "shape": ["1"]
+    }
+  ],
+  "rawOutputContents": ["B1xLPA=="]
 }
 ```

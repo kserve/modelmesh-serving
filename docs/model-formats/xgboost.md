@@ -33,10 +33,17 @@ The storage path can point directly to a serialized model
 
 ```
 s3://modelmesh-example-models/
-└── xgboost/mushroom.json
+└── xgboost
+    └── mushroom.json
+    └── mushroom-fil
+        ├── 1
+        │   └── xgboost.json
+        └── config.pbtxt
 ```
 
 **InferenceService**
+
+If using MLServer:
 
 ```yaml
 apiVersion: serving.kserve.io/v1beta1
@@ -53,6 +60,28 @@ spec:
       storage:
         key: localMinIO
         path: xgboost/mushroom.json
+        parameters:
+          bucket: modelmesh-example-models
+```
+
+For Triton:
+
+```yaml
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: xgboost-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: xgboost
+      runtime: triton-2.x
+      storage:
+        key: localMinIO
+        path: xgboost/mushroom-fil
         parameters:
           bucket: modelmesh-example-models
 ```

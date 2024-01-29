@@ -32,10 +32,17 @@ The storage path can point directly to a serialized model
 
 ```
 s3://modelmesh-example-models/
-└── lightgbm/mushroom.bst
+└── lightgbm
+    └── mushroom.bst
+    └── mushroom-fil
+        ├── 1
+        │   └── model.txt
+        └── config.pbtxt
 ```
 
 **InferenceService**
+
+For MLServer:
 
 ```yaml
 kind: InferenceService
@@ -51,6 +58,28 @@ spec:
       storage:
         key: localMinIO
         path: lightgbm/mushroom.bst
+        parameters:
+          bucket: modelmesh-example-models
+```
+
+For Triton:
+
+```yaml
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: lightgbm-example
+  annotations:
+    serving.kserve.io/deploymentMode: ModelMesh
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: lightgbm
+      runtime: triton-2.x
+      storage:
+        key: localMinIO
+        path: lightgbm/lightgbm-fil
         parameters:
           bucket: modelmesh-example-models
 ```
