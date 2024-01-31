@@ -14,13 +14,59 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: for syntax, either use "experimental" or "1.3" (or later) to enable multi-arch build with mount option
-# see https://hub.docker.com/r/docker/dockerfile (https://github.com/moby/buildkit/releases/tag/dockerfile%2F1.3.0)
+# NOTE: for syntax, either use "experimental" or "1.3" (or later) to enable
+# multi-arch build with mount option, see https://hub.docker.com/r/docker/dockerfile
+# (https://github.com/moby/buildkit/releases/tag/dockerfile%2F1.3.0)
 
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.20
+
+# TODO: replace the "go_toolset" build stage once ubi8/go-toolset:1.21 is available
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9 as go-toolset
+
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# We need TARGETOS and TARGETARCH (not BUILDOS and BUILDARCH) since the developer
+# image should be built for the OS of the developer using it (this is not a "builder image")
+ARG TARGETOS
+ARG TARGETARCH
+
+ARG GOLANG_VERSION=1.21.6
+
+USER root
+
+ENV HOME=/root \
+    PATH=/usr/local/go/bin:$PATH:
+
+WORKDIR /workspace
+
+# install necessary tools that are included in the ubi/go-toolset image that we are temporarily replacing
+RUN --mount=type=cache,target=/root/.cache/microdnf:rw \
+    microdnf --setopt=cachedir=/root/.cache/microdnf --nodocs install \
+       diffutils \
+       gcc-c++ \
+       make \
+       wget \
+       tar \
+       git \
+       which \
+    && microdnf update --nodocs \
+    && true
+
+# install go
+RUN true \
+    && wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz" \
+    && tar -C /usr/local -xzf go.tgz \
+    && go version \
+    && rm go.tgz \
+    && true
+
+
+####################################################################################
+# TODO: replace "go-toolset" build stage with ubi/go-toolset:1.21 once available   #
+#       and swap `microdnf` commands for `dnf`                                     #
+####################################################################################
+FROM go-toolset
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
@@ -43,7 +89,7 @@ WORKDIR /workspace
 # Install build and dev tools
 # NOTE: Require python38 to install pre-commit
 RUN --mount=type=cache,target=/root/.cache/dnf:rw \
-    dnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
+    microdnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
        nodejs \
        jq \
        python38 \
@@ -59,14 +105,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
 # Then download and overwrite kubebuilder binary with desired/latest version
 RUN true \
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS}_${TARGETARCH}.tar.gz | tar -xz -C /tmp/ \
-    && mv /tmp/kubebuilder_*_${TARGETOS}_${TARGETARCH} /usr/local/kubebuilder \
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS}_${TARGETARCH} -o /usr/local/kubebuilder/bin/kubebuilder \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS:-linux}_${TARGETARCH:-amd64}.tar.gz | tar -xz -C /tmp/ \
+    && mv /tmp/kubebuilder_*_${TARGETOS:-linux}_${TARGETARCH:-amd64} /usr/local/kubebuilder \
+    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS:-linux}_${TARGETARCH:-amd64} -o /usr/local/kubebuilder/bin/kubebuilder \
     && true
 
 # Download openshift-cli
 RUN true \
-    && curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/${TARGETARCH}/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS}.tar.gz \
+    && curl -sSLf --output /tmp/oc_client.tar.gz https://mirror.openshift.com/pub/openshift-v4/${TARGETARCH:-amd64}/clients/ocp/latest-${OPENSHIFT_VERSION}/openshift-client-${TARGETOS:-linux}.tar.gz \
     && tar -xvf /tmp/oc_client.tar.gz -C /tmp \
     && mv /tmp/oc /usr/local/bin \
     && mv /tmp/kubectl /usr/local/bin \
@@ -76,7 +122,7 @@ RUN true \
 
 # Download kustomize
 RUN true \
-    && curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz \
+    && curl -sSLf --output /tmp/kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_${TARGETOS:-linux}_${TARGETARCH:-amd64}.tar.gz \
     && tar -xvf /tmp/kustomize.tar.gz -C /tmp \
     && mv /tmp/kustomize /usr/local/bin \
     && chmod a+x /usr/local/bin/kustomize \
