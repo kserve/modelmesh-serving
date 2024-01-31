@@ -32,7 +32,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+// when adding or removing to the replace-ments below, remove the following block of
+// indirect dependencies and run `go mod tidy -compat=1.21` (see go version above)
 require (
+	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/compute v1.19.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.0.1 // indirect
@@ -125,10 +128,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-// when adding/remove replace, remove the following block of indirect dependencies
-// and run `go mod tidy -compat=1.20` (based on go version above)
-require cloud.google.com/go v0.110.2 // indirect
 
 replace (
 	// Fixes CVE-2022-21698 and CVE-2023-45142
