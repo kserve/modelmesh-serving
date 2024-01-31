@@ -31,8 +31,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9 as go-toolset
 ARG TARGETOS
 ARG TARGETARCH
 
-# match go version of ubi8/go-toolset (for now)
-ARG GOLANG_VERSION=1.20.10
+ARG GOLANG_VERSION=1.21.6
 
 USER root
 
