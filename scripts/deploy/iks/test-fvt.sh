@@ -39,8 +39,8 @@ run_fvt() {
   export KUBECONFIG=~/.kube/config
 
   rm -rf /usr/local/go
-  wget https://go.dev/dl/go1.20.4.linux-amd64.tar.gz
-  tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
+  wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
 
   go install github.com/onsi/ginkgo/v2/ginkgo
   export PATH=/root/go/bin/:$PATH
