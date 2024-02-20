@@ -1,6 +1,6 @@
 module github.com/kserve/modelmesh-serving
 
-go 1.20
+go 1.21
 
 require (
 	github.com/dereklstinson/cifar v0.0.0-20200421171932-5722a3b6a0c7
@@ -32,8 +32,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-// when adding/remove replace, remove the following block of indirect dependencies
-// and run `go mod tidy -compat=1.20` (based on go version above)
+// when adding or removing to the replace-ments below, remove the following block of
+// indirect dependencies and run `go mod tidy -compat=1.21` (see go version above)
 require (
 	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/compute v1.19.3 // indirect
@@ -136,8 +136,6 @@ replace (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
 	// Update Go Crypto to avoid CVE-2022-27191, CVE-2021-43565, CVE-2020-29652, CVE-2023-48795
 	golang.org/x/crypto => golang.org/x/crypto v0.17.0
-	// Update Go Networking to avoid CVE-2023-44487 and CVE-2023-39325
-	golang.org/x/net => golang.org/x/net v0.17.0
 	// remove when upgrade to controller-runtime 0.15.x or apimachinery to 0.27.x
 	// Fixes github.com/elazarl/goproxy Denial of Service (DoS)
 	// This dependency was removed from apimachinery 0.27.0
