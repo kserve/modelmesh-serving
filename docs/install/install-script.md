@@ -7,6 +7,8 @@
 
 - **Kubectl and Kustomize** - The installation will occur via the terminal using [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/).
 
+- **jq** - The `--enable-self-signed-ca` flag depends on the installation of [jq](https://jqlang.github.io/jq/download/)
+
 - **etcd** - ModelMesh Serving requires an [etcd](https://etcd.io/) server in order to coordinate internal state which can be either dedicated or shared. More on this later.
 
 - **Model storage** - The model files have to be stored in a compatible form of remote storage or on a Kubernetes Persistent Volume. For more information about supported storage options take a look at our [storage setup](/docs/predictors/setup-storage.md) page.
@@ -63,6 +65,8 @@ A list of Kubernetes namespaces `--user-namespaces` is optional to enable user n
 
 The `--quickstart` option can be specified to install and configure supporting datastores in the same namespace (etcd and MinIO) for experimental/development use. If this is not chosen, the namespace provided must have an Etcd secret named `model-serving-etcd` created which provides access to the Etcd cluster. See the [instructions above](#setup-the-etcd-connection-information) on this step.
 
+The `--enable-self-signed-ca` parameter below depends on [jq](https://jqlang.github.io/jq/download/). Follow the link to install before running the install script below.  
+
 ```shell
 kubectl create namespace modelmesh-serving
 ./scripts/install.sh --namespace modelmesh-serving --quickstart --enable-self-signed-ca
@@ -103,7 +107,9 @@ The `--namespace-scope-mode` will deploy `ServingRuntime`s confined to the same 
 
 You can optionally provide a custom ModelMesh Serving image with `--modelmesh-serving-image`. If not specified, it will pull the latest image.
 
-The ModelMesh controller uses a webhook that requires a certificate. We suggest using [cert-manager](https://github.com/cert-manager/cert-manager) to provision the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert-manager documentation](https://cert-manager.io/docs/installation/) to install it. If you don't want to install `cert-manager`, use the `--enable-self-signed-ca` flag. It will execute a script to create a self-signed CA and patch it to the webhook config.
+The ModelMesh controller uses a webhook that requires a certificate. We suggest using [cert-manager](https://github.com/cert-manager/cert-manager) to provision the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert-manager documentation](https://cert-manager.io/docs/installation/) to install it. 
+
+If you don't want to install `cert-manager`, use the `--enable-self-signed-ca` flag. It will execute a script to generate the self-signed CA certificate and then restart the webhook pod to include the certificate in the config. Please install the [jq](https://jqlang.github.io/jq/download/) dependency before using the flag.
 
 - [cert-manager latest version](https://github.com/cert-manager/cert-manager/releases/latest)
 
