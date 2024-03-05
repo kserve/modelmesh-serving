@@ -14,6 +14,7 @@ To quickly get started using ModelMesh Serving, here is a brief guide.
 - A Kubernetes cluster v1.23+ with cluster administrative privileges
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and
   [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) (v4.0+)
+- [jq](https://jqlang.github.io/jq/download/)
 - At least 4 vCPU and 8 GB memory. For more details, please see
   [here](install/README.md#deployed-components).
 
