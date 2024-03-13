@@ -113,6 +113,22 @@ var predictorsArray = []FVTPredictor{
 		differentPredictorName:     "xgboost",
 		differentPredictorFilename: "xgboost-predictor.yaml",
 	},
+	{
+		predictorName:              "xgboost-fil",
+		predictorFilename:          "xgboost-fil-predictor.yaml",
+		currentModelPath:           "fvt/xgboost/mushroom-fil",
+		updatedModelPath:           "fvt/xgboost/mushroom-fil-dup",
+		differentPredictorName:     "onnx",
+		differentPredictorFilename: "onnx-predictor.yaml",
+	},
+	{
+		predictorName:              "lightgbm-fil",
+		predictorFilename:          "lightgbm-fil-predictor.yaml",
+		currentModelPath:           "fvt/lightgbm/mushroom-fil",
+		updatedModelPath:           "fvt/lightgbm/mushroom-fil-dup",
+		differentPredictorName:     "onnx",
+		differentPredictorFilename: "onnx-predictor.yaml",
+	},
 	// TorchServe test is currently disabled
 	// {
 	// 	predictorName:              "pytorch-mar",
@@ -731,6 +747,50 @@ var _ = Describe("Predictor", func() {
 		})
 	})
 
+	var _ = Describe("XGBoost FIL inference", Ordered, func() {
+		var xgboostPredictorObject *unstructured.Unstructured
+		var xgboostPredictorName string
+
+		BeforeAll(func() {
+			// load the test predictor object
+			xgboostPredictorObject = NewPredictorForFVT("xgboost-fil-predictor.yaml")
+			xgboostPredictorName = xgboostPredictorObject.GetName()
+
+			CreatePredictorAndWaitAndExpectLoaded(xgboostPredictorObject)
+
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(xgboostPredictorName)
+		})
+
+		It("should successfully run an inference", func() {
+			ExpectSuccessfulInference_xgboostFILMushroom(xgboostPredictorName)
+		})
+
+		It("should fail with invalid shape", func() {
+			// build the grpc inference call
+			inferInput := &inference.ModelInferRequest_InferInputTensor{
+				Name:     "input__0",
+				Shape:    []int64{1, 28777},
+				Datatype: "FP32",
+				Contents: &inference.InferTensorContents{Fp32Contents: []float32{}},
+			}
+			inferRequest := &inference.ModelInferRequest{
+				ModelName: xgboostPredictorName,
+				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
+			}
+
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
+
+			Expect(inferResponse).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unexpected shape for input 'input__0'"))
+		})
+	})
+
 	var _ = Describe("Pytorch inference", Ordered, func() {
 		var ptPredictorObject *unstructured.Unstructured
 		var ptPredictorName string
@@ -888,6 +948,50 @@ var _ = Describe("Predictor", func() {
 			Expect(err.Error()).To(ContainSubstring("INTERNAL: builtins.ValueError: cannot reshape array"))
 		})
 	})
+
+	var _ = Describe("LightGBM FIL inference", Ordered, func() {
+		var lightGBMPredictorObject *unstructured.Unstructured
+		var lightGBMPredictorName string
+
+		BeforeAll(func() {
+			// load the test predictor object
+			lightGBMPredictorObject = NewPredictorForFVT("lightgbm-fil-predictor.yaml")
+			lightGBMPredictorName = lightGBMPredictorObject.GetName()
+
+			CreatePredictorAndWaitAndExpectLoaded(lightGBMPredictorObject)
+
+			err := FVTClientInstance.ConnectToModelServing(Insecure)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			FVTClientInstance.DeletePredictor(lightGBMPredictorName)
+		})
+
+		It("should successfully run an inference", func() {
+			ExpectSuccessfulInference_lightgbmFILMushroom(lightGBMPredictorName)
+		})
+
+		It("should fail with invalid shape input", func() {
+			// build the grpc inference call
+			inferInput := &inference.ModelInferRequest_InferInputTensor{
+				Name:     "input__0",
+				Shape:    []int64{1, 28777},
+				Datatype: "FP32",
+				Contents: &inference.InferTensorContents{Fp32Contents: []float32{}},
+			}
+			inferRequest := &inference.ModelInferRequest{
+				ModelName: lightGBMPredictorName,
+				Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
+			}
+
+			inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
+
+			Expect(inferResponse).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unexpected shape for input 'input__0'"))
+		})
+	})
 })
 
 // These tests verify that an invalid Predictor fails to load. These are in a
@@ -947,6 +1051,11 @@ var _ = Describe("Invalid Predictors", func() {
 			It("predictor should fail to load with unrecognized model type", func() {
 				// modify the object with an unrecognized model type
 				SetString(predictorObject, "invalidModelType", "spec", "modelType", "name")
+
+				// remove runtime field for predictors that have a runtime spec for this test
+				if CheckIfStringExists(predictorObject, "spec", "runtime", "name") {
+					SetString(predictorObject, "", "spec", "runtime", "name")
+				}
 
 				obj := CreatePredictorAndWaitAndExpectFailed(predictorObject)
 
