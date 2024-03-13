@@ -302,6 +302,26 @@ func ExpectSuccessfulInference_lightgbmMushroom(predictorName string) {
 	Expect(math.Round(float64(inferResponse.Outputs[0].Contents.Fp64Contents[0])*10) / 10).To(BeEquivalentTo(0.0))
 }
 
+// LightGBM Mushroom via Triton
+// COS path: fvt/lightgbm/mushroom-fil
+func ExpectSuccessfulInference_lightgbmFILMushroom(predictorName string) {
+	// build the grpc inference call
+	inferInput := &inference.ModelInferRequest_InferInputTensor{
+		Name:     "input__0",
+		Shape:    []int64{1, 126},
+		Datatype: "FP32",
+		Contents: &inference.InferTensorContents{Fp32Contents: mushroomInputData},
+	}
+	inferRequest := &inference.ModelInferRequest{
+		ModelName: predictorName,
+		Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
+	}
+
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
+}
+
 // XGBoost Mushroom
 // COS path: fvt/xgboost/mushroom
 func ExpectSuccessfulInference_xgboostMushroom(predictorName string) {
@@ -322,6 +342,26 @@ func ExpectSuccessfulInference_xgboostMushroom(predictorName string) {
 	Expect(inferResponse).ToNot(BeNil())
 	// check that the model predicted a value close to 0
 	Expect(math.Round(float64(inferResponse.Outputs[0].Contents.Fp32Contents[0])*10) / 10).To(BeEquivalentTo(0.0))
+}
+
+// XGBoost Mushroom via Triton
+// COS path: fvt/xgboost/mushroom-fil
+func ExpectSuccessfulInference_xgboostFILMushroom(predictorName string) {
+	// build the grpc inference call
+	inferInput := &inference.ModelInferRequest_InferInputTensor{
+		Name:     "input__0",
+		Shape:    []int64{1, 126},
+		Datatype: "FP32",
+		Contents: &inference.InferTensorContents{Fp32Contents: mushroomInputData},
+	}
+	inferRequest := &inference.ModelInferRequest{
+		ModelName: predictorName,
+		Inputs:    []*inference.ModelInferRequest_InferInputTensor{inferInput},
+	}
+
+	inferResponse, err := FVTClientInstance.RunKfsInference(inferRequest)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(inferResponse).ToNot(BeNil())
 }
 
 // Helpers

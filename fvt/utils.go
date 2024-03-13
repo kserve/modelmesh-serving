@@ -111,6 +111,12 @@ func GetString(obj *unstructured.Unstructured, fieldPath ...string) string {
 	return value
 }
 
+func CheckIfStringExists(obj *unstructured.Unstructured, fieldPath ...string) bool {
+	_, exists, err := unstructured.NestedString(obj.Object, fieldPath...)
+	Expect(err).ToNot(HaveOccurred())
+	return exists
+}
+
 func GetSlice(obj *unstructured.Unstructured, fieldPath ...string) ([]interface{}, bool) {
 	value, exists, err := unstructured.NestedSlice(obj.Object, fieldPath...)
 	Expect(err).ToNot(HaveOccurred())
