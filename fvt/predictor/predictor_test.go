@@ -1052,6 +1052,11 @@ var _ = Describe("Invalid Predictors", func() {
 				// modify the object with an unrecognized model type
 				SetString(predictorObject, "invalidModelType", "spec", "modelType", "name")
 
+				// remove runtime field for Triton-FIL predictors for this test
+				if GetString(predictorObject, "spec", "runtime", "name") == "triton-2.x" {
+					SetString(predictorObject, "", "spec", "runtime", "name")
+				}
+
 				obj := CreatePredictorAndWaitAndExpectFailed(predictorObject)
 
 				By("Verifying the predictor")
