@@ -108,7 +108,7 @@ spec:
               value: AKIAIOSFODNN7EXAMPLE
             - name: MINIO_SECRET_KEY
               value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          image: rafvasq/modelmesh-minio-dev-examples:latest
+          image: kserve/modelmesh-minio-dev-examples:latest
           name: minio
 ---
 apiVersion: v1
