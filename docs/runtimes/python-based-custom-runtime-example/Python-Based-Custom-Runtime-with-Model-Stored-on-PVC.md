@@ -155,7 +155,7 @@ from mlserver import MLModel
 from mlserver.utils import get_model_uri
 from mlserver.types import InferenceRequest, InferenceResponse, ResponseOutput, Parameters
 from mlserver.codecs import DecodedParameterName
-from joblib import load  # Add this line for importing joblib module
+from joblib import load 
 
 import logging
 import numpy as np
@@ -177,7 +177,7 @@ class CustomMLModel(MLModel):  # pylint:disable=c-extension-no-member
         logger.info("Model load URI: {model_uri}")
         if exists(model_uri):
             logger.info(f"Loading MNIST model from {model_uri}")
-            self._model = load(model_uri)  # Changed 'joblib.load' to 'load'
+            self._model = load(model_uri)
             logger.info("Model loaded successfully")
         else:
             logger.info(f"Model not exist in {model_uri}")
@@ -260,7 +260,7 @@ docker build -t <DOCKER-HUB-ORG>/custom-model-server:0.1 .
 
 ```
 
-> **Note**: Please use the `--build-arg` to add the HTTP_PROXY if necessary, such as: 
+> **Note**: Please use the `--build-arg` to add the http proxy if there is proxy in user's environment, such as: 
 ```shell
 docker build --build-arg HTTP_PROXY=http://<DOMAIN-OR-IP>:PORT --build-arg HTTPS_PROXY=http://<DOMAIN-OR-IP>:PORT -t <DOCKER-HUB-ORG>/custom-model-server:0.1 .
 ```
@@ -385,12 +385,8 @@ curl -s -X POST -k "http://localhost:8008/v2/models/${MODEL_NAME}/infer" -d '{"i
     {
       "name": "predict",
       "datatype": "INT64",
-      "shape": [
-        1
-      ],
-      "data": [
-        8
-      ]
+      "shape": [1],
+      "data": [8]
     }
   ]
 }

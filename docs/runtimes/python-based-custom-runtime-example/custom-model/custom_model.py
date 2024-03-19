@@ -5,7 +5,7 @@ from mlserver import MLModel
 from mlserver.utils import get_model_uri
 from mlserver.types import InferenceRequest, InferenceResponse, ResponseOutput, Parameters
 from mlserver.codecs import DecodedParameterName
-from joblib import load  # Add this line for importing joblib module
+from joblib import load
 
 import logging
 import numpy as np
@@ -27,7 +27,7 @@ class CustomMLModel(MLModel):  # pylint:disable=c-extension-no-member
         logger.info("Model load URI: {model_uri}")
         if exists(model_uri):
             logger.info(f"Loading MNIST model from {model_uri}")
-            self._model = load(model_uri)  # Changed 'joblib.load' to 'load'
+            self._model = load(model_uri)
             logger.info("Model loaded successfully")
         else:
             logger.info(f"Model not exist in {model_uri}")
