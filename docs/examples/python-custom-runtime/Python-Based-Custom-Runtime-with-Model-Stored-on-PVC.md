@@ -1,31 +1,8 @@
 # The Python-Based Custom Runtime with Model Stored on Persistent Volume Claim
 
-This document can provide the step by step instructions to demonstrate how to write a custom python-based `ServingRuntime` of `MLModel` and store the trained models on persistent volume claims.
+This document provides step-by-step instructions to demonstrate how to write a custom Python-based `ServingRuntime` inheriting from [MLServer's MLModel class](https://github.com/SeldonIO/MLServer/blob/master/mlserver/model.py) and deploy a model stored on persistent volume claims with it.
 
-Before writing the custom `ServingRuntime`, user should have a K8s cluster with `kserve modelmesh` installed firstly by following [doc](https://github.com/kserve/modelmesh-serving/blob/main/docs/quickstart.md). Please make sure `modelMesh serving` is working well, it looks like below:
-
-The `modelMesh serving` pods are running:
-
-```shell
-kubectl get pods
-
-NAME                                    READY   STATUS    RESTARTS   AGE
-etcd-78ff7867d5-h4r2t                   1/1     Running   0          5m
-minio-6b85d9b464-nmk5b                  1/1     Running   0          5m
-modelmesh-controller-695b8488f5-hndgn   1/1     Running   0          5m
-```
-
-The `ServingRuntime`s are available: 
-
-```shell
-kubectl get servingruntimes
-
-NAME             DISABLED   MODELTYPE     CONTAINERS   AGE
-mlserver-1.x                sklearn       mlserver     2m
-ovms-1.x                    openvino_ir   ovms         2m
-torchserve-0.x              pytorch-mar   torchserve   2m
-triton-2.x                  keras         triton       2m
-```
+This example assumes that ModelMesh Serving was deployed using the [quickstart guide](https://github.com/kserve/modelmesh-serving/blob/main/docs/quickstart.md).
 
 # Deploy a model stored on a Persistent Volume Claim
 
@@ -141,119 +118,17 @@ kubectl get cm "model-serving-config" -o jsonpath="{.data['config\.yaml']}"
 
 # Implement the Python-based Custom Runtime on MLServer
 
-All necessary resources are in [custom-model](./custom-model), including source code file and Dockerfile.
+All of the necessary resources are contained in [custom-model](./custom-model), including the model code, and the Dockerfile.
 
 ## 1. Implement the API of MLModel
 
-Please understand the `Custom MLModel Template` before writing the real code by following [Python-based Custom Runtime on MLServer](../mlserver_custom.md). Both `load` and `predict` must be implemented to support the custom `ServingRuntime`, and below snippet can be the simplified implementation of `CustomMLModel` for model `mnist-svm.joblib`.
+Both `load` and `predict` must be implemented to support this custom `ServingRuntime`. The code file [custom_model.py](./custom-model/custom_model.py) provides a simplified implementation of `CustomMLModel` for model `mnist-svm.joblib`. You can read more about it [here](https://github.com/kserve/modelmesh-serving/blob/main/docs/runtimes/mlserver_custom.md).
 
-```shell
-import os
-from os.path import exists
-from typing import Dict, List
-from mlserver import MLModel
-from mlserver.utils import get_model_uri
-from mlserver.types import InferenceRequest, InferenceResponse, ResponseOutput, Parameters
-from mlserver.codecs import DecodedParameterName
-from joblib import load 
+## 2. Build the custom `ServingRuntime` image
 
-import logging
-import numpy as np
+You can use [`mlserver`](https://mlserver.readthedocs.io/en/stable/examples/custom/README.html#building-a-custom-image) or `docker` to help to build the custom `ServingRuntime` image, and the latter is done in [Dockerfile](./custom-model/Dockerfile).
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-_to_exclude = {
-    "parameters": {DecodedParameterName, "headers"},
-    'inputs': {"__all__": {"parameters": {DecodedParameterName, "headers"}}}
-}
-
-WELLKNOWN_MODEL_FILENAMES = ["mnist-svm.joblib"]
-
-
-class CustomMLModel(MLModel):  # pylint:disable=c-extension-no-member
-    async def load(self) -> bool:
-        model_uri = await get_model_uri(self._settings, wellknown_filenames=WELLKNOWN_MODEL_FILENAMES)
-        logger.info("Model load URI: {model_uri}")
-        if exists(model_uri):
-            logger.info(f"Loading MNIST model from {model_uri}")
-            self._model = load(model_uri)
-            logger.info("Model loaded successfully")
-        else:
-            logger.info(f"Model not exist in {model_uri}")
-            # raise FileNotFoundError(model_uri)
-            self.ready = False
-            return self.ready
-    
-        self.ready = True
-        return self.ready
-
-    async def predict(self, payload: InferenceRequest) -> InferenceResponse:
-        input_data = [input_data.data for input_data in payload.inputs]
-        input_name = [input_data.name for input_data in payload.inputs]
-        input_data_array = np.array(input_data)
-        result = self._model.predict(input_data_array) 
-        predictions = np.array(result)
-
-        logger.info(f"Predict result is: {result}")
-        return InferenceResponse(
-            id=payload.id,
-            model_name = self.name,
-            model_version = self.version,
-            outputs = [
-                ResponseOutput(
-                    name = str(input_name[0]),
-                    shape = predictions.shape,
-                    datatype = "INT64",
-                    data=predictions.tolist(),
-                )
-            ],
-        )
-```
-
-## 2. Build custom ServingRuntim image
-
-User can use `mlserver` or `docker` to help to build the custom `ServingRuntim` image, and the latter is chosen in this doc. The available Dockerfile is below:
-
-```dockerfile
-FROM python:3.9.13
-# ENV LANG C.UTF-8
-
-COPY requirements.txt ./requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-# The custom `MLModel` implementation should be on the Python search path
-# instead of relying on the working directory of the image. If using a
-# single-file module, this can be accomplished with:
-COPY --chown=${USER} ./custom_model.py /opt/custom_model.py
-ENV PYTHONPATH=/opt/
-WORKDIR /opt
-
-# environment variables to be compatible with ModelMesh Serving
-#  these can also be set in the ServingRuntime, but this is recommended for
-#  consistency when building and testing
-# reference: https://mlserver.readthedocs.io/en/latest/reference/settings.html
-ENV MLSERVER_MODELS_DIR=/models/_mlserver_models \
-    MLSERVER_GRPC_PORT=8001 \
-    MLSERVER_HTTP_PORT=8002 \
-    MLSERVER_METRICS_PORT=8082 \
-    MLSERVER_LOAD_MODELS_AT_STARTUP=false \
-    MLSERVER_DEBUG=false \
-    MLSERVER_PARALLEL_WORKERS=1 \
-    MLSERVER_GRPC_MAX_MESSAGE_LENGTH=33554432 \
-    # https://github.com/SeldonIO/MLServer/pull/748
-    MLSERVER__CUSTOM_GRPC_SERVER_SETTINGS='{"grpc.max_metadata_size": "32768"}' \
-    MLSERVER_MODEL_NAME=dummy-model
-
-# With this setting, the implementation field is not required in the model
-# settings which eases integration by allowing the built-in adapter to generate
-# a basic model settings file
-ENV MLSERVER_MODEL_IMPLEMENTATION=custom_model.CustomMLModel
-
-CMD mlserver start $MLSERVER_MODELS_DIR
-```
-
-Get into the folder [custom-model](./custom-model), then execute command:
+To build the image, execute the following command from within the [custom-model](./custom-model) directory.
 
 ```shell
 docker build -t <DOCKER-HUB-ORG>/custom-model-server:0.1 .
@@ -267,7 +142,7 @@ docker build --build-arg HTTP_PROXY=http://<DOMAIN-OR-IP>:PORT --build-arg HTTPS
 
 ## 3. Define and Apply Custom ServingRuntime
 
-Please understand the `Custom ServingRuntime Template` before defining it by following [Python-based Custom Runtime on MLServer](../mlserver_custom.md). Executing below command to create a custom ServingRuntime.
+Below, you will create a ServingRuntime using the image built above. You can learn more about the custom `ServingRuntime` template [here](https://github.com/kserve/modelmesh-serving/blob/main/docs/runtimes/mlserver_custom.md#custom-servingruntime-template).
 
 ```shell
 kubectl apply -f - <<EOF
@@ -330,7 +205,7 @@ torchserve-0.x                   pytorch-mar    torchserve   10m
 triton-2.x                       keras          triton       10m
 ```
 
-## 4. Deploy the Inference Service according to custom ServingRuntime
+## 4. Deploy the InferenceService using the custom ServingRuntime
 
 ```shell
 kubectl apply -f - <<EOF
