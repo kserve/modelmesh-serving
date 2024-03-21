@@ -124,7 +124,7 @@ All of the necessary resources are contained in [custom-model](./custom-model), 
 
 Both `load` and `predict` must be implemented to support this custom `ServingRuntime`. The code file [custom_model.py](./custom-model/custom_model.py) provides a simplified implementation of `CustomMLModel` for model `mnist-svm.joblib`. You can read more about it [here](https://github.com/kserve/modelmesh-serving/blob/main/docs/runtimes/mlserver_custom.md).
 
-## 2. Build the custom `ServingRuntime` image
+## 2. Build the custom ServingRuntime image
 
 You can use [`mlserver`](https://mlserver.readthedocs.io/en/stable/examples/custom/README.html#building-a-custom-image) or `docker` to help to build the custom `ServingRuntime` image, and the latter is done in [Dockerfile](./custom-model/Dockerfile).
 
