@@ -135,7 +135,8 @@ docker build -t <DOCKER-HUB-ORG>/custom-model-server:0.1 .
 
 ```
 
-> **Note**: Please use the `--build-arg` to add the http proxy if there is proxy in user's environment, such as: 
+> **Note**: Please use the `--build-arg` to add the http proxy if there is proxy in user's environment, such as:
+
 ```shell
 docker build --build-arg HTTP_PROXY=http://<DOMAIN-OR-IP>:PORT --build-arg HTTPS_PROXY=http://<DOMAIN-OR-IP>:PORT -t <DOCKER-HUB-ORG>/custom-model-server:0.1 .
 ```
@@ -160,7 +161,7 @@ spec:
   grpcDataEndpoint: port:8001
   grpcEndpoint: port:8085
   containers:
-    - name: mlserver 
+    - name: mlserver
       image: <DOCKER-HUB-ORG>/custom-model-server:0.1
       env:
         - name: MLSERVER_MODELS_DIR
@@ -192,7 +193,7 @@ spec:
 EOF
 ```
 
-Verify the available `ServingRuntime`, including the custom one: 
+Verify the available `ServingRuntime`, including the custom one:
 
 ```shell
 kubectl get servingruntimes
@@ -221,7 +222,7 @@ spec:
     model:
       modelFormat:
         name: custom-model
-      runtime: my-custom-model-0.x 
+      runtime: my-custom-model-0.x
       storage:
         parameters:
           type: pvc
