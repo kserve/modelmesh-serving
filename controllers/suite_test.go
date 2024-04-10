@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
@@ -101,8 +102,8 @@ var _ = BeforeSuite(func() {
 	// +kubebuilder:scaffold:scheme
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0", //This disables the metrics server
+		Scheme:  scheme.Scheme,
+		Metrics: server.Options{BindAddress: "0"}, //This disables the metrics server
 	})
 	Expect(err).ToNot(HaveOccurred())
 

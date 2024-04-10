@@ -43,10 +43,13 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -219,14 +222,18 @@ func main() {
 
 	mgrOpts := ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Metrics:                server.Options{BindAddress: metricsAddr},
+		WebhookServer:          webhook.NewServer(webhook.Options{Port: 9443}),
 		HealthProbeBindAddress: probeAddr,
 	}
 
 	if !clusterScopeMode {
 		// Set manager to operate scoped to our namespace
-		mgrOpts.Namespace = ControllerNamespace
+		mgrOpts.Cache = cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				ControllerNamespace: {},
+			},
+		}
 	}
 
 	if enableLeaderElection {
@@ -261,10 +268,12 @@ func main() {
 	}
 
 	// Setup servingruntime validating webhook
+	// TODO: Rework webhook setup using builder.WebhookManagedBy, so that there is no need to worry about the Decoder
 	hookServer := mgr.GetWebhookServer()
 	servingRuntimeWebhook := &webhook.Admission{
 		Handler: &servingv1alpha1.ServingRuntimeWebhook{
-			Client: mgr.GetClient(),
+			Client:  mgr.GetClient(),
+			Decoder: admission.NewDecoder(mgr.GetScheme()),
 		},
 	}
 	hookServer.Register("/validate-serving-modelmesh-io-v1alpha1-servingruntime", servingRuntimeWebhook)
