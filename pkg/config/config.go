@@ -232,10 +232,10 @@ func (cp *ConfigProvider) ReloadConfigMap(ctx context.Context, c client.Client, 
 // Handler used by controllers which depend on the user configuration
 func ConfigWatchHandler(configMapName types.NamespacedName, f func() []reconcile.Request,
 	cp *ConfigProvider, kclient *client.Client) handler.EventHandler {
-	return handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+	return handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, o client.Object) []reconcile.Request {
 		// Ignore ConfigMaps we don't care about
 		if o.GetName() == configMapName.Name && o.GetNamespace() == configMapName.Namespace {
-			err := cp.ReloadConfigMap(context.TODO(), *kclient, configMapName)
+			err := cp.ReloadConfigMap(ctx, *kclient, configMapName)
 			if err != nil {
 				configLog.Error(err, "Unable to reload user configuration")
 			}

@@ -606,7 +606,7 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 		For(&kserveapi.ServingRuntime{}).
 		Owns(&appsv1.Deployment{}).
 		// watch the user configmap and reconcile all runtimes when it changes
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+		Watches(&corev1.ConfigMap{},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				return r.requestsForRuntimes("", func(namespace string) bool {
 					mme, err := modelMeshEnabled2(context.TODO(), namespace,
@@ -615,22 +615,22 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 				})
 			}, r.ConfigProvider, &r.Client)).
 		// watch predictors and reconcile the corresponding runtime(s) it could be assigned to
-		Watches(&source.Kind{Type: &api.Predictor{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		Watches(&api.Predictor{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				return r.runtimeRequestsForPredictor(o.(*api.Predictor), "Predictor")
 			}))
 
 	if r.ClusterScope {
 		// watch namespaces to check the modelmesh-enabled flag
-		builder = builder.Watches(&source.Kind{Type: &corev1.Namespace{}}, handler.EnqueueRequestsFromMapFunc(
-			func(o client.Object) []reconcile.Request {
+		builder = builder.Watches(&corev1.Namespace{}, handler.EnqueueRequestsFromMapFunc(
+			func(_ context.Context, o client.Object) []reconcile.Request {
 				return r.requestsForRuntimes(o.GetName(), nil)
 			}))
 	}
 
 	if watchInferenceServices {
-		builder = builder.Watches(&source.Kind{Type: &v1beta1.InferenceService{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder = builder.Watches(&v1beta1.InferenceService{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				if p, _ := predictor_source.BuildBasePredictorFromInferenceService(o.(*v1beta1.InferenceService)); p != nil {
 					return r.runtimeRequestsForPredictor(p, "InferenceService")
 				}
@@ -639,26 +639,26 @@ func (r *ServingRuntimeReconciler) SetupWithManager(mgr ctrl.Manager,
 	}
 
 	if r.EnableCSRWatch {
-		builder = builder.Watches(&source.Kind{Type: &kserveapi.ClusterServingRuntime{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder = builder.Watches(&kserveapi.ClusterServingRuntime{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				return r.clusterServingRuntimeRequests(o.(*kserveapi.ClusterServingRuntime))
 			}))
 	}
 
 	if r.EnableSecretWatch {
-		builder = builder.Watches(&source.Kind{Type: &corev1.Secret{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder = builder.Watches(&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				return r.storageSecretRequests(o.(*corev1.Secret))
 			}))
 	}
 
 	if sourcePluginEvents != nil {
-		builder.Watches(&source.Channel{Source: sourcePluginEvents},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder.WatchesRawSource(&source.Channel{Source: sourcePluginEvents},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, o client.Object) []reconcile.Request {
 				nn, src := predictor_source.ResolveSource(types.NamespacedName{
 					Name: o.GetName(), Namespace: o.GetNamespace()}, PredictorCRSourceId)
 				if registry, ok := r.RegistryMap[src]; ok {
-					if p, _ := registry.Get(context.TODO(), nn); p != nil {
+					if p, _ := registry.Get(ctx, nn); p != nil {
 						return r.runtimeRequestsForPredictor(p, registry.GetSourceName())
 					}
 				}

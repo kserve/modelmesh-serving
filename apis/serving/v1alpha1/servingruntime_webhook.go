@@ -32,7 +32,7 @@ import (
 // +kubebuilder:webhook:path=/validate-serving-modelmesh-io-v1alpha1-servingruntime,mutating=false,failurePolicy=fail,sideEffects=None,groups=serving.kserve.io,resources=servingruntimes;clusterservingruntimes,verbs=create;update,versions=v1alpha1,name=servingruntime.modelmesh-webhook-server.default,admissionReviewVersions=v1
 type ServingRuntimeWebhook struct {
 	Client  client.Client
-	decoder *admission.Decoder
+	Decoder *admission.Decoder
 }
 
 func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -42,7 +42,7 @@ func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Reques
 
 	if req.Kind.Kind == "ServingRuntime" {
 		servingRuntime := &kservev1alpha.ServingRuntime{}
-		err := s.decoder.Decode(req, servingRuntime)
+		err := s.Decoder.Decode(req, servingRuntime)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -58,7 +58,7 @@ func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Reques
 
 	} else {
 		clusterServingRuntime := &kservev1alpha.ClusterServingRuntime{}
-		err := s.decoder.Decode(req, clusterServingRuntime)
+		err := s.Decoder.Decode(req, clusterServingRuntime)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -90,12 +90,6 @@ func (s *ServingRuntimeWebhook) Handle(ctx context.Context, req admission.Reques
 	}
 
 	return admission.Allowed("Passed all validation checks for ServingRuntime")
-}
-
-// InjectDecoder injects the decoder.
-func (s *ServingRuntimeWebhook) InjectDecoder(d *admission.Decoder) error {
-	s.decoder = d
-	return nil
 }
 
 // Validation of servingruntime autoscaler class

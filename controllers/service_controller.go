@@ -46,7 +46,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -447,7 +446,7 @@ func (r *ServiceReconciler) setupForNamespaceScope(builder *bld.Builder) {
 		UpdateFunc: func(event event.UpdateEvent) bool { return filter(event.ObjectNew) },
 		DeleteFunc: func(event event.DeleteEvent) bool { return false },
 	})).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+		Watches(&corev1.ConfigMap{},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				if _, _, changed := r.getMMService(r.ControllerDeployment.Namespace, r.ConfigProvider, true); changed {
 					r.Log.Info("Triggering service reconciliation after config change")
@@ -458,8 +457,8 @@ func (r *ServiceReconciler) setupForNamespaceScope(builder *bld.Builder) {
 
 	// Enable ServiceMonitor watch if ServiceMonitorCRDExists
 	if r.ServiceMonitorCRDExists {
-		builder.Watches(&source.Kind{Type: &monitoringv1.ServiceMonitor{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder.Watches(&monitoringv1.ServiceMonitor{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				if o.GetName() == serviceMonitorName && o.GetNamespace() == r.ControllerDeployment.Namespace {
 					return []reconcile.Request{{NamespacedName: r.ControllerDeployment}}
 				}
@@ -470,7 +469,7 @@ func (r *ServiceReconciler) setupForNamespaceScope(builder *bld.Builder) {
 
 func (r *ServiceReconciler) setupForClusterScope(builder *bld.Builder) {
 	builder.For(&corev1.Namespace{}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+		Watches(&corev1.ConfigMap{},
 			config.ConfigWatchHandler(r.ConfigMapName, func() []reconcile.Request {
 				list := &corev1.NamespaceList{}
 				if err := r.Client.List(context.TODO(), list); err != nil {
@@ -492,8 +491,8 @@ func (r *ServiceReconciler) setupForClusterScope(builder *bld.Builder) {
 
 	// Enable ServiceMonitor watch if ServiceMonitorCRDExists
 	if r.ServiceMonitorCRDExists {
-		builder.Watches(&source.Kind{Type: &monitoringv1.ServiceMonitor{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+		builder.Watches(&monitoringv1.ServiceMonitor{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 				if o.GetName() == serviceMonitorName {
 					return []reconcile.Request{{
 						NamespacedName: types.NamespacedName{Name: o.GetNamespace()},

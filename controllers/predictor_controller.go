@@ -592,20 +592,20 @@ func (pr *PredictorReconciler) SetupWithManager(mgr ctrl.Manager, eventStream *m
 	watchInferenceServices bool, sourcePluginEvents <-chan event.GenericEvent) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&api.Predictor{}).
-		Watches(&src.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
+		WatchesRawSource(&src.Channel{Source: eventStream.MMEvents}, &handler.EnqueueRequestForObject{})
 
 	if sourcePluginEvents != nil {
-		builder.Watches(&src.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
+		builder.WatchesRawSource(&src.Channel{Source: sourcePluginEvents}, &handler.EnqueueRequestForObject{})
 	}
 
 	if watchInferenceServices {
-		builder = builder.Watches(&src.Kind{Type: &v1beta1.InferenceService{}}, prefixName(InferenceServiceCRSourceId))
+		builder = builder.Watches(&v1beta1.InferenceService{}, prefixName(InferenceServiceCRSourceId))
 	}
 	return builder.Complete(pr)
 }
 
 func prefixName(prefix string) handler.EventHandler {
-	return handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+	return handler.EnqueueRequestsFromMapFunc(func(_ context.Context, o client.Object) []reconcile.Request {
 		// Prepend prefix
 		return []reconcile.Request{{
 			NamespacedName: types.NamespacedName{
