@@ -40,17 +40,10 @@ A secret named `model-serving-etcd` will be created and passed to the controller
 
 ## Installation
 
-<!-- Remove the following note on the `release-*` branch -->
-
-To install the most recent _stable release_ of [modelmesh-serving](https://github.com/kserve/modelmesh-serving/releases/latest)
-follow the [Installation instructions](https://github.com/kserve/modelmesh-serving/blob/release-0.11.2/docs/install/install-script.md) for version `v0.11.2`.
-
 Start by cloning the [modelmesh-serving](https://github.com/kserve/modelmesh-serving.git) repository:
 
-<!-- Replace with RELEASE="release-0.12" on the `release-0.12` branch -->
-
 ```shell
-RELEASE="main"
+RELEASE="release-0.12"
 git clone -b $RELEASE --depth 1 --single-branch https://github.com/kserve/modelmesh-serving.git
 cd modelmesh-serving
 ```
@@ -103,7 +96,7 @@ The installation will create a secret named `storage-config` if it does not alre
 
 The `--namespace-scope-mode` will deploy `ServingRuntime`s confined to the same namespace, instead of the default cluster-scoped runtimes `ClusterServingRuntime`s. These serving runtimes are accessible to any user/namespace in the cluster.
 
-You can optionally provide a custom ModelMesh Serving image with `--modelmesh-serving-image`. If not specified, it will pull the latest image.
+You can optionally provide a custom ModelMesh Serving image with `--modelmesh-serving-image`. If not specified, it will pull the v0.12.0-rc0 image.
 
 The ModelMesh controller uses a webhook that requires a certificate. We suggest using [cert-manager](https://github.com/cert-manager/cert-manager) to provision the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert-manager documentation](https://cert-manager.io/docs/installation/) to install it.
 
