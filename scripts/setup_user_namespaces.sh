@@ -31,7 +31,7 @@ EOF
 
 ctrl_ns="modelmesh-serving"
 user_ns_array=()
-modelmesh_release="v0.11.2"       # The latest release is the default
+modelmesh_release="v0.12.0"       # The latest release is the default
 create_storage_secret=false
 deploy_serving_runtimes=false
 dev_mode=false                    # Set to true to use locally cloned files instead of from a release
