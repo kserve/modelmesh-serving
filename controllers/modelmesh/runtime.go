@@ -342,8 +342,7 @@ func (m *Deployment) addPassThroughPodFieldsToDeployment(deployment *appsv1.Depl
 	rts := m.SRSpec
 	// these fields map directly to pod spec fields
 	// supported architectures are "amd64" and "arm64", "ppc64le"
-	// and "s390x" are not supported by tensorflow
-	// (https://github.com/kserve/modelmesh-runtime-adapter/pull/38#discussion_r1156749259)
+	// and "s390x" 
 	deployment.Spec.Template.Spec.NodeSelector = rts.NodeSelector
 	deployment.Spec.Template.Spec.Tolerations = rts.Tolerations
 	archNodeSelector := corev1.NodeSelectorTerm{
@@ -351,7 +350,7 @@ func (m *Deployment) addPassThroughPodFieldsToDeployment(deployment *appsv1.Depl
 			{
 				Key:      "kubernetes.io/arch",
 				Operator: corev1.NodeSelectorOpIn,
-				Values:   []string{"amd64", "arm64"},
+				Values:   []string{"amd64", "arm64", "s390x"},
 			},
 		},
 	}
