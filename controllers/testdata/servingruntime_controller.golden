@@ -38,6 +38,7 @@ spec:
                 values:
                 - amd64
                 - arm64
+                - s390x
       containers:
       - command:
         - /opt/app/mlserver-adapter
