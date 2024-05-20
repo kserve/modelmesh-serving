@@ -23,7 +23,8 @@
 ###############################################################################
 
 # TODO: replace the "go_toolset" build stage once ubi8/go-toolset:1.21 is available
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9 as go-toolset
+# the go-toolset 1.21 is based on ubi9, we need to update it in the base image as well.
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as go-toolset
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # We need TARGETOS and TARGETARCH (not BUILDOS and BUILDARCH) since the developer
