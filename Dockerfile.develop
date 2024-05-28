@@ -104,7 +104,7 @@ ENV PIP_CACHE_DIR=/root/.cache/pip
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install pre-commit
 
-#Older version of kubebuilder doesn't have s390x tar file. Individually installing etcd , kube-apiserver , kubebuilder , kubectl for all architecture (amd64, arm64 , pp64cle & s390x)
+# Older version of kubebuilder doesn't have s390x tar file. Individually installing etcd , kube-apiserver , kubebuilder , kubectl for all architecture (amd64, arm64 , pp64cle & s390x)
 RUN true \
     && mkdir -p /usr/local/kubebuilder/bin \
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS:-linux}_${TARGETARCH:-amd64} -o /usr/local/kubebuilder/bin/kubebuilder \
@@ -126,7 +126,6 @@ RUN true \
    && chmod +x /usr/local/kubebuilder/bin/etcd-${ETCD_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}/etcd \
    && etcd --version \
    && true
-
 
 # Download openshift-cli
 RUN true \
@@ -176,7 +175,7 @@ RUN true \
     && ginkgo version \
     && true
 
-# Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA).kubebuilder tool 1.29 works fine with s390x & other architecture
+# Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA), and 1.29+ for s390x & other architectures
 RUN true \
     && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest \
     && setup-envtest use 1.29 \
