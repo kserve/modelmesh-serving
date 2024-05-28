@@ -28,7 +28,7 @@ There should be secret key called `localMinIO` that looks like:
   "access_key": "AKIAIOSFODNN7EXAMPLE",
   "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
   "endpoint_url": "http://minio:9000",
-  "default_bucket": "modelmesh-example-models"
+  "bucket": "modelmesh-example-models"
 }
 ```
 

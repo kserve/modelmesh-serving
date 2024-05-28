@@ -46,7 +46,7 @@ var StorageConfigDataMinio = map[string]interface{}{
 		"access_key_id":     "AKIAIOSFODNN7EXAMPLE",
 		"secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"endpoint_url":      "http://minio:9000",
-		"default_bucket":    "modelmesh-example-models",
+		"bucket":    "modelmesh-example-models",
 		"region":            "us-south",
 	},
 }
