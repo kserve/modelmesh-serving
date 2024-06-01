@@ -32,10 +32,12 @@ usage() {
 }
 
 DOCKER_TARGET="runtime"
-DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
+#DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD)-$(date -u +"%Y%m%dT%H%M%S%Z")"
+DOCKER_TAG="$(git rev-parse --abbrev-ref HEAD | tr '/' '-')-$(date -u +"%Y%m%dT%H%M%S%Z")"
 CONTROLLER_IMG="kserve/modelmesh-controller"
 DEV_IMAGE="$(cat .develop_image_name)"
 ENGINE="docker"
+
 
 while (("$#")); do
   arg="$1"

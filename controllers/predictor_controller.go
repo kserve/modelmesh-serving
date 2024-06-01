@@ -138,7 +138,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 		if setStatusFailureInfo(status, &api.FailureInfo{
 			Reason:  api.InvalidPredictorSpec,
 			Message: invalidPredictorMessage,
-			ModelId: concreteModelName(predictor, sourceId),
+			ModelId: concreteModelName(predictor, sourceId, true),
 		}) {
 			updateStatus = true
 		}
@@ -166,7 +166,7 @@ func (pr *PredictorReconciler) ReconcilePredictor(ctx context.Context, nname typ
 			updateStatus = setStatusFailureInfo(status, &api.FailureInfo{
 				Reason:  api.RuntimeUnhealthy,
 				Message: "Waiting for runtime Pod to become available",
-				ModelId: concreteModelName(predictor, sourceId),
+				ModelId: concreteModelName(predictor, sourceId, true),
 			})
 		} else if grpcstatus.Convert(err).Code() == codes.AlreadyExists {
 			//TODO here should also extract the conflicting owner string, and also trigger a reconcile with that
@@ -330,7 +330,7 @@ func (pr *PredictorReconciler) setVModel(ctx context.Context, mmc mmeshapi.Model
 	return mmc.SetVModel(setVmodelCtx, &mmeshapi.SetVModelRequest{
 		VModelId:              predictor.GetName(),
 		Owner:                 sourceId,
-		TargetModelId:         concreteModelName(predictor, sourceId),
+		TargetModelId:         concreteModelName(predictor, sourceId, true),
 		AutoDeleteTargetModel: true,
 		LoadNow:               loadNow,
 		ModelInfo: &mmeshapi.ModelInfo{
@@ -379,7 +379,10 @@ func extractModelFields(predictor *api.Predictor) (path string, schemaPath, stor
 }
 
 // Returns the model-mesh model name corresponding to a particular Predictor and sourceId
-func concreteModelName(predictor *api.Predictor, sourceId string) string {
+func concreteModelName(predictor *api.Predictor, sourceId string, simpleModelName bool) string {
+	if simpleModelName {
+		return fmt.Sprintf(predictor.Name)
+	}
 	return fmt.Sprintf("%s__%s-%s", predictor.Name, sourceId, Hash(&predictor.Spec))
 }
 
