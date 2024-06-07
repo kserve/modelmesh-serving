@@ -60,7 +60,7 @@ $ mc ls myminio/models/onnx
 
 ### 3. Add a storage entry to the `storage-config` secret
 
-Ensure there is a key defined in the common `storage-config` secret corresponding to the S3-based storage instance holding your model. The value of this secret key should be JSON like the following, `default_bucket` is optional.
+Ensure there is a key defined in the common `storage-config` secret corresponding to the S3-based storage instance holding your model. The value of this secret key should be JSON like the following, `bucket` is optional.
 
 Users can specify use of a custom certificate via the storage config `certificate` parameter. The custom certificate should be in the form of an embedded Certificate Authority (CA) bundle in PEM format.
 
@@ -72,7 +72,7 @@ Using MinIO the JSON contents look like:
   "access_key_id": "minioadmin",
   "secret_access_key": "minioadmin/K7JTCMP/EXAMPLEKEY",
   "endpoint_url": "http://127.0.0.1:9000:9000",
-  "default_bucket": "",
+  "bucket": "",
   "region": "us-east"
 }
 ```
@@ -207,7 +207,7 @@ stringData:
 #      "access_key_id": "AKIAIOSFODNN7EXAMPLE",
 #      "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 #      "endpoint_url": "http://minio:9000",
-#      "default_bucket": "modelmesh-example-models",
+#      "bucket": "modelmesh-example-models",
 #      "region": "us-south"
 #    }
   pvc1: |
