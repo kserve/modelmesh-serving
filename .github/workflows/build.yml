@@ -2,6 +2,8 @@ name: Build
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1,4'  # midnight US/Pacific on Sundays and Wednesdays
   push:
     branches:
       - main
