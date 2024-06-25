@@ -96,7 +96,7 @@ The installation will create a secret named `storage-config` if it does not alre
 
 The `--namespace-scope-mode` will deploy `ServingRuntime`s confined to the same namespace, instead of the default cluster-scoped runtimes `ClusterServingRuntime`s. These serving runtimes are accessible to any user/namespace in the cluster.
 
-You can optionally provide a custom ModelMesh Serving image with `--modelmesh-serving-image`. If not specified, it will pull the v0.12.0-rc0 image.
+You can optionally provide a custom ModelMesh Serving image with `--modelmesh-serving-image`. If not specified, it will pull the v0.12.0 image.
 
 The ModelMesh controller uses a webhook that requires a certificate. We suggest using [cert-manager](https://github.com/cert-manager/cert-manager) to provision the certificates for the webhook server. Other solutions should also work as long as they put the certificates in the desired location. You can follow [the cert-manager documentation](https://cert-manager.io/docs/installation/) to install it.
 
