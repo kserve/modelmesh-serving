@@ -21,53 +21,9 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
+ARG GOLANG_VERSION=1.21
+FROM registry.access.redhat.com/ubi8/go-toolset:$GOLANG_VERSION
 
-# TODO: replace the "go_toolset" build stage once ubi8/go-toolset:1.21 is available
-# the go-toolset 1.21 is based on ubi9, we need to update it in the base image as well.
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as go-toolset
-
-# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# We need TARGETOS and TARGETARCH (not BUILDOS and BUILDARCH) since the developer
-# image should be built for the OS of the developer using it (this is not a "builder image")
-ARG TARGETOS
-ARG TARGETARCH
-
-ARG GOLANG_VERSION=1.21.6
-
-USER root
-
-ENV HOME=/root \
-    PATH=/usr/local/go/bin:$PATH:
-
-WORKDIR /workspace
-
-# install necessary tools that are included in the ubi/go-toolset image that we are temporarily replacing
-RUN --mount=type=cache,target=/root/.cache/microdnf:rw \
-    microdnf --setopt=cachedir=/root/.cache/microdnf --nodocs install \
-       diffutils \
-       gcc-c++ \
-       make \
-       wget \
-       tar \
-       git \
-       which \
-    && microdnf update --nodocs \
-    && true
-
-# install go
-RUN true \
-    && wget -qO go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz" \
-    && tar -C /usr/local -xzf go.tgz \
-    && go version \
-    && rm go.tgz \
-    && true
-
-
-####################################################################################
-# TODO: replace "go-toolset" build stage with ubi/go-toolset:1.21 once available   #
-#       and swap `microdnf` commands for `dnf`                                     #
-####################################################################################
-FROM go-toolset
 
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # don't provide "default" values (e.g. 'ARG TARGETARCH=amd64') for non-buildx environments,
@@ -92,7 +48,7 @@ WORKDIR /workspace
 # Install build and dev tools
 # NOTE: Require python38 to install pre-commit
 RUN --mount=type=cache,target=/root/.cache/dnf:rw \
-    microdnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
+    dnf install --setopt=cachedir=/root/.cache/dnf -y --nodocs \
        nodejs \
        jq \
        python38 \
