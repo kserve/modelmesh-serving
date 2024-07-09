@@ -43,7 +43,7 @@ A secret named `model-serving-etcd` will be created and passed to the controller
 <!-- Remove the following note on the `release-*` branch -->
 
 To install the most recent _stable release_ of [modelmesh-serving](https://github.com/kserve/modelmesh-serving/releases/latest)
-follow the [Installation instructions](https://github.com/kserve/modelmesh-serving/blob/release-0.12.0/docs/install/install-script.md) for version `v0.12.0`.
+follow the [Installation instructions](https://github.com/kserve/modelmesh-serving/blob/v0.12.0/docs/install/install-script.md) for version `v0.12.0`.
 
 Start by cloning the [modelmesh-serving](https://github.com/kserve/modelmesh-serving.git) repository:
 
