@@ -132,10 +132,10 @@ RUN true \
     && ginkgo version \
     && true
 
-# Use setup-entest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA)
-# Pin envest to specific version until update to go 1.22
+# Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA)
+# Pin envtest to specific version until update to go 1.22
 RUN true \
-    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc74866 \
+    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc7486e6 \
     && setup-envtest use 1.26 \
     && true
 
