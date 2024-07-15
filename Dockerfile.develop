@@ -132,10 +132,11 @@ RUN true \
     && ginkgo version \
     && true
 
-# Use setup-envtest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA), and 1.29+ for s390x & other architectures
+# Use setup-entest for kubebuilder to use K8s version 1.23+ for autoscaling/v2 (HPA)
+# Pin envest to specific version until update to go 1.22
 RUN true \
-    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest \
-    && setup-envtest use 1.29 \
+    && go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc74866 \
+    && setup-envtest use 1.26 \
     && true
 
 # For GitHub Action 'lint', work around error "detected dubious ownership in repository at '/workspace'"
