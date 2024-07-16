@@ -28,6 +28,7 @@ import (
 
 	kserveapi "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
+	"github.com/kserve/kserve/pkg/constants"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/kserve/modelmesh-serving/controllers/autoscaler"
 	"github.com/kserve/modelmesh-serving/controllers/modelmesh"
@@ -291,7 +292,12 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	//ScaleToZero or None autoscaler case
 	if replicas == uint16(0) || as.Autoscaler.AutoscalerClass == autoscaler.AutoscalerClassNone {
-		mmDeployment.Replicas = replicas
+		mmDeployment.Replicas = int32(replicas)
+		if _, err = as.Reconcile(true); err != nil {
+			return ctrl.Result{}, fmt.Errorf("HPA reconcile error: %w", err)
+		}
+	} else if as.Autoscaler.AutoscalerClass == constants.AutoscalerClassExternal {
+		mmDeployment.Replicas = -1
 		if _, err = as.Reconcile(true); err != nil {
 			return ctrl.Result{}, fmt.Errorf("HPA reconcile error: %w", err)
 		}
@@ -309,9 +315,9 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				return ctrl.Result{}, fmt.Errorf("Could not get the deployment for the servingruntime : %w", err)
 			}
 			if *existingDeployment.Spec.Replicas == int32(0) {
-				mmDeployment.Replicas = uint16(*(as.Autoscaler.HPA.HPA).Spec.MinReplicas)
+				mmDeployment.Replicas = *(as.Autoscaler.HPA.HPA).Spec.MinReplicas
 			} else {
-				mmDeployment.Replicas = uint16(*(existingDeployment.Spec.Replicas))
+				mmDeployment.Replicas = *(existingDeployment.Spec.Replicas)
 			}
 		}
 
