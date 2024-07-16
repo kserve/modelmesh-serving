@@ -104,6 +104,10 @@ func createAutoscaler(client client.Client,
 		// Set HPA reconciler even though AutoscalerClass is None to delete existing hpa
 		as.HPA = hpa.NewHPAReconciler(client, scheme, runtimeMeta, mmDeploymentName, mmNamespace)
 		return as, nil
+	case constants.AutoscalerClassExternal:
+		// Set HPA reconciler even though AutoscalerClass is External to delete existing hpa
+		as.HPA = hpa.NewHPAReconciler(client, scheme, runtimeMeta, mmDeploymentName, mmNamespace)
+		return as, nil
 	default:
 		return nil, errors.New("unknown autoscaler class type.")
 	}
