@@ -96,7 +96,6 @@ func init() {
 		log.Fatalf("cannot add model serving v1 scheme, %v", err)
 	}
 	_ = batchv1.AddToScheme(scheme)
-	_ = servingv1alpha1.AddToScheme(scheme)
 	_ = v1beta1.AddToScheme(scheme)
 	_ = v1alpha1.AddToScheme(scheme)
 	_ = monitoringv1.AddToScheme(scheme)
