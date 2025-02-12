@@ -133,10 +133,11 @@ type TLSConfig struct {
 }
 
 type RESTProxyConfig struct {
-	Enabled   bool
-	Port      uint16
-	Image     ImageConfig
-	Resources ResourceRequirements
+	Enabled    bool
+	SkipVerify bool
+	Port       uint16
+	Image      ImageConfig
+	Resources  ResourceRequirements
 }
 
 func (c *Config) GetEtcdSecretName() string {

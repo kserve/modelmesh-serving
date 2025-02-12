@@ -555,6 +555,8 @@ spec:
           value: "false"
         - name: REST_PROXY_GRPC_MAX_MSG_SIZE_BYTES
           value: "16777216"
+        - name: REST_PROXY_SKIP_VERIFY
+          value: "false"
         image: kserve/rest-proxy:latest
         imagePullPolicy: Always
         name: rest-proxy
