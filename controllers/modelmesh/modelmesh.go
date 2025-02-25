@@ -37,25 +37,26 @@ const ModelMeshEtcdPrefix = "mm"
 
 // Models a deployment
 type Deployment struct {
-	ServiceName        string
-	ServicePort        uint16
-	Name               string
-	Namespace          string
-	Owner              mf.Owner
-	SRSpec             *kserveapi.ServingRuntimeSpec
-	DefaultVModelOwner string
-	Log                logr.Logger
-	Metrics            bool
-	PrometheusPort     uint16
-	PrometheusScheme   string
-	PayloadProcessors  string
-	ModelMeshImage     string
-	ModelMeshResources *corev1.ResourceRequirements
-	RESTProxyEnabled   bool
-	RESTProxyImage     string
-	RESTProxyResources *corev1.ResourceRequirements
-	RESTProxyPort      uint16
-	PVCs               []string
+	ServiceName         string
+	ServicePort         uint16
+	Name                string
+	Namespace           string
+	Owner               mf.Owner
+	SRSpec              *kserveapi.ServingRuntimeSpec
+	DefaultVModelOwner  string
+	Log                 logr.Logger
+	Metrics             bool
+	PrometheusPort      uint16
+	PrometheusScheme    string
+	PayloadProcessors   string
+	ModelMeshImage      string
+	ModelMeshResources  *corev1.ResourceRequirements
+	RESTProxyEnabled    bool
+	RESTProxySkipVerify bool
+	RESTProxyImage      string
+	RESTProxyResources  *corev1.ResourceRequirements
+	RESTProxyPort       uint16
+	PVCs                []string
 	// internal fields used when templating
 	ModelMeshLimitCPU          string
 	ModelMeshRequestsCPU       string

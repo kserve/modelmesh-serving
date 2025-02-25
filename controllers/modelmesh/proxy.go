@@ -26,6 +26,7 @@ const (
 	restProxyGrpcMaxMsgSizeEnvVar = "REST_PROXY_GRPC_MAX_MSG_SIZE_BYTES"
 	restProxyGrpcPortEnvVar       = "REST_PROXY_GRPC_PORT"
 	restProxyTlsEnvVar            = "REST_PROXY_USE_TLS"
+	restProxySkipVerifyEnvVar     = "REST_PROXY_SKIP_VERIFY"
 )
 
 func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) error {
@@ -47,6 +48,9 @@ func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) err
 				}, {
 					Name:  restProxyGrpcMaxMsgSizeEnvVar,
 					Value: strconv.Itoa(m.GrpcMaxMessageSize),
+				}, {
+					Name:  restProxySkipVerifyEnvVar,
+					Value: strconv.FormatBool(m.RESTProxySkipVerify),
 				},
 			},
 			Ports: []corev1.ContainerPort{
