@@ -87,11 +87,13 @@ var _ = JustBeforeEach(func() {
 })
 var _ = JustAfterEach(func() {
 	if CurrentSpecReport().Failed() {
+		FVTClientInstance.PrintMMConfig()
 		FVTClientInstance.PrintPredictors()
 		FVTClientInstance.PrintIsvcs()
 		FVTClientInstance.PrintPods()
 		FVTClientInstance.PrintDescribeNodes()
 		FVTClientInstance.PrintEvents()
 		FVTClientInstance.TailPodLogs(startTime)
+		FVTClientInstance.PrintContainerEnvsFromAllPods()
 	}
 })

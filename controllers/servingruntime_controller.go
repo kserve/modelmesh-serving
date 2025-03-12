@@ -242,6 +242,7 @@ func (r *ServingRuntimeReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		RESTProxyEnabled:           cfg.RESTProxy.Enabled,
 		RESTProxyImage:             cfg.RESTProxy.Image.TaggedImage(),
 		RESTProxyPort:              cfg.RESTProxy.Port,
+		RESTProxySkipVerify:        cfg.RESTProxy.SkipVerify,
 		RESTProxyResources:         cfg.RESTProxy.Resources.ToKubernetesType(),
 		PullerImage:                cfg.StorageHelperImage.TaggedImage(),
 		PullerImageCommand:         cfg.StorageHelperImage.Command,

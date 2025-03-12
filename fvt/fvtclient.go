@@ -28,11 +28,10 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc/credentials/insecure"
-
 	"github.com/go-logr/logr"
 	"github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	api "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -497,6 +496,29 @@ func (fvt *FVTClient) TailPodLogs(sinceTime string) {
 	}
 }
 
+func (fvt *FVTClient) PrintContainerEnvsFromAllPods() {
+	podList, err := fvt.Resource(gvrPods).Namespace(fvt.namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "modelmesh-service=modelmesh-serving",
+	})
+	if err != nil {
+		fvt.log.Error(err, "Error listing the pods")
+	}
+	for _, podList := range podList.Items {
+		podName := podList.GetName()
+		err = fvt.RunKubectl("get", "pod/"+podName, "-o", "yaml")
+		if err != nil {
+			fvt.log.Error(err, "Error running kubectl exec env command")
+		}
+	}
+}
+
+func (fvt *FVTClient) PrintMMConfig() {
+	err := fvt.RunKubectl("get", "cm", UserConfigMapName, "-o", "yaml")
+	if err != nil {
+		fvt.log.Error(err, "Error running get config map command")
+	}
+}
+
 func (fvt *FVTClient) RunKubectl(args ...string) error {
 	args = append(args, "-n", fvt.namespace)
 	kubectlCmd := exec.Command("kubectl", args...)
@@ -533,13 +555,13 @@ func (fvt *FVTClient) RunKfsModelMetadata(req *inference.ModelMetadataRequest) (
 	return grpcClient.ModelMetadata(ctx, req)
 }
 
-func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, tls bool) (string, error) {
+func (fvt *FVTClient) RunKfsRestInference(modelName string, body []byte, useTls bool) (string, error) {
 	if fvt.restConn == nil {
 		return "", errors.New("you must connect to model mesh before running an inference")
 	}
 
 	protocol := "http"
-	if tls {
+	if useTls {
 		protocol = "https"
 	}
 

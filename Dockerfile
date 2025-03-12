@@ -51,7 +51,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 ###############################################################################
 # Stage 2: Copy build assets to create the smallest final runtime image
 ###############################################################################
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS runtime
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 AS runtime
 
 ARG USER=2000
 ARG IMAGE_VERSION
