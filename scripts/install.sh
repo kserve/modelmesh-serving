@@ -279,6 +279,8 @@ if [[ $fvt == "true" ]]; then
   info "Waiting for dependent pods to be up ..."
   wait_for_pods_ready "-l app=etcd"
   wait_for_pods_ready "-l app=minio"
+  kubectl get pod/pvc-reader -o yaml
+  wait_for_pods_ready "-l app=pvc-reader"
 fi
 
 if ! kubectl get secret model-serving-etcd >/dev/null; then

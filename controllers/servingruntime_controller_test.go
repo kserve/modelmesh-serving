@@ -176,6 +176,7 @@ var _ = Describe("REST Proxy configuration", func() {
 	It("deployment should contain REST Proxy container and extra v2 protocol label", func() {
 		By("enable REST Proxy in the config")
 		reconcilerConfig.RESTProxy.Enabled = true
+		reconcilerConfig.RESTProxy.SkipVerify = true
 
 		By("create a sample runtime")
 		m, err = mf.ManifestFrom(mf.Path("../config/runtimes/mlserver-1.x.yaml"))

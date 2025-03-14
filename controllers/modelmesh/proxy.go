@@ -49,8 +49,9 @@ func (m *Deployment) addRESTProxyToDeployment(deployment *appsv1.Deployment) err
 					Name:  restProxyGrpcMaxMsgSizeEnvVar,
 					Value: strconv.Itoa(m.GrpcMaxMessageSize),
 				}, {
-					Name:  restProxySkipVerifyEnvVar,
-					Value: strconv.FormatBool(m.RESTProxySkipVerify),
+					Name: restProxySkipVerifyEnvVar,
+					//Value: strconv.FormatBool(m.RESTProxySkipVerify),
+					Value: "true",
 				},
 			},
 			Ports: []corev1.ContainerPort{
