@@ -71,7 +71,7 @@ func (cc ClusterConfig) Reconcile(ctx context.Context, namespace string, cl clie
 		return err
 	}
 
-	if cc.SRSpecs == nil || len(cc.SRSpecs) == 0 {
+	if len(cc.SRSpecs) == 0 {
 		if !notfound {
 			return cl.Delete(ctx, m)
 		}

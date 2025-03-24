@@ -15,15 +15,15 @@
 package predictor
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	inference "github.com/kserve/modelmesh-serving/fvt/generated"
 	tfsframework "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow/core/framework"
 	tfsapi "github.com/kserve/modelmesh-serving/fvt/generated/tensorflow_serving/apis"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/kserve/modelmesh-serving/fvt"
 	. "github.com/onsi/ginkgo/v2"
@@ -364,9 +364,15 @@ var _ = Describe("Predictor", func() {
 		BeforeAll(func() {
 			// load the test predictor object
 			tfPredictorObject = NewPredictorForFVT("tf-predictor.yaml")
+			rd := fmt.Sprintf("%x", sha1.Sum([]byte(time.Now().String())))
+			randomName := fmt.Sprintf("minimal-tf-predictor-%s", rd[len(rd)-5:])
+			SetString(tfPredictorObject, randomName, "metadata", "name")
+
 			tfPredictorName = tfPredictorObject.GetName()
 
 			CreatePredictorAndWaitAndExpectLoaded(tfPredictorObject)
+
+			WaitForStableActiveDeployState(time.Second * 60)
 
 			err := FVTClientInstance.ConnectToModelServing(Insecure)
 			Expect(err).ToNot(HaveOccurred())
@@ -1175,6 +1181,7 @@ var _ = Describe("TLS XGBoost inference", Ordered, Serial, func() {
 
 	It("should successfully run an inference with basic TLS", func() {
 		By("Updating the user ConfigMap to for basic TLS")
+
 		FVTClientInstance.UpdateConfigMapTLS(BasicTLSConfig)
 
 		By("Waiting for stable deploy state after UpdateConfigMapTLS")

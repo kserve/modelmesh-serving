@@ -27,7 +27,8 @@ var NameSpaceScopeMode = false
 var DefaultConfig = map[string]interface{}{
 	"podsPerRuntime": 1,
 	"restProxy": map[string]interface{}{
-		"enabled": true,
+		"enabled":    true,
+		"skipVerify": true,
 	},
 	"scaleToZero": map[string]interface{}{
 		"enabled": false,
