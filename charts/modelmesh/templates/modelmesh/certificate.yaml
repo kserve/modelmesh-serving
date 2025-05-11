@@ -1,0 +1,17 @@
+{{- if .Values.modelmesh.certmanager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    {{- include "modelmesh.labels" . | nindent 4 }}
+  name: {{ .Values.modelmesh.certmanager.certificateName | quote }}
+spec:
+  commonName: modelmesh-webhook-server-service.{{ .Release.Namespace }}.svc
+  dnsNames:
+  - modelmesh-webhook-server-service.{{ .Release.Namespace }}.svc
+  - modelmesh-webhook-server-service.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: {{ .Values.modelmesh.certmanager.secretName | quote }}
+{{- end }}
