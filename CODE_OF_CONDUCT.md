@@ -1,6 +1,7 @@
 ## CNCF Community Code of Conduct v1.3
 
 Other languages available:
+
 - [Arabic/العربية](https://github.com/cncf/foundation/blob/main/code-of-conduct-languages/ar.md)
 - [Bengali/বাংলা](https://github.com/cncf/foundation/blob/main/code-of-conduct-languages/bn.md)
 - [Bulgarian/Български](https://github.com/cncf/foundation/blob/main/code-of-conduct-languages/bg.md)
@@ -36,8 +37,9 @@ We are committed to making participation in the CNCF community a harassment-free
 ## Scope
 
 This code of conduct applies:
-* within project and community spaces,
-* in other spaces when an individual CNCF community participant's words or actions are directed at or are about a CNCF project, the CNCF community, or another CNCF community participant in the context of a CNCF activity.
+
+- within project and community spaces,
+- in other spaces when an individual CNCF community participant's words or actions are directed at or are about a CNCF project, the CNCF community, or another CNCF community participant in the context of a CNCF activity.
 
 ### CNCF Events
 
@@ -49,35 +51,35 @@ The CNCF Community is open, inclusive and respectful. Every member of our commun
 
 Examples of behavior that contributes to a positive environment include but are not limited to:
 
-* Demonstrating empathy and kindness toward other people
-* Being respectful of differing opinions, viewpoints, and experiences
-* Giving and gracefully accepting constructive feedback
-* Accepting responsibility and apologizing to those affected by our mistakes,
+- Demonstrating empathy and kindness toward other people
+- Being respectful of differing opinions, viewpoints, and experiences
+- Giving and gracefully accepting constructive feedback
+- Accepting responsibility and apologizing to those affected by our mistakes,
   and learning from the experience
-* Focusing on what is best not just for us as individuals, but for the
+- Focusing on what is best not just for us as individuals, but for the
   overall community
-* Using welcoming and inclusive language
-
+- Using welcoming and inclusive language
 
 Examples of unacceptable behavior include but are not limited to:
 
-* The use of sexualized language or imagery
-* Trolling, insulting or derogatory comments, and personal or political attacks
-* Public or private harassment in any form
-* Publishing others' private information, such as a physical or email
+- The use of sexualized language or imagery
+- Trolling, insulting or derogatory comments, and personal or political attacks
+- Public or private harassment in any form
+- Publishing others' private information, such as a physical or email
   address, without their explicit permission
-* Violence, threatening violence, or encouraging others to engage in violent behavior
-* Stalking or following someone without their consent
-* Unwelcome physical contact
-* Unwelcome sexual or romantic attention or advances
-* Using CNCF projects or community spaces for political campaigning or promotion of political causes 
+- Violence, threatening violence, or encouraging others to engage in violent behavior
+- Stalking or following someone without their consent
+- Unwelcome physical contact
+- Unwelcome sexual or romantic attention or advances
+- Using CNCF projects or community spaces for political campaigning or promotion of political causes
   that are unrelated to the advancement of cloud native technology. To clarify, this policy does not restrict individuals' personal attire, including attire that expresses personal beliefs or aspects of identity.
-* Other conduct which could reasonably be considered inappropriate in a
+- Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
 The following behaviors are also prohibited:
-* Providing knowingly false or misleading information in connection with a Code of Conduct investigation or otherwise intentionally tampering with an investigation.
-* Retaliating against a person because they reported an incident or provided information about an incident as a witness.
+
+- Providing knowingly false or misleading information in connection with a Code of Conduct investigation or otherwise intentionally tampering with an investigation.
+- Retaliating against a person because they reported an incident or provided information about an incident as a witness.
 
 Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct.
 By adopting this Code of Conduct, project maintainers commit themselves to fairly and consistently applying these principles to every aspect
@@ -88,11 +90,12 @@ Project maintainers who do not follow or enforce the Code of Conduct may be temp
 
 For incidents occurring in the Kubernetes community, contact the [Kubernetes Code of Conduct Committee](https://git.k8s.io/community/committee-code-of-conduct) via <conduct@kubernetes.io>. You can expect a response within three business days.
 
-For other projects, or for incidents that are project-agnostic or impact multiple CNCF projects, please contact the [CNCF Code of Conduct Committee](https://www.cncf.io/conduct/committee/) via <conduct@cncf.io>.  Alternatively, you can contact any of the individual members of the [CNCF Code of Conduct Committee](https://www.cncf.io/conduct/committee/) to submit your report. For more detailed instructions on how to submit a report, including how to submit a report anonymously, please see our [Incident Resolution Procedures](https://github.com/cncf/foundation/blob/main/code-of-conduct/coc-incident-resolution-procedures.md). You can expect a response within three business days.
+For other projects, or for incidents that are project-agnostic or impact multiple CNCF projects, please contact the [CNCF Code of Conduct Committee](https://www.cncf.io/conduct/committee/) via <conduct@cncf.io>. Alternatively, you can contact any of the individual members of the [CNCF Code of Conduct Committee](https://www.cncf.io/conduct/committee/) to submit your report. For more detailed instructions on how to submit a report, including how to submit a report anonymously, please see our [Incident Resolution Procedures](https://github.com/cncf/foundation/blob/main/code-of-conduct/coc-incident-resolution-procedures.md). You can expect a response within three business days.
 
 For incidents occurring at CNCF event that is produced by the Linux Foundation, please contact <eventconduct@cncf.io>.
 
 ## Frequently asked questions
+
 For more information about this Code of Conduct, please see the [CNCF Code of Conduct Frequently Asked Questions](https://www.cncf.io/conduct/faq/).
 
 ## Enforcement
