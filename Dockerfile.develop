@@ -21,7 +21,7 @@
 ###############################################################################
 # Create the develop, test, and build environment
 ###############################################################################
-ARG GOLANG_VERSION=1.22
+ARG GOLANG_VERSION=1.23
 FROM registry.access.redhat.com/ubi9/go-toolset:$GOLANG_VERSION
 
 
