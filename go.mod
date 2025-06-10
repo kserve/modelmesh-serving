@@ -4,15 +4,15 @@ go 1.23.6
 
 require (
 	github.com/dereklstinson/cifar v0.0.0-20200421171932-5722a3b6a0c7
-	github.com/go-logr/logr v1.3.0
-	github.com/golang/protobuf v1.5.3
+	github.com/go-logr/logr v1.4.1
+	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/kserve/kserve v0.12.0
 	github.com/manifestival/controller-runtime-client v0.4.0
 	github.com/manifestival/manifestival v0.7.1
 	github.com/moverest/mnist v0.0.0-20160628192128-ec5d9d203b59
-	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/ginkgo/v2 v2.15.0
+	github.com/onsi/gomega v1.31.0
 	github.com/operator-framework/operator-lib v0.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.0
@@ -25,7 +25,7 @@ require (
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.33.0
 	k8s.io/api v0.28.4
-	k8s.io/apimachinery v0.28.4
+	k8s.io/apimachinery v0.30.13
 	k8s.io/client-go v0.28.4
 	knative.dev/pkg v0.0.0-20231115001034-97c7258e3a98
 	sigs.k8s.io/controller-runtime v0.16.3
@@ -127,8 +127,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.28.4 // indirect
 	k8s.io/component-base v0.28.4 // indirect
-	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20231113174909-778a5567bc1e // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	knative.dev/networking v0.0.0-20231115015815-3af9769712cd // indirect
 	knative.dev/serving v0.39.3 // indirect
