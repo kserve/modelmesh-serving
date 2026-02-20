@@ -1,4 +1,4 @@
-[![Build](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml/badge.svg)](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml)
+[![Build](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml/badge.svg)](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml) -- IGNORE
 
 # ModelMesh Serving
 
