@@ -277,7 +277,19 @@ func ExpectSuccessfulInference_kerasMnist(predictorName string) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(inferResponse).ToNot(BeNil())
 	Expect(inferResponse.ModelName).To(HavePrefix(predictorName))
-	Expect(inferResponse.RawOutputContents[0][0]).To(BeEquivalentTo(91))
+	// decode the raw output bytes into 10 float32 probabilities (one per digit)
+	// and verify the model predicts digit 5 (highest activation)
+	output, err := convertRawOutputContentsTo10Floats(inferResponse.GetRawOutputContents()[0])
+	Expect(err).ToNot(HaveOccurred())
+	maxVal := output[0]
+	maxIdx := 0
+	for i := 1; i < 10; i++ {
+		if output[i] > maxVal {
+			maxVal = output[i]
+			maxIdx = i
+		}
+	}
+	Expect(maxIdx).To(Equal(5))
 }
 
 // LightGBM Mushroom

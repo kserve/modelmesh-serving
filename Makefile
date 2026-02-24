@@ -29,7 +29,7 @@ IMG ?= kserve/modelmesh-controller:latest
 # Namespace to deploy model-serve into
 NAMESPACE ?= "model-serving"
 
-CONTROLLER_GEN_VERSION ?= "v0.11.4"
+CONTROLLER_GEN_VERSION ?= "v0.14.0"
 
 # Kubernetes version needs to be 1.23 or newer for autoscaling/v2 (HPA)
 # https://github.com/kubernetes-sigs/controller-runtime/tree/main/tools/setup-envtest
@@ -141,9 +141,9 @@ manifests: controller-gen
 		# of controller-gen and yq used. The KServe make manifests also includes a bunch of yaml post-processing which
 		# would need to be replicated here.
 		# HACK: ignore errors from generating the TrainedModel CRD from KServe, which is removed below
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1alpha1" output:crd:dir=config/crd/bases
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="github.com/kserve/kserve/pkg/apis/serving/v1beta1" output:crd:dir=config/crd/bases
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role crd paths="./..." output:crd:dir=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role paths="github.com/kserve/kserve/pkg/apis/serving/v1alpha1" output:crd:dir=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role paths="github.com/kserve/kserve/pkg/apis/serving/v1beta1" output:crd:dir=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=controller-role paths="./..." output:crd:dir=config/crd/bases
 	rm -f ./config/crd/bases/serving.kserve.io_trainedmodels.yaml
 	pre-commit run --all-files prettier > /dev/null || true
 
