@@ -1,0 +1,34 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: modelmesh-servingruntime.serving.kserve.io
+  labels:
+    {{- include "modelmesh.labels" . | nindent 4 }}
+  {{- if .Values.modelmesh.certmanager.enabled }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Values.modelmesh.certmanager.secretName }}
+  {{- end }}
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      caBundle: {{ include "webhook.caBundle" . | b64enc | quote }}
+      service:
+        name: modelmesh-webhook-server-service
+        namespace: {{ .Release.Namespace }}
+        path: /validate-serving-modelmesh-io-v1alpha1-servingruntime
+        port: 9443
+    failurePolicy: Fail
+    name: servingruntime.modelmesh-webhook-server.default
+    rules:
+      - apiGroups:
+          - serving.kserve.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - clusterservingruntimes
+          - servingruntimes
+    sideEffects: None
