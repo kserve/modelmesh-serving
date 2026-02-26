@@ -89,6 +89,8 @@ type Config struct {
 
 	ImagePullSecrets []corev1.LocalObjectReference
 
+	RuntimeClassName string
+
 	// For internal use only
 	InternalModelMeshEnvVars EnvVarList
 }

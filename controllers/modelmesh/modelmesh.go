@@ -68,6 +68,7 @@ type Deployment struct {
 	PullerImageCommand  []string
 	PullerResources     *corev1.ResourceRequirements
 	Replicas            uint16
+	RuntimeClassName    string
 	Port                uint16
 	TLSSecretName       string
 	TLSClientAuth       string
@@ -132,6 +133,7 @@ func (m *Deployment) Apply(ctx context.Context) error {
 				m.configureRuntimePodSpecLabels,
 				m.ensureMMContainerIsLast,
 				m.configureRuntimePodSpecImagePullSecrets,
+				m.addRuntimeClassToDeployment,
 			); tErr != nil {
 				return tErr
 			}
@@ -312,5 +314,13 @@ func (m *Deployment) setConfigMap() error {
 	}
 
 	m.AnnotationConfigMap = annotationConfigMap
+	return nil
+}
+
+// Add runtimeClassName to the deployment spec
+func (m *Deployment) addRuntimeClassToDeployment(deployment *appsv1.Deployment) error {
+	if m.RuntimeClassName != "" {
+		deployment.Spec.Template.Spec.RuntimeClassName = &m.RuntimeClassName
+	}
 	return nil
 }
