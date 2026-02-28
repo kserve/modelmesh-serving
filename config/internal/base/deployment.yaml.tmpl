@@ -22,7 +22,9 @@ metadata:
     app.kubernetes.io/name: modelmesh-controller
     name: {{.ServiceName}}-{{.Name}}
 spec:
+  {{if ge .Replicas 0}}
   replicas: {{.Replicas}}
+  {{end}}
   selector:
     matchLabels:
       modelmesh-service: {{.ServiceName}}
