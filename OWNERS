@@ -1,14 +1,4 @@
 approvers:
-  - njhill
-  - tjohnson31415
-  - ckadner
-  - rafvasq
-reviewers:
-  - njhill
-  - tjohnson31415
-  - ckadner
-  - rafvasq
-  - joerunde
-emeritus_approvers:
-  - animeshsingh  # 2023-04-12
-  - pvaneck       # 2023-04-12
+  - terrytangyuan
+  - yuzisun
+  - Jooho
