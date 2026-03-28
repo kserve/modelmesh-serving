@@ -67,7 +67,7 @@ type Deployment struct {
 	PullerImage         string
 	PullerImageCommand  []string
 	PullerResources     *corev1.ResourceRequirements
-	Replicas            uint16
+	Replicas            int32
 	Port                uint16
 	TLSSecretName       string
 	TLSClientAuth       string
