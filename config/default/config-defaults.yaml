@@ -49,6 +49,7 @@ storageHelperResources:
     cpu: "2"
     memory: "512Mi"
 serviceAccountName: ""
+runtimeClassName: ""
 metrics:
   enabled: true
 builtInServerTypes:

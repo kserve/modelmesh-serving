@@ -54,6 +54,7 @@ The following parameters are currently supported. _Note_ the keys are expressed 
 | `runtimePodAnnotations`                    | `metadata.annotations` to be added to all `ServingRuntime` pods                                       | (\*\*\*\*\*) See default annotations below |
 | `imagePullSecrets`                         | The image pull secrets to use for runtime Pods                                                        |                                            |
 | `allowAnyPVC`                              | Allows any PVC in predictor to configure PVC for runtime pods when it's not in storage secret         | `false`                                    |
+| `runtimeClassName`                         | The K8s runtimeClassName to use for the runtime                                                       |
 
 (\*) Currently requires a controller restart to take effect
 
