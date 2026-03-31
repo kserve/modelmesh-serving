@@ -1,0 +1,56 @@
+modelmesh:
+  version: &defaultVersion v0.12.0
+
+  # -- Run ModelMesh Serving in namespace scope mode.
+  namespaceScopeMode: false
+
+  # -- Install and configure required supporting datastores in the same namespace (etcd and MinIO) - for experimentation/development.
+  quickstart: true
+
+  certmanager:
+    # -- Whether cert manager is already installed on the cluster. If not, a selfsigned ca will be used.
+    enabled: false
+
+    # -- Name of the Certificate CRD.
+    certificateName: modelmesh-webhook-server-cert
+
+    # -- Name of the certificates secret that cert manager will create.
+    secretName: modelmesh-webhook-server-cert
+
+    # -- The namespace where cert manager is installed.
+    namespace: cert-manager
+
+  controller:
+    nodeSelector: { }
+    tolerations: [ ]
+    topologySpreadConstraints: [ ]
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: control-plane
+                    operator: In
+                    values:
+                      - modelmesh-controller
+              topologyKey: topology.kubernetes.io/zone
+    image: kserve/modelmesh-controller
+    tag: *defaultVersion
+
+  config:
+    # -- The name of the configmap that holds the default configuration and will be mounted to the controller.
+    configMapName: model-serving-config-defaults
+
+    # -- The name of the secret containing the ca certificate when in self-signed mode.
+    selfsignedSecretName: modelmesh-webhook-server-cert
+
+    devModeLogging: false
+    modelmeshImage: kserve/modelmesh
+    modelmeshImageTag: *defaultVersion
+    modelmeshRuntimeAdapterImage: kserve/modelmesh-runtime-adapter
+    modelmeshRuntimeAdapterImageTag: *defaultVersion
+    restProxyImage: kserve/rest-proxy
+    restProxyImageTag: *defaultVersion
+    podsPerRuntime: 2
