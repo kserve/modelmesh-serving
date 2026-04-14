@@ -1,4 +1,4 @@
-[![Build](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml/badge.svg)](https://github.com/kserve/modelmesh-serving/actions/workflows/build.yml)
+> This repo has been archived. Please check out [the main KServe repo](https://github.com/kserve/kserve).
 
 # ModelMesh Serving
 
