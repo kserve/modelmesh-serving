@@ -33,8 +33,10 @@ ARG TARGETARCH
 
 ARG OPENSHIFT_VERSION=4.12
 ARG KUSTOMIZE_VERSION=4.5.2
-ARG KUBEBUILDER_VERSION=v3.11.0
+ARG KUBEBUILDER_VERSION=v3.14.0
 ARG CONTROLLER_GEN_VERSION=v0.11.4
+ARG ETCD_VERSION=v3.5.6
+ARG APISERVER_VERSION=v1.25.0
 
 ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin:
 
@@ -60,13 +62,28 @@ ENV PIP_CACHE_DIR=/root/.cache/pip
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install pre-commit
 
-# First download and extract older dist of kubebuilder which includes required etcd, kube-apiserver and kubectl binaries
-# Then download and overwrite kubebuilder binary with desired/latest version
+# Older version of kubebuilder doesn't have s390x tar file. Individually installing etcd , kube-apiserver , kubebuilder , kubectl for all architecture (amd64, arm64 , pp64cle & s390x)
 RUN true \
-    && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/v2.3.2/kubebuilder_2.3.2_${TARGETOS:-linux}_${TARGETARCH:-amd64}.tar.gz | tar -xz -C /tmp/ \
-    && mv /tmp/kubebuilder_*_${TARGETOS:-linux}_${TARGETARCH:-amd64} /usr/local/kubebuilder \
+    && mkdir -p /usr/local/kubebuilder/bin \
     && curl -L https://github.com/kubernetes-sigs/kubebuilder/releases/download/${KUBEBUILDER_VERSION}/kubebuilder_${TARGETOS:-linux}_${TARGETARCH:-amd64} -o /usr/local/kubebuilder/bin/kubebuilder \
+    && chmod +x /usr/local/kubebuilder/bin/kubebuilder \
     && true
+
+RUN true \
+    && wget https://dl.k8s.io/${APISERVER_VERSION}/bin/${TARGETOS:-linux}/${TARGETARCH:-amd64}/kube-apiserver \
+    && mv kube-apiserver /usr/local/kubebuilder/bin \
+    && chmod +x /usr/local/kubebuilder/bin/kube-apiserver \
+    && kube-apiserver --version \
+    && true
+
+ENV PATH=/usr/local/go/bin:$PATH:/usr/local/kubebuilder/bin/etcd-${ETCD_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}:
+
+RUN true \
+   && wget https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz \
+   && tar -C /usr/local/kubebuilder/bin -xvzf etcd-${ETCD_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}.tar.gz \
+   && chmod +x /usr/local/kubebuilder/bin/etcd-${ETCD_VERSION}-${TARGETOS:-linux}-${TARGETARCH:-amd64}/etcd \
+   && etcd --version \
+   && true
 
 # Download openshift-cli
 RUN true \
