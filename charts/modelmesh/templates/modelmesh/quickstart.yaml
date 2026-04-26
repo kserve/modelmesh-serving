@@ -1,0 +1,118 @@
+{{- if .Values.modelmesh.quickstart }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+spec:
+  ports:
+    - name: etcd-client-port
+      port: 2379
+      protocol: TCP
+      targetPort: 2379
+  selector:
+    app: etcd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: etcd
+  name: etcd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+    spec:
+      containers:
+        - command:
+            - etcd
+            - --data-dir # use data directory under /tmp for read/write access by non-root user on OpenShift
+            - /tmp/etcd.data
+            - --listen-client-urls
+            - http://0.0.0.0:2379
+            - --advertise-client-urls
+            - http://0.0.0.0:2379
+          image: quay.io/coreos/etcd:v3.5.4
+          name: etcd
+          ports:
+            - containerPort: 2379
+              name: client
+              protocol: TCP
+            - containerPort: 2380
+              name: server
+              protocol: TCP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: model-serving-etcd
+stringData:
+  etcd_connection: |
+    {
+      "endpoints": "http://etcd:2379",
+      "root_prefix": "modelmesh-serving"
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  ports:
+    - name: minio-client-port
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+  selector:
+    app: minio
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: minio
+  name: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - args:
+            - server
+            # - /data
+            - /data1
+          env:
+            - name: MINIO_ACCESS_KEY
+              value: AKIAIOSFODNN7EXAMPLE
+            - name: MINIO_SECRET_KEY
+              value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          # image: quay.io/cloudservices/minio:latest
+          image: kserve/modelmesh-minio-examples:latest
+          name: minio
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storage-config
+stringData:
+  localMinIO: |
+    {
+      "type": "s3",
+      "access_key_id": "AKIAIOSFODNN7EXAMPLE",
+      "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "endpoint_url": "http://minio:9000",
+      "bucket": "modelmesh-example-models",
+      "region": "us-south"
+    }
+{{- end }}

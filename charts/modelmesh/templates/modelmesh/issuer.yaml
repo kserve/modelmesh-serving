@@ -1,0 +1,11 @@
+{{- if .Values.modelmesh.certmanager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    {{- include "modelmesh.labels" . | nindent 4 }}
+  name: selfsigned-issuer
+  namespace: modelmesh-serving
+spec:
+  selfSigned: {}
+{{- end }}
